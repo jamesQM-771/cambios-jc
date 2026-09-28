@@ -28,14 +28,13 @@ Instala (o verifica que tengas):
 
 | Herramienta | Para qué | Comprobar |
 |---|---|---|
-| Node.js 22 LTS | Ejecutar el proyecto | `node -v` |
+| Node.js 26 | Ejecutar el proyecto | `node -v` |
 | Git | Control de versiones | `git --version` |
-| Docker Desktop | PostgreSQL local | `docker -v` |
-| WSL2 (solo Windows) | Docker funciona mejor sobre WSL2 | `wsl -l -v` |
+| PostgreSQL 18 | Base de datos local (instalación nativa) | servicio `postgresql-x64-18` |
 | App autenticadora (Google Authenticator, Authy…) | Probar el 2FA | — |
 | Cuenta de GitHub | Repositorio y CI | — |
 
-En Windows, trabaja el proyecto **dentro de WSL2** (por ejemplo en `~/proyectos/cambios-jc`), no en `C:\`: Docker y Node van mucho más rápido.
+En este equipo no se usa Docker ni WSL2: PostgreSQL corre como servicio nativo de Windows (ver D14 en `docs/DECISIONES.md`).
 
 ## Paso 2 — Crear el repositorio
 

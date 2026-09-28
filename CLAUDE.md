@@ -36,18 +36,18 @@ Antes de implementar algo, lee la sección de `PROYECTO.md` que lo describe. Si 
 
 | Capa | Tecnología |
 |---|---|
-| Runtime | Node.js 22 LTS |
+| Runtime | Node.js 26 (LTS desde oct-2026; ver D13) |
 | Lenguaje | TypeScript en modo `strict` en todo el repositorio |
 | Monorepo | npm workspaces |
 | Frontend | React 19 + Vite + React Router + TanStack Query |
 | Backend | Fastify 5 |
 | Validación | Zod (esquemas compartidos en `packages/shared`) |
-| ORM | Prisma + PostgreSQL 16 |
+| ORM | Prisma + PostgreSQL 18 (ver D14) |
 | Colas | BullMQ + Redis 7 (desde la fase en que se necesiten; no en fase 0) |
 | Tiempo real | Socket.IO (desde la fase 2) |
 | Pruebas | Vitest (unitarias e integración); Playwright (e2e, desde fase 2) |
 | Lint / formato | ESLint + Prettier |
-| Contenedores | Docker + Docker Compose |
+| Contenedores | Docker + Docker Compose (solo producción y CI; en desarrollo PostgreSQL nativo, ver D14) |
 | CI | GitHub Actions |
 
 **No agregues dependencias fuera de esta lista sin preguntar.** Prohibido: Redux, Zustand, MUI, Tailwind, librerías de componentes UI, ORMs alternativos, `moment`.
@@ -89,11 +89,11 @@ cambios-jc/
 
 ### Dinero (reglas no negociables)
 - **Nunca** `number` para montos, tasas ni márgenes. Usa `Decimal` (Prisma.Decimal / decimal.js) en todo el backend y en los cálculos compartidos.
-- En la base de datos: montos `Decimal(18,2)`, tasas y márgenes `Decimal(18,6)`.
+- En la base de datos: montos `Decimal(18,2)`, montos en bolívares `Decimal(18,3)` (ver D15), tasas y márgenes `Decimal(18,6)`.
 - En JSON viajan como **string** (`"162000.00"`), nunca como número.
 - Redondeo solo al fijar el monto final o al mostrar; nunca en pasos intermedios. Modo de redondeo: `ROUND_HALF_UP`, documentado en `packages/shared`.
 - Toda función que calcule dinero vive en `packages/shared/src/dinero/` o en el servicio del módulo, **nunca en un componente React**, y tiene pruebas.
-- Formato de pantalla: `COP 162.000`, `VES 43.085,00`, `USD 150,00` (separador de miles `.`, decimales `,`). No usar el signo `$` solo: es ambiguo entre pesos y dólares.
+- Formato de pantalla: `COP 162.000`, `VES 43.085,106`, `USD 150,00` (separador de miles `.`, decimales `,`). No usar el signo `$` solo: es ambiguo entre pesos y dólares.
 
 ### Datos
 - **Nada se borra.** Las operaciones se anulan con motivo. No hay `DELETE` en tablas de negocio.
@@ -126,7 +126,7 @@ cambios-jc/
 ## 8. Pruebas
 
 - Toda regla de negocio y todo cálculo de dinero: prueba unitaria.
-- Todo endpoint: al menos una prueba de integración con base de datos real (PostgreSQL de pruebas en Docker), incluyendo el caso **sin permiso**.
+- Todo endpoint: al menos una prueba de integración con base de datos real (base PostgreSQL de pruebas separada de la de desarrollo), incluyendo el caso **sin permiso**.
 - Casos límite obligatorios en cálculos: cero, montos grandes, muchos decimales, redondeo.
 - Cuando existan, usa los archivos de `docs/datos-prueba/` para pruebas contra resultados esperados.
 - `npm run check` = lint + typecheck + pruebas. Debe pasar antes de cada commit.
@@ -137,7 +137,7 @@ Mantén estos scripts en el `package.json` raíz y actualiza esta sección si ca
 
 ```bash
 npm install            # instala todo el monorepo
-docker compose up -d   # levanta PostgreSQL (y Redis cuando se agregue)
+# PostgreSQL 18 debe estar corriendo (servicio nativo en desarrollo; ver README)
 npm run dev            # api + web en modo desarrollo
 npm run db:migrate     # aplica migraciones
 npm run db:seed        # datos de ejemplo ficticios + usuario administrador inicial

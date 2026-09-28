@@ -22,14 +22,15 @@ Cada tarea termina con `npm run check` en verde y un commit. Presenta el plan de
 - TypeScript `strict` con `tsconfig` base compartido.
 - ESLint + Prettier con configuración única.
 - Scripts raíz de §9 de `CLAUDE.md`.
-- `.gitignore`, `.editorconfig`, `.nvmrc` (Node 22).
+- `.gitignore`, `.editorconfig`, `.nvmrc` (Node 26).
 
 **Aceptación:** `npm install && npm run check` funciona en un clon limpio.
 
-### 0.2 Entorno local con Docker
-- `docker-compose.yml` con PostgreSQL 16 (desarrollo) y una segunda base para pruebas.
+### 0.2 Entorno local
+- PostgreSQL 18 nativo (sin Docker, ver D14) con una base de desarrollo y una segunda base para pruebas.
+- `docker-compose.yml` con PostgreSQL 18 solo como referencia para producción.
 - `.env.example` con todas las variables documentadas.
-- `README.md` con los pasos para levantar el proyecto desde cero en Windows (WSL2) y macOS.
+- `README.md` con los pasos para levantar el proyecto desde cero en Windows (PostgreSQL nativo) y macOS.
 
 **Aceptación:** siguiendo el README en una máquina limpia, `npm run dev` levanta API y web.
 
@@ -37,10 +38,10 @@ Cada tarea termina con `npm run check` en verde y un commit. Presenta el plan de
 - Tipo y funciones sobre `Decimal`: suma, resta, multiplicación, división, redondeo `ROUND_HALF_UP`.
 - Conversión: `bolivares = pesos ÷ tasa` y `pesos = divisa × tasa`, con precisión definida.
 - Serialización a/desde string para JSON.
-- Formateo de pantalla: `COP 162.000`, `VES 43.085,00`, `USD 150,00`.
+- Formateo de pantalla: `COP 162.000`, `VES 43.085,106`, `USD 150,00`.
 - Enmascarado de cuentas: `0102 **** **** **** 4441`.
 
-**Aceptación:** pruebas unitarias con casos límite, incluido el caso real `162000 ÷ 3.76 = 43085.11` (redondeo a 2 decimales) y montos de hasta 12 dígitos.
+**Aceptación:** pruebas unitarias con casos límite, incluido el caso real `162000 ÷ 3.76 = 43085.106` (3 decimales en bolívares, ver D15) y montos de hasta 12 dígitos.
 
 ### 0.4 Base de datos inicial (Prisma)
 Tablas de esta fase:

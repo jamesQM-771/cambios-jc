@@ -481,7 +481,7 @@ coincidencia en lista restrictiva            -> bloquear y escalar
 ```
 
 ### 7.8 Dinero
-- Montos `NUMERIC(18,2)`, tasas y márgenes `NUMERIC(18,6)`. Nunca `float`.
+- Montos `NUMERIC(18,2)`, montos en bolívares `NUMERIC(18,3)` (D15), tasas y márgenes `NUMERIC(18,6)`. Nunca `float`.
 - Aritmética con `decimal.js` / `Prisma.Decimal`.
 - Redondeo solo al mostrar o al fijar el monto final.
 
@@ -577,10 +577,10 @@ flowchart LR
 |---|---|---|
 | Frontend | React 19 + Vite + **TypeScript** + React Router + TanStack Query | Tipos para montos y estados |
 | UI | Componentes propios con tokens de `design/` | Sistema de diseño existente |
-| Backend | Node 22 LTS + **Fastify** + TypeScript | Liviano, validación integrada |
+| Backend | Node 26 + **Fastify** + TypeScript | Liviano, validación integrada |
 | Validación | Zod compartido front/back | Una sola definición de reglas |
 | ORM | Prisma | Migraciones, tipos, `Decimal` |
-| Base de datos | PostgreSQL 16 | Transacciones y bloqueos de fila |
+| Base de datos | PostgreSQL 18 | Transacciones y bloqueos de fila |
 | Tareas en segundo plano | BullMQ + Redis | Facturación, WhatsApp, listas y tasas con reintentos |
 | Tiempo real | Socket.IO con salas por empresa | Cola del operador y notificaciones |
 | Autenticación | Cookie `httpOnly` + 2FA TOTP | Obligatorio |
