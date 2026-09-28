@@ -1,0 +1,10 @@
+# Finales de línea LF en todo el repositorio (los .sh deben funcionar en Linux y CI).
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
+*.xlsx binary
+*.xls binary
+*.pdf binary

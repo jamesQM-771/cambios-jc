@@ -1,0 +1,23 @@
+# Dependencias y compilados
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+.vite/
+
+# Secretos: solo se versiona .env.example
+.env
+.env.*
+!.env.example
+
+# Archivos generados en ejecución
+uploads/
+respaldos/
+*.log
+
+# Sistema operativo y editores
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/

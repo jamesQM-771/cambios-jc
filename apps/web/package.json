@@ -1,0 +1,11 @@
+{
+  "name": "@cambios-jc/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Frontend React + Vite",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "build": "tsc --noEmit -p tsconfig.json"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "@cambios-jc/shared",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Esquemas Zod, tipos, utilidades de dinero y permisos compartidos",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "build": "tsc -p tsconfig.build.json"
+  },
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  }
+}

@@ -1,0 +1,7 @@
+package-lock.json
+dist/
+coverage/
+# La especificación se edita a mano; Prettier no la reformatea.
+docs/
+CLAUDE.md
+LEEME-PRIMERO.md
