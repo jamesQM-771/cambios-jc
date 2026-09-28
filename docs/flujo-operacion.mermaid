@@ -1,0 +1,117 @@
+flowchart TD
+    INICIO(["Apertura de jornada en la sucursal"]) --> SALDOS["Sistema carga saldos de cuentas, contrapartes y liquidez"]
+    SALDOS --> REF["Supervisor ingresa tasa de referencia por línea de negocio"]
+    REF --> ASIS["Sistema muestra tasa oficial y de mercado como apoyo"]
+    ASIS --> CALC["Calcula tasa de compra y venta con márgenes"]
+    CALC --> TUR["Vendedor abre turno en su caja con conteo por denominación"]
+    TUR --> TUR2{"¿Coincide con el cierre anterior de la caja?"}
+    TUR2 -->|"No"| TUR3["Registrar diferencia de apertura"]
+    TUR2 -->|"Sí"| TIPO
+    TUR3 --> TIPO{"¿Qué operación llega?"}
+
+    %% ===== REMESA =====
+    TIPO -->|"Remesa a Venezuela"| V1["Buscar remitente por documento o registrarlo"]
+    V1 --> V2["Elegir beneficiario y medio de pago: cuenta 20 dígitos o pago móvil"]
+    V2 --> V3["Digitar pesos; bolívares = pesos / punto"]
+    V3 --> TM{"¿Tasa manual?"}
+    TM -->|"No"| CUMP
+    TM -->|"Sí, en rango"| TM2["Registrar motivo"]
+    TM -->|"Sí, fuera de rango"| DC
+    TM2 --> CUMP{"¿Supera umbral de cumplimiento?"}
+    CUMP -->|"Sí"| CUMP2["Exigir ficha ampliada y revisar listas restrictivas"]
+    CUMP2 --> CUMP3{"¿Coincide en lista restrictiva?"}
+    CUMP3 -->|"Sí"| BLOQ["Bloquear y escalar al oficial de cumplimiento"]
+    CUMP3 -->|"No"| LIQ
+    CUMP -->|"No"| LIQ{"¿Alcanzan los bolívares libres?"}
+    LIQ -->|"No"| LIQ2["Alerta de liquidez: fondear o esperar"]
+    LIQ2 --> LIQ
+    LIQ -->|"Sí"| MONTO{"¿Supera umbral de doble control?"}
+    MONTO -->|"Sí"| DC["Solicitud de aprobación"]
+    DC --> DC2{"¿Aprobada por otra persona?"}
+    DC2 -->|"No"| ANU["Anulada"]
+    DC2 -->|"Sí"| VER
+    MONTO -->|"No"| VER{"¿Pago del cliente verificado?"}
+    VER -->|"No"| VER2["Queda Registrada, en espera"]
+    VER2 --> VER
+    VER -->|"Sí"| PUB["Imprimir recibo en ticket y publicar En cola; factura electrónica solo si la empresa la activa"]
+    PUB --> SEG["Enviar recibo y enlace de seguimiento por WhatsApp"]
+    SEG --> RT(("Tiempo real"))
+    RT --> O1
+
+    subgraph VEN["Digitador en Venezuela"]
+        O1["Ve solo titular, banco, cuenta o teléfono, cédula y monto en bolívares"] --> O2["La toma con bloqueo"]
+        O2 --> O3{"¿Pudo pagar?"}
+        O3 -->|"Sí"| O4["Sube captura del comprobante y elige cuenta de origen; referencia y costo opcionales"]
+        O4 --> O5["Completada"]
+        O3 -->|"No"| O6["Reporta incidencia con motivo"]
+    end
+
+    O5 --> N1["Notificar al vendedor y al cliente; enlace muestra comprobante"]
+    N1 --> ASI["Asiento contable y ganancia neta de costos"]
+    O6 --> I1{"¿Se corrige?"}
+    I1 -->|"Sí"| I2["Vendedor corrige datos del beneficiario"]
+    I2 --> PUB
+    I1 -->|"No"| I3["Devolución con doble control"]
+    I3 --> I4["Cuenta por pagar al cliente y asiento de reversa"]
+
+    %% ===== COMPRA DE BOLÍVARES =====
+    TIPO -->|"Compra de bolívares"| C1["Contraparte, tasa de compra y bolívares"]
+    C1 --> C2{"¿Cómo se paga?"}
+    C2 -->|"De contado"| C3["Sale de una cuenta en pesos"]
+    C2 -->|"A crédito o con anticipo"| C4["Cuenta corriente de la contraparte"]
+    C3 --> C5["Recalcular costo promedio y liquidez VES"]
+    C4 --> C5
+    C5 --> ASI
+
+    %% ===== DÓLARES EN CAJA =====
+    TIPO -->|"Dólares en caja"| D1{"¿Compra o venta?"}
+    D1 -->|"Compra"| D2["Pesos = dólares x tasa de compra; recalcular costo promedio"]
+    D1 -->|"Venta"| D3["Pesos = dólares x tasa de venta; calcular ganancia"]
+    D2 --> D4["Registrar denominaciones recibidas y entregadas"]
+    D3 --> D4
+    D4 --> D5["Imprimir recibo en ticket; factura electrónica solo si está activa"]
+    D5 --> ASI
+
+    %% ===== CONTRAPARTES =====
+    TIPO -->|"Movimiento con contraparte"| P1["Elegir contraparte y tipo de movimiento"]
+    P1 --> P2{"¿Es un ajuste?"}
+    P2 -->|"Sí"| P3["Doble control"]
+    P2 -->|"No"| P4{"¿Movió dinero físico?"}
+    P3 --> P4
+    P4 -->|"Sí"| P5["Afecta la cuenta de dinero elegida"]
+    P4 -->|"No"| P6["Solo reconocimiento de deuda"]
+    P5 --> ASI
+    P6 --> ASI
+
+    %% ===== GASTOS =====
+    TIPO -->|"Gasto"| G1{"¿Operativo o personal?"}
+    G1 -->|"Operativo"| G2["Resta a la ganancia"]
+    G1 -->|"Personal"| G3["Retiro del dueño: no resta a la ganancia"]
+    G2 --> ASI
+    G3 --> ASI
+
+    ASI --> MAS{"¿Más operaciones en el turno?"}
+    I4 --> MAS
+    BLOQ --> MAS
+    ANU --> MAS
+    MAS -->|"Sí"| TIPO
+
+    %% ===== CIERRE DE TURNO =====
+    MAS -->|"No"| K1["Calcular saldo esperado por cuenta y denominación"]
+    K1 --> K2["Vendedor cuenta billetes por denominación y reporta bancos"]
+    K2 --> K3{"¿Cuadra?"}
+    K3 -->|"Sí"| K4["CUADRADO"]
+    K3 -->|"Conteo mayor"| K5["SOBRANTE: explicación obligatoria"]
+    K3 -->|"Conteo menor"| K6["FALTANTE: explicación obligatoria"]
+    K4 --> K7["Cerrar turno atribuido al vendedor"]
+    K5 --> K7
+    K6 --> K7
+
+    %% ===== CIERRE DE JORNADA =====
+    K7 --> J1{"¿Todos los turnos cerrados y ninguna remesa Tomada?"}
+    J1 -->|"No"| J2["Esperar o resolver pendientes"]
+    J2 --> J1
+    J1 -->|"Sí"| J3["Revisar alertas abiertas y facturas rechazadas si aplica"]
+    J3 --> J4["Resumen: ganancia neta por línea, retiros, me deben, le debo y posición total"]
+    J4 --> J5["Cerrar jornada en solo lectura"]
+    J5 --> FIN(["Saldos pasan a la jornada siguiente"])
