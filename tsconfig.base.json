@@ -5,6 +5,9 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "types": [],
+    // Desarrollo, pruebas y verificación de tipos leen `shared` desde su código fuente (D31).
+    // Las compilaciones de producción lo anulan con `"customConditions": []` y usan `dist`.
+    "customConditions": ["@cambios-jc/fuente"],
 
     "strict": true,
     "noUncheckedIndexedAccess": true,

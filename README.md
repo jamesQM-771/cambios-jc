@@ -62,14 +62,25 @@ npm run dev
 
 ## Comandos
 
-| Comando              | Qué hace                                                      |
-| -------------------- | ------------------------------------------------------------- |
-| `npm run dev`        | API y web en modo desarrollo                                  |
-| `npm run db:migrate` | Aplica migraciones (desde la tarea 0.4)                       |
-| `npm run db:seed`    | Datos ficticios y administrador inicial (desde la tarea 0.4)  |
-| `npm run test`       | Pruebas                                                       |
-| `npm run lint`       | ESLint + formato con Prettier                                 |
-| `npm run typecheck`  | Verificación de tipos                                         |
-| `npm run check`      | lint + typecheck + pruebas (obligatorio antes de cada commit) |
-| `npm run build`      | Compila todos los paquetes                                    |
-| `npm run format`     | Aplica el formato de Prettier                                 |
+| Comando                            | Qué hace                                                      |
+| ---------------------------------- | ------------------------------------------------------------- |
+| `npm run dev`                      | API y web en modo desarrollo                                  |
+| `npm run db:migrate`               | Aplica migraciones (desde la tarea 0.4)                       |
+| `npm run db:seed`                  | Datos ficticios y administrador inicial (desde la tarea 0.4)  |
+| `npm run test`                     | Pruebas                                                       |
+| `npm run lint`                     | ESLint + formato con Prettier                                 |
+| `npm run typecheck`                | Verificación de tipos                                         |
+| `npm run check`                    | lint + typecheck + pruebas (obligatorio antes de cada commit) |
+| `npm run build`                    | Compila todos los paquetes (`shared` primero)                 |
+| `npm run start -w @cambios-jc/api` | Arranca la API ya compilada (tras `npm run build`)            |
+| `npm run format`                   | Aplica el formato de Prettier                                 |
+
+## Pruebas de la API con base de datos
+
+`npm run check` reinicia la base `cambios_jc_pruebas` (borra y vuelve a crear todas sus tablas) antes de las pruebas de integración. Por seguridad, se niega a reiniciar cualquier base cuyo nombre no termine en `_pruebas`.
+
+Para repetir solo las pruebas de la API sin reiniciar la base (más rápido), con la base de pruebas ya migrada:
+
+```bash
+CONSERVAR_BASE_PRUEBAS=1 npx vitest run --project api
+```

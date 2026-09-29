@@ -1,8 +1,18 @@
+import { fileURLToPath } from 'node:url';
+
 import { defineProject } from 'vitest/config';
 
 import { urlBasePruebas } from './test/base-pruebas.js';
 
 export default defineProject({
+  // Las pruebas leen `shared` desde su código fuente, sin necesidad de compilarlo antes (D31).
+  resolve: {
+    alias: {
+      '@cambios-jc/shared': fileURLToPath(
+        new URL('../../packages/shared/src/index.ts', import.meta.url),
+      ),
+    },
+  },
   test: {
     name: 'api',
     environment: 'node',

@@ -1,12 +1,18 @@
 import { construirApp } from './app.js';
+import { leerConfig } from './lib/config.js';
+import { crearPrisma } from './lib/prisma.js';
 
-const puerto = Number(process.env.PUERTO_API ?? 3000);
-const host = process.env.HOST_API ?? '127.0.0.1';
+const config = leerConfig();
+const app = construirApp({ config, prisma: crearPrisma(config.DATABASE_URL) });
 
-const app = construirApp();
+for (const senal of ['SIGINT', 'SIGTERM'] as const) {
+  process.once(senal, () => {
+    void app.close().then(() => process.exit(0));
+  });
+}
 
 try {
-  await app.listen({ port: puerto, host });
+  await app.listen({ port: config.PUERTO_API, host: config.HOST_API });
 } catch (error) {
   app.log.error(error);
   process.exit(1);

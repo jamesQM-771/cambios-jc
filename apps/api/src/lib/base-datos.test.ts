@@ -1,3 +1,4 @@
+import { ROLES } from '@cambios-jc/shared';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { crearPrisma, type PrismaClient } from './prisma.js';
@@ -10,6 +11,18 @@ beforeAll(() => {
 
 afterAll(async () => {
   await prisma.$disconnect();
+});
+
+describe('roles', () => {
+  it('el enum "rol" de la base coincide con ROLES de shared', async () => {
+    const filas = await prisma.$queryRaw<{ etiqueta: string }[]>`
+      SELECT e.enumlabel AS etiqueta
+      FROM pg_enum e JOIN pg_type t ON t.oid = e.enumtypid
+      WHERE t.typname = 'rol'
+      ORDER BY e.enumsortorder`;
+
+    expect(filas.map((fila) => fila.etiqueta).sort()).toEqual([...ROLES].sort());
+  });
 });
 
 describe('auditoria es de solo inserción', () => {
