@@ -7,12 +7,21 @@
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "build": "tsc -p tsconfig.build.json",
-    "dev": "tsx watch --env-file-if-exists=../../.env src/servidor.ts"
+    "dev": "tsx watch --env-file-if-exists=../../.env src/servidor.ts",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:seed": "prisma db seed"
   },
   "dependencies": {
-    "fastify": "5.12.5"
+    "@prisma/adapter-pg": "7.10.0",
+    "@prisma/client": "7.10.0",
+    "argon2": "0.45.1",
+    "fastify": "5.12.5",
+    "pg": "8.23.0"
   },
   "devDependencies": {
+    "@types/pg": "8.23.1",
+    "prisma": "7.10.0",
     "tsx": "4.23.15"
   }
 }

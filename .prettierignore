@@ -1,6 +1,7 @@
 package-lock.json
 dist/
 coverage/
+apps/api/src/generated/
 # La especificación se edita a mano; Prettier no la reformatea.
 docs/
 CLAUDE.md

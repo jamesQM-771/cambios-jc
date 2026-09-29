@@ -1,0 +1,114 @@
+// Esquema de la fase 0 (docs/fases/FASE-0.md §0.4).
+// Modelos y campos en español camelCase; tablas y columnas en snake_case (D24).
+// Fechas en UTC con zona horaria (timestamptz).
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Rol {
+  administrador
+  vendedor
+  digitador
+  supervisor
+  cumplimiento
+
+  @@map("rol")
+}
+
+/// Configuración de la empresa dueña de la instalación. Una sola fila (restricción en la migración).
+model Empresa {
+  id             String   @id @default(uuid(7)) @db.Uuid
+  /// Siempre true: con el índice único garantiza una sola fila.
+  unica          Boolean  @default(true) @unique
+  nombre         String
+  nit            String?
+  telefono       String?
+  whatsapp       String?
+  direccion      String?
+  logoUrl        String?  @map("logo_url")
+  monedaLocal    String   @default("COP") @map("moneda_local") @db.Char(3)
+  zonaHoraria    String   @default("America/Bogota") @map("zona_horaria")
+  textoPieRecibo String?  @map("texto_pie_recibo")
+  creadaEn       DateTime @default(now()) @map("creada_en") @db.Timestamptz(6)
+  actualizadaEn  DateTime @updatedAt @map("actualizada_en") @db.Timestamptz(6)
+
+  @@map("empresa")
+}
+
+model Sucursal {
+  id       String    @id @default(uuid(7)) @db.Uuid
+  nombre   String    @unique
+  ciudad   String
+  activa   Boolean   @default(true)
+  usuarios Usuario[]
+
+  @@map("sucursal")
+}
+
+model Usuario {
+  id                    String    @id @default(uuid(7)) @db.Uuid
+  nombre                String
+  login                 String    @unique
+  hashContrasena        String    @map("hash_contrasena")
+  /// La contraseña es temporal (seed o restablecida): se debe cambiar en el próximo acceso.
+  debeCambiarContrasena Boolean   @default(true) @map("debe_cambiar_contrasena")
+  rol                   Rol
+  sucursalId            String?   @map("sucursal_id") @db.Uuid
+  sucursal              Sucursal? @relation(fields: [sucursalId], references: [id], onDelete: Restrict)
+  activo                Boolean   @default(true)
+  /// Secreto TOTP cifrado con CLAVE_CIFRADO_2FA (tarea 0.7). Nunca en texto plano.
+  secreto2fa            String?   @map("secreto_2fa")
+  tiene2fa              Boolean   @default(false) @map("tiene_2fa")
+  intentosFallidos      Int       @default(0) @map("intentos_fallidos")
+  bloqueadoHasta        DateTime? @map("bloqueado_hasta") @db.Timestamptz(6)
+  ultimoAcceso          DateTime? @map("ultimo_acceso") @db.Timestamptz(6)
+  creadoEn              DateTime  @default(now()) @map("creado_en") @db.Timestamptz(6)
+  sesiones              Sesion[]
+  auditorias            Auditoria[]
+
+  @@map("usuario")
+}
+
+model Sesion {
+  id              String   @id @default(uuid(7)) @db.Uuid
+  usuarioId       String   @map("usuario_id") @db.Uuid
+  usuario         Usuario  @relation(fields: [usuarioId], references: [id])
+  /// false = sesión parcial (contraseña correcta, falta el código 2FA); true = sesión completa.
+  completa        Boolean  @default(false)
+  creadaEn        DateTime @default(now()) @map("creada_en") @db.Timestamptz(6)
+  expiraEn        DateTime @map("expira_en") @db.Timestamptz(6)
+  ultimaActividad DateTime @default(now()) @map("ultima_actividad") @db.Timestamptz(6)
+  ip              String?
+  agenteUsuario   String?  @map("agente_usuario")
+  revocada        Boolean  @default(false)
+
+  @@index([usuarioId])
+  @@map("sesion")
+}
+
+/// Bitácora de solo inserción: un trigger rechaza UPDATE, DELETE y TRUNCATE.
+model Auditoria {
+  id            BigInt   @id @default(autoincrement())
+  fecha         DateTime @default(now()) @db.Timestamptz(6)
+  usuarioId     String?  @map("usuario_id") @db.Uuid
+  usuario       Usuario? @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+  accion        String
+  entidad       String
+  entidadId     String?  @map("entidad_id")
+  antes         Json?
+  despues       Json?
+  ip            String?
+  agenteUsuario String?  @map("agente_usuario")
+
+  @@index([fecha])
+  @@index([usuarioId])
+  @@index([entidad, entidadId])
+  @@map("auditoria")
+}

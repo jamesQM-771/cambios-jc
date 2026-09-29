@@ -3,6 +3,9 @@ node_modules/
 dist/
 coverage/
 *.tsbuildinfo
+
+# Cliente de Prisma generado (npm install lo regenera)
+apps/api/src/generated/
 .vite/
 
 # Secretos: solo se versiona .env.example

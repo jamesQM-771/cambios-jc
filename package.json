@@ -11,14 +11,15 @@
   ],
   "scripts": {
     "dev": "concurrently -n api,web -c blue,green \"npm run dev -w @cambios-jc/api\" \"npm run dev -w @cambios-jc/web\"",
-    "db:migrate": "node scripts/pendiente.mjs db:migrate 0.4",
-    "db:seed": "node scripts/pendiente.mjs db:seed 0.4",
+    "db:migrate": "npm run db:migrate -w @cambios-jc/api",
+    "db:seed": "npm run db:seed -w @cambios-jc/api",
     "test": "vitest run",
     "lint": "eslint . && prettier --check .",
     "typecheck": "tsc -p tsconfig.json && npm run typecheck --workspaces",
     "check": "npm run lint && npm run typecheck && npm run test",
     "build": "npm run build --workspaces",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "postinstall": "npm run db:generate -w @cambios-jc/api"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

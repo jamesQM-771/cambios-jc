@@ -19,7 +19,7 @@ const importsProhibidos = {
 };
 
 export default defineConfig(
-  { ignores: ['**/dist/', '**/coverage/', '**/node_modules/'] },
+  { ignores: ['**/dist/', '**/coverage/', '**/node_modules/', 'apps/api/src/generated/'] },
   js.configs.recommended,
   tseslint.configs.strictTypeChecked,
   {
