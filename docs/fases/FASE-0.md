@@ -61,7 +61,7 @@ Tablas de esta fase:
 **Aceptación:** `npm run db:migrate && npm run db:seed` crea todo; una prueba confirma que actualizar o borrar en `Auditoria` falla.
 
 ### 0.5 Roles y permisos (`packages/shared/src/permisos/`)
-- Roles: `administrador`, `vendedor`, `digitador` (y `supervisor`, `cumplimiento` definidos pero opcionales).
+- Roles: `administrador`, `vendedor`, `digitador` (solo estos tres; supervisor y cumplimiento se descartaron, ver D28).
 - Permisos como strings (`usuario.gestionar`, `empresa.configurar`, `auditoria.ver`…). Incluir desde ya los permisos de fases futuras listados en la tabla §6.2 de `PROYECTO.md`, aunque sus pantallas no existan.
 - Mapa rol → permisos en código (en la fase 13 pasará a ser configurable).
 - Restricciones fijas: nadie aprueba lo propio; solo el administrador reabre cierres.

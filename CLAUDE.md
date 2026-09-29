@@ -9,7 +9,7 @@ Este archivo se lee al inicio de cada sesión. Define **cómo** se trabaja en es
 
 - Sistema web para una casa de cambio real en Cúcuta (Colombia): remesas COP → VES pagadas por un **digitador** en Venezuela, compra/venta de USD, contrapartes (deudas y préstamos) y caja diaria con arqueo.
 - Reemplaza un Excel contable y un software operativo de terceros. Maneja **dinero real**: un error de cálculo es plata perdida.
-- Una instalación por negocio (no es SaaS multiempresa). Usuarios: administrador, vendedor, digitador (supervisor y cumplimiento opcionales).
+- Una instalación por negocio (no es SaaS multiempresa). Usuarios: administrador, vendedor, digitador (solo estos tres roles, ver D28).
 
 ## 2. Documentos de referencia
 

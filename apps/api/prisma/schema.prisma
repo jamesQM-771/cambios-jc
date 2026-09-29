@@ -16,8 +16,6 @@ enum Rol {
   administrador
   vendedor
   digitador
-  supervisor
-  cumplimiento
 
   @@map("rol")
 }

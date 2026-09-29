@@ -387,7 +387,7 @@ Bandeja de aprobaciones para supervisor/dueño; quien solicita no puede aprobar 
 Cada empresa parte de **roles predefinidos** y puede ajustarlos marcando permisos individuales (ej. `tasa.cambiar_en_operacion`, `contraparte.registrar_movimiento`, `caja.reabrir`). Los permisos críticos (reabrir cierres, aprobar lo propio) tienen restricciones que ningún rol puede saltarse.
 
 ### 6.2 Roles predefinidos
-Los tres roles del software actual se conservan con el mismo nombre (**administrador, vendedor, digitador**). **Supervisor** y **oficial de cumplimiento** son opcionales: en un negocio pequeño el administrador cumple esas funciones.
+Los tres roles del software actual se conservan con el mismo nombre (**administrador, vendedor, digitador**). **Supervisor** y **oficial de cumplimiento** quedaron descartados en Cambios JC (D28 de `DECISIONES.md`): el administrador cumple esas funciones. Las columnas de esos dos roles en la tabla siguiente se conservan solo como referencia para otras instalaciones.
 
 
 | Acción | Vendedor | Digitador (VE) | Supervisor (opcional) | Cumplimiento (opcional) | Administrador / Dueño |
