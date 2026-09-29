@@ -1,6 +1,6 @@
 import { PrismaPg } from '@prisma/adapter-pg';
 
-import { PrismaClient } from '../generated/prisma/client.js';
+import { PrismaClient, type Prisma } from '../generated/prisma/client.js';
 
 /** Crea un cliente de Prisma conectado con el adaptador de PostgreSQL (Prisma 7). */
 export function crearPrisma(url = process.env.DATABASE_URL): PrismaClient {
@@ -8,4 +8,4 @@ export function crearPrisma(url = process.env.DATABASE_URL): PrismaClient {
   return new PrismaClient({ adapter: new PrismaPg({ connectionString: url }) });
 }
 
-export type { PrismaClient };
+export type { Prisma, PrismaClient };

@@ -34,6 +34,11 @@ function appConRutas(): FastifyInstance {
     { config: { acceso: 'publico' }, schema: { response: respuestaOk } },
     () => ({ ok: true }),
   );
+  rutas.get(
+    '/prueba/parcial',
+    { config: { acceso: 'parcial' }, schema: { response: respuestaOk } },
+    () => ({ ok: true }),
+  );
   rutas.post(
     '/prueba/con-cuerpo',
     {
@@ -116,6 +121,40 @@ describe('acceso a las rutas', () => {
     });
     // Sin sesión debe ser 401, no 400: no se revela cómo se valida a quien no tiene acceso.
     expect(respuesta.statusCode).toBe(401);
+  });
+
+  it('una sesión parcial (falta el 2FA) no abre rutas con permiso ni rutas de sesión', async () => {
+    app = appConRutas();
+    for (const url of ['/prueba/admin', '/prueba/sesion']) {
+      const respuesta = await app.inject({
+        method: 'GET',
+        url,
+        headers: { 'x-rol-prueba': 'administrador', 'x-sesion-parcial': 'si' },
+      });
+      expect(respuesta.statusCode, url).toBe(401);
+      expect(respuesta.json<CuerpoErrorApi>().error.codigo, url).toBe('SESION_INCOMPLETA');
+    }
+  });
+
+  it('una ruta "parcial" solo acepta la sesión parcial', async () => {
+    app = appConRutas();
+    const parcial = await app.inject({
+      method: 'GET',
+      url: '/prueba/parcial',
+      headers: { 'x-rol-prueba': 'vendedor', 'x-sesion-parcial': 'si' },
+    });
+    const completa = await app.inject({
+      method: 'GET',
+      url: '/prueba/parcial',
+      headers: { 'x-rol-prueba': 'vendedor' },
+    });
+    const sinSesion = await app.inject({ method: 'GET', url: '/prueba/parcial' });
+
+    expect(parcial.statusCode).toBe(200);
+    expect(completa.statusCode).toBe(409);
+    expect(completa.json<CuerpoErrorApi>().error.codigo).toBe('ESTADO_INVALIDO');
+    expect(sinSesion.statusCode).toBe(401);
+    expect(sinSesion.json<CuerpoErrorApi>().error.codigo).toBe('NO_AUTENTICADO');
   });
 
   it('una ruta inexistente responde 404 aunque no haya sesión', async () => {

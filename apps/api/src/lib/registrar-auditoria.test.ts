@@ -132,8 +132,17 @@ describe('request.auditar', () => {
 
     app = crearAppPrueba({
       prisma: crearPrisma(),
-      resolverUsuario: () =>
-        Promise.resolve({ id: usuario.id, login, nombre: usuario.nombre, rol: 'administrador' }),
+      resolverSesion: () =>
+        Promise.resolve({
+          usuario: {
+            id: usuario.id,
+            login,
+            nombre: usuario.nombre,
+            rol: 'administrador',
+            sesionId: 'x',
+          },
+          completa: true,
+        }),
     });
     app.withTypeProvider<ProveedorZod>().post(
       '/prueba/auditar',

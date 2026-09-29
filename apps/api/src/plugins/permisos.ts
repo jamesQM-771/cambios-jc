@@ -3,23 +3,38 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 
 import { errores } from '../lib/errores.js';
 
-/** Usuario con sesión completa. La tarea 0.7 (autenticación) agrega aquí lo que haga falta. */
+/** Usuario con una sesión válida. */
 export interface UsuarioAutenticado {
   id: string;
   login: string;
   nombre: string;
   rol: Rol;
+  sesionId: string;
 }
 
-/** Devuelve el usuario de la petición, o `null` si no hay sesión válida. */
-export type ResolverUsuario = (request: FastifyRequest) => Promise<UsuarioAutenticado | null>;
+/**
+ * Sesión de la petición. `completa = false` es la sesión parcial: la contraseña fue correcta pero
+ * falta el código 2FA (o el cambio de la contraseña temporal). Solo sirve para las rutas de `/auth`.
+ */
+export interface SesionActual {
+  usuario: UsuarioAutenticado;
+  completa: boolean;
+}
+
+/** Devuelve la sesión de la petición, o `null` si no hay una válida. */
+export type ResolverSesion = (request: FastifyRequest) => Promise<SesionActual | null>;
 
 declare module 'fastify' {
   interface FastifyContextConfig {
-    /** Permiso que exige la ruta (CLAUDE.md §6). */
+    /** Permiso que exige la ruta (CLAUDE.md §6). Requiere sesión completa. */
     permiso?: Permiso;
-    /** Alternativa a `permiso`: ruta pública o solo para usuarios con sesión, sin permiso específico. */
-    acceso?: 'publico' | 'autenticado';
+    /**
+     * Alternativa a `permiso`:
+     * - `publico`: sin sesión.
+     * - `autenticado`: cualquier usuario con sesión completa.
+     * - `parcial`: solo la sesión parcial (pasos del acceso antes de completar el 2FA).
+     */
+    acceso?: 'publico' | 'autenticado' | 'parcial';
   }
 
   interface FastifyRequest {
@@ -37,7 +52,7 @@ function tieneRespuestaDeclarada(esquema: unknown): boolean {
  * Obliga a que cada ruta declare su permiso (o `acceso`) y su esquema de respuesta: si falta
  * alguno, la API no arranca. Después, en cada petición, comprueba sesión y permiso.
  */
-export function instalarPermisos(app: FastifyInstance, resolverUsuario: ResolverUsuario): void {
+export function instalarPermisos(app: FastifyInstance, resolverSesion: ResolverSesion): void {
   app.decorateRequest('usuario', null);
 
   app.addHook('onRoute', (ruta) => {
@@ -71,9 +86,21 @@ export function instalarPermisos(app: FastifyInstance, resolverUsuario: Resolver
     if (permiso === undefined && acceso === undefined) return;
     if (acceso === 'publico') return;
 
-    const usuario = await resolverUsuario(request);
-    request.usuario = usuario;
-    if (!usuario) throw errores.noAutenticado();
-    if (permiso !== undefined && !tienePermiso(usuario.rol, permiso)) throw errores.sinPermiso();
+    const sesion = await resolverSesion(request);
+    request.usuario = sesion?.usuario ?? null;
+
+    if (acceso === 'parcial') {
+      if (!sesion) throw errores.noAutenticado();
+      if (sesion.completa) {
+        throw errores.estadoInvalido('Ya completaste la verificación en dos pasos.');
+      }
+      return;
+    }
+
+    if (!sesion) throw errores.noAutenticado();
+    if (!sesion.completa) throw errores.sesionIncompleta();
+    if (permiso !== undefined && !tienePermiso(sesion.usuario.rol, permiso)) {
+      throw errores.sinPermiso();
+    }
   });
 }

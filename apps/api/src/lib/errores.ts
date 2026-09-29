@@ -2,6 +2,11 @@ import { z } from 'zod';
 
 export type CodigoError =
   | 'NO_AUTENTICADO'
+  | 'SESION_INCOMPLETA'
+  | 'CREDENCIALES_INVALIDAS'
+  | 'CODIGO_INVALIDO'
+  | 'CUENTA_BLOQUEADA'
+  | 'ESTADO_INVALIDO'
   | 'SIN_PERMISO'
   | 'VALIDACION_FALLIDA'
   | 'SOLICITUD_INVALIDA'
@@ -31,6 +36,19 @@ export class ErrorApp extends Error {
 
 export const errores = {
   noAutenticado: () => new ErrorApp(401, 'NO_AUTENTICADO', 'Debes iniciar sesión para continuar.'),
+  sesionIncompleta: () =>
+    new ErrorApp(401, 'SESION_INCOMPLETA', 'Debes completar la verificación en dos pasos.'),
+  credencialesInvalidas: () =>
+    new ErrorApp(401, 'CREDENCIALES_INVALIDAS', 'Usuario o contraseña incorrectos.'),
+  codigoInvalido: () => new ErrorApp(401, 'CODIGO_INVALIDO', 'El código no es correcto.'),
+  cuentaBloqueada: (minutosRestantes: number) =>
+    new ErrorApp(
+      403,
+      'CUENTA_BLOQUEADA',
+      `Cuenta bloqueada temporalmente. Inténtalo de nuevo en ${String(minutosRestantes)} minuto(s).`,
+      { minutosRestantes },
+    ),
+  estadoInvalido: (mensaje: string) => new ErrorApp(409, 'ESTADO_INVALIDO', mensaje),
   sinPermiso: () =>
     new ErrorApp(403, 'SIN_PERMISO', 'No tienes permiso para realizar esta acción.'),
   noEncontrado: (mensaje = 'El recurso solicitado no existe.') =>

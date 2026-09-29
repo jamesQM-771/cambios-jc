@@ -24,7 +24,7 @@ enum Rol {
 model Empresa {
   id             String   @id @default(uuid(7)) @db.Uuid
   /// Siempre true: con el índice único garantiza una sola fila.
-  unica          Boolean  @default(true) @unique
+  unica          Boolean  @unique @default(true)
   nombre         String
   nit            String?
   telefono       String?
@@ -51,23 +51,25 @@ model Sucursal {
 }
 
 model Usuario {
-  id                    String    @id @default(uuid(7)) @db.Uuid
+  id                    String      @id @default(uuid(7)) @db.Uuid
   nombre                String
-  login                 String    @unique
-  hashContrasena        String    @map("hash_contrasena")
+  login                 String      @unique
+  hashContrasena        String      @map("hash_contrasena")
   /// La contraseña es temporal (seed o restablecida): se debe cambiar en el próximo acceso.
-  debeCambiarContrasena Boolean   @default(true) @map("debe_cambiar_contrasena")
+  debeCambiarContrasena Boolean     @default(true) @map("debe_cambiar_contrasena")
   rol                   Rol
-  sucursalId            String?   @map("sucursal_id") @db.Uuid
-  sucursal              Sucursal? @relation(fields: [sucursalId], references: [id], onDelete: Restrict)
-  activo                Boolean   @default(true)
+  sucursalId            String?     @map("sucursal_id") @db.Uuid
+  sucursal              Sucursal?   @relation(fields: [sucursalId], references: [id], onDelete: Restrict)
+  activo                Boolean     @default(true)
   /// Secreto TOTP cifrado con CLAVE_CIFRADO_2FA (tarea 0.7). Nunca en texto plano.
-  secreto2fa            String?   @map("secreto_2fa")
-  tiene2fa              Boolean   @default(false) @map("tiene_2fa")
-  intentosFallidos      Int       @default(0) @map("intentos_fallidos")
-  bloqueadoHasta        DateTime? @map("bloqueado_hasta") @db.Timestamptz(6)
-  ultimoAcceso          DateTime? @map("ultimo_acceso") @db.Timestamptz(6)
-  creadoEn              DateTime  @default(now()) @map("creado_en") @db.Timestamptz(6)
+  secreto2fa            String?     @map("secreto_2fa")
+  tiene2fa              Boolean     @default(false) @map("tiene_2fa")
+  /// Último paso de tiempo TOTP aceptado: un mismo código no se puede usar dos veces.
+  ultimoPaso2fa         Int?        @map("ultimo_paso_2fa")
+  intentosFallidos      Int         @default(0) @map("intentos_fallidos")
+  bloqueadoHasta        DateTime?   @map("bloqueado_hasta") @db.Timestamptz(6)
+  ultimoAcceso          DateTime?   @map("ultimo_acceso") @db.Timestamptz(6)
+  creadoEn              DateTime    @default(now()) @map("creado_en") @db.Timestamptz(6)
   sesiones              Sesion[]
   auditorias            Auditoria[]
 
@@ -78,6 +80,8 @@ model Sesion {
   id              String   @id @default(uuid(7)) @db.Uuid
   usuarioId       String   @map("usuario_id") @db.Uuid
   usuario         Usuario  @relation(fields: [usuarioId], references: [id])
+  /// SHA-256 del token que viaja en la cookie. El token nunca se guarda.
+  tokenHash       String   @unique @map("token_hash")
   /// false = sesión parcial (contraseña correcta, falta el código 2FA); true = sesión completa.
   completa        Boolean  @default(false)
   creadaEn        DateTime @default(now()) @map("creada_en") @db.Timestamptz(6)

@@ -1,8 +1,5 @@
-import argon2 from 'argon2';
-
+import { hashContrasena, LONGITUD_MINIMA_CONTRASENA } from './contrasenas.js';
 import type { PrismaClient } from './prisma.js';
-
-export const LONGITUD_MINIMA_CONTRASENA = 10;
 
 export interface DatosSemilla {
   loginAdmin: string;
@@ -32,7 +29,7 @@ export async function sembrar(
     );
   }
   // El hash se calcula fuera de la transacción: argon2 es lento a propósito.
-  const hashContrasena = await argon2.hash(datos.contrasenaAdmin, { type: argon2.argon2id });
+  const hash = await hashContrasena(datos.contrasenaAdmin);
 
   return prisma.$transaction(async (tx) => {
     const resultado: ResultadoSemilla = {
@@ -75,7 +72,7 @@ export async function sembrar(
         data: {
           nombre: 'Administrador',
           login,
-          hashContrasena,
+          hashContrasena: hash,
           debeCambiarContrasena: true,
           rol: 'administrador',
           sucursalId: sucursal.id,

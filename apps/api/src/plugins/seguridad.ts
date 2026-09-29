@@ -1,3 +1,4 @@
+import cookie from '@fastify/cookie';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
@@ -9,6 +10,9 @@ import { errores } from '../lib/errores.js';
 /** Cabeceras de seguridad, CORS restringido al origen de la web y límite de peticiones por IP. */
 export function instalarSeguridad(app: FastifyInstance, config: Config): void {
   void app.register(helmet);
+
+  // Lee las cookies de la petición (la sesión viaja en una cookie httpOnly).
+  void app.register(cookie);
 
   void app.register(cors, {
     origin: config.ORIGEN_WEB,

@@ -84,3 +84,16 @@ Para repetir solo las pruebas de la API sin reiniciar la base (más rápido), co
 ```bash
 CONSERVAR_BASE_PRUEBAS=1 npx vitest run --project api
 ```
+
+## Primer acceso del administrador
+
+1. En `.env`, define `ADMIN_LOGIN_INICIAL` y `ADMIN_CONTRASENA_INICIAL` (mínimo 10 caracteres) y ejecuta `npm run db:seed`.
+2. Inicia sesión con esas credenciales. La contraseña es temporal: el sistema pide cambiarla.
+3. Configura la verificación en dos pasos: escanea el código QR con Google Authenticator (o Authy) y escribe el primer código de 6 dígitos.
+4. Los accesos siguientes piden usuario, contraseña y el código de la aplicación.
+
+`CLAVE_CIFRADO_2FA` (en `.env`) cifra los secretos de la verificación en dos pasos en la base de datos. Si la cambias, los secretos ya guardados dejan de servir y hay que reiniciar el 2FA de cada usuario. Genérala con:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+```

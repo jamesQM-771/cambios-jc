@@ -11,6 +11,19 @@ const esquemaConfig = z.object({
     .enum(['true', 'false'])
     .default('false')
     .transform((valor) => valor === 'true'),
+  /** Clave de 32 bytes en base64 para cifrar los secretos 2FA en la base de datos. */
+  CLAVE_CIFRADO_2FA: z
+    .string()
+    .refine(
+      (valor) => Buffer.from(valor, 'base64').length === 32,
+      'debe ser una clave de 32 bytes en base64 (ver .env.example para generarla)',
+    ),
+  SESION_INACTIVIDAD_MINUTOS: z.coerce.number().int().positive().default(30),
+  SESION_MAXIMA_HORAS: z.coerce.number().int().positive().default(12),
+  /** Tiempo para completar el 2FA después de la contraseña; se renueva en cada paso. */
+  SESION_PARCIAL_MINUTOS: z.coerce.number().int().positive().default(10),
+  LOGIN_INTENTOS_MAXIMOS: z.coerce.number().int().positive().default(5),
+  LOGIN_BLOQUEO_MINUTOS: z.coerce.number().int().positive().default(15),
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(100),
   RATE_LIMIT_VENTANA_SEGUNDOS: z.coerce.number().int().positive().default(60),
   LOG_NIVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
