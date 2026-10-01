@@ -1,0 +1,104 @@
+/*
+ * Tokens de diseño de Cambios JC. Todo color, espacio y tamaño sale de aquí (CLAUDE.md §6).
+ * Claro por defecto; oscuro según el sistema, o el que elija la persona con el botón de tema
+ * (guarda data-tema="claro" | "oscuro" en <html>).
+ */
+:root {
+  --fondo: #f6f8f7;
+  --superficie: #ffffff;
+  --superficie-suave: #eef3f1;
+  --texto: #10231e;
+  --texto-suave: #4f615b;
+  --borde: #d5dfdb;
+  --marca: #0f5d4a;
+  --marca-fuerte: #0a4636;
+  --marca-texto: #ffffff;
+  --marca-suave: #e7f2ee;
+  --acento: #f4c542;
+  --exito: #1e7b46;
+  --exito-fondo: #dcf3e5;
+  --alerta: #8a4b00;
+  --alerta-fondo: #fff1d6;
+  --error: #b3261e;
+  --error-fondo: #fbe0de;
+  --info-fondo: #e3f0fb;
+  --info: #0b4a7a;
+  --foco: #f4c542;
+
+  --radio: 12px;
+  --radio-chico: 8px;
+  --sombra: 0 1px 3px rgb(0 0 0 / 0.08);
+  --sombra-fuerte: 0 8px 24px rgb(0 0 0 / 0.16);
+
+  --espacio-1: 4px;
+  --espacio-2: 8px;
+  --espacio-3: 12px;
+  --espacio-4: 16px;
+  --espacio-5: 24px;
+  --espacio-6: 32px;
+  --espacio-7: 48px;
+
+  --fuente: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --fuente-mono: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  --texto-chico: 0.875rem;
+  --texto-base: 1rem;
+  --texto-grande: 1.25rem;
+  --titulo: clamp(1.5rem, 3vw, 2rem);
+
+  --ancho-menu: 248px;
+  --alto-encabezado: 60px;
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema='claro']) {
+    --fondo: #0d1512;
+    --superficie: #15211d;
+    --superficie-suave: #1b2a25;
+    --texto: #e6efec;
+    --texto-suave: #a5b8b1;
+    --borde: #2b3a35;
+    --marca: #4fbf9b;
+    --marca-fuerte: #6fd3b3;
+    --marca-texto: #0d1512;
+    --marca-suave: #1b2e28;
+    --exito: #5fcf8c;
+    --exito-fondo: #17301f;
+    --alerta: #f0a254;
+    --alerta-fondo: #33260f;
+    --error: #f2877f;
+    --error-fondo: #3a1a18;
+    --info: #8ec5f0;
+    --info-fondo: #14283a;
+    --sombra: 0 1px 3px rgb(0 0 0 / 0.4);
+    --sombra-fuerte: 0 8px 24px rgb(0 0 0 / 0.6);
+
+    color-scheme: dark;
+  }
+}
+
+:root[data-tema='oscuro'] {
+  --fondo: #0d1512;
+  --superficie: #15211d;
+  --superficie-suave: #1b2a25;
+  --texto: #e6efec;
+  --texto-suave: #a5b8b1;
+  --borde: #2b3a35;
+  --marca: #4fbf9b;
+  --marca-fuerte: #6fd3b3;
+  --marca-texto: #0d1512;
+  --marca-suave: #1b2e28;
+  --exito: #5fcf8c;
+  --exito-fondo: #17301f;
+  --alerta: #f0a254;
+  --alerta-fondo: #33260f;
+  --error: #f2877f;
+  --error-fondo: #3a1a18;
+  --info: #8ec5f0;
+  --info-fondo: #14283a;
+  --sombra: 0 1px 3px rgb(0 0 0 / 0.4);
+  --sombra-fuerte: 0 8px 24px rgb(0 0 0 / 0.6);
+
+  color-scheme: dark;
+}

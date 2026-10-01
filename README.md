@@ -88,9 +88,16 @@ CONSERVAR_BASE_PRUEBAS=1 npx vitest run --project api
 ## Primer acceso del administrador
 
 1. En `.env`, define `ADMIN_LOGIN_INICIAL` y `ADMIN_CONTRASENA_INICIAL` (mínimo 10 caracteres) y ejecuta `npm run db:seed`.
-2. Inicia sesión con esas credenciales. La contraseña es temporal: el sistema pide cambiarla.
-3. Configura la verificación en dos pasos: escanea el código QR con Google Authenticator (o Authy) y escribe el primer código de 6 dígitos.
-4. Los accesos siguientes piden usuario, contraseña y el código de la aplicación.
+2. Ejecuta `npm run dev` y abre http://localhost:5173.
+3. Inicia sesión con esas credenciales. La contraseña es temporal: el sistema pide cambiarla.
+4. Configura la verificación en dos pasos: escanea el código QR con Google Authenticator (o Authy) y escribe el primer código de 6 dígitos. El mismo QR se puede escanear en **varios teléfonos**: todos darán los mismos códigos.
+5. Los accesos siguientes piden usuario, contraseña y el código de la aplicación.
+
+> Si recargas la página a mitad del acceso, empiezas de nuevo desde el usuario y la contraseña.
+
+## Cómo se conecta la web con la API
+
+La web siempre habla con la API por el mismo origen, bajo `/api`: en desarrollo, Vite reenvía `/api/*` a la API (el puerto sale de `PUERTO_API` en `.env`); en producción lo hará el servidor web. Así la cookie de sesión funciona sin configurar CORS.
 
 `CLAVE_CIFRADO_2FA` (en `.env`) cifra los secretos de la verificación en dos pasos en la base de datos. Si la cambias, los secretos ya guardados dejan de servir y hay que reiniciar el 2FA de cada usuario. Genérala con:
 

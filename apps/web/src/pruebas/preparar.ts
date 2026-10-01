@@ -1,0 +1,38 @@
+import '@testing-library/jest-dom/vitest';
+
+import { cleanup } from '@testing-library/react';
+import { afterEach, vi } from 'vitest';
+
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+  window.localStorage.clear();
+  document.documentElement.removeAttribute('data-tema');
+});
+
+// jsdom no implementa <dialog>: se simula lo mínimo (abrir y cerrar).
+if (typeof HTMLDialogElement.prototype.showModal !== 'function') {
+  HTMLDialogElement.prototype.showModal = function showModal(this: HTMLDialogElement) {
+    this.setAttribute('open', '');
+  };
+  HTMLDialogElement.prototype.close = function close(this: HTMLDialogElement) {
+    this.removeAttribute('open');
+    this.dispatchEvent(new Event('close'));
+  };
+}
+
+// jsdom tampoco trae matchMedia (lo usa el cambio de tema).
+if (typeof window.matchMedia !== 'function') {
+  window.matchMedia = (consulta: string): MediaQueryList =>
+    ({
+      matches: false,
+      media: consulta,
+      onchange: null,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+      dispatchEvent: () => false,
+    }) as MediaQueryList;
+}

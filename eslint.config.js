@@ -32,6 +32,8 @@ export default defineConfig(
     rules: {
       'no-restricted-imports': ['error', importsProhibidos],
       eqeqeq: ['error', 'always'],
+      // Los manejadores de React se escriben como flechas cortas: onChange={(e) => setX(e.target.value)}.
+      '@typescript-eslint/no-confusing-void-expression': ['error', { ignoreArrowShorthand: true }],
     },
   },
   {

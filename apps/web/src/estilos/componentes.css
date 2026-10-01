@@ -1,0 +1,433 @@
+/* ---------- Botones ---------- */
+.boton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--espacio-2);
+  min-height: 44px; /* tamaño táctil cómodo en celular */
+  padding: var(--espacio-2) var(--espacio-4);
+  border: 1px solid var(--marca);
+  border-radius: var(--radio-chico);
+  background: var(--marca);
+  color: var(--marca-texto);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.boton:hover:not(:disabled) {
+  background: var(--marca-fuerte);
+  border-color: var(--marca-fuerte);
+}
+
+.boton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.boton--secundario {
+  background: transparent;
+  color: var(--marca);
+}
+
+.boton--secundario:hover:not(:disabled) {
+  background: var(--marca-suave);
+  color: var(--marca);
+}
+
+.boton--peligro {
+  background: transparent;
+  border-color: var(--error);
+  color: var(--error);
+}
+
+.boton--peligro:hover:not(:disabled) {
+  background: var(--error-fondo);
+  border-color: var(--error);
+}
+
+.boton--chico {
+  min-height: 36px;
+  padding: var(--espacio-1) var(--espacio-3);
+  font-size: var(--texto-chico);
+}
+
+.boton--ancho {
+  width: 100%;
+}
+
+.acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espacio-3);
+}
+
+/* ---------- Campos de formulario ---------- */
+.campo {
+  display: grid;
+  gap: var(--espacio-1);
+  margin-bottom: var(--espacio-4);
+}
+
+.campo__etiqueta {
+  font-weight: 600;
+  font-size: var(--texto-chico);
+}
+
+.campo__entrada {
+  width: 100%;
+  min-height: 44px;
+  padding: var(--espacio-2) var(--espacio-3);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-chico);
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+}
+
+.campo__entrada[aria-invalid='true'] {
+  border-color: var(--error);
+}
+
+.campo__ayuda {
+  color: var(--texto-suave);
+  font-size: var(--texto-chico);
+}
+
+.campo__error {
+  color: var(--error);
+  font-size: var(--texto-chico);
+}
+
+/* ---------- Avisos ---------- */
+.aviso {
+  padding: var(--espacio-3) var(--espacio-4);
+  border-radius: var(--radio-chico);
+  border-left: 4px solid currentColor;
+  margin-bottom: var(--espacio-4);
+}
+
+.aviso--info {
+  background: var(--info-fondo);
+  color: var(--info);
+}
+
+.aviso--exito {
+  background: var(--exito-fondo);
+  color: var(--exito);
+}
+
+.aviso--advertencia {
+  background: var(--alerta-fondo);
+  color: var(--alerta);
+}
+
+.aviso--error {
+  background: var(--error-fondo);
+  color: var(--error);
+}
+
+.aviso > :last-child {
+  margin-bottom: 0;
+}
+
+/* ---------- Tarjeta y estados ---------- */
+.tarjeta {
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  padding: var(--espacio-5);
+  box-shadow: var(--sombra);
+}
+
+.cargando {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--espacio-3);
+  padding: var(--espacio-6);
+  color: var(--texto-suave);
+}
+
+.cargando__rueda {
+  width: 20px;
+  height: 20px;
+  border: 3px solid var(--borde);
+  border-top-color: var(--marca);
+  border-radius: 50%;
+  animation: girar 0.8s linear infinite;
+}
+
+@keyframes girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------- Pantalla de acceso ---------- */
+.acceso {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: var(--espacio-4);
+}
+
+.acceso__tarjeta {
+  width: min(440px, 100%);
+}
+
+.acceso__marca {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-3);
+  margin-bottom: var(--espacio-5);
+}
+
+.acceso__marca img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  border-radius: var(--radio-chico);
+}
+
+.acceso__marca strong {
+  font-size: var(--texto-grande);
+}
+
+.qr {
+  display: block;
+  margin: 0 auto var(--espacio-4);
+  width: 240px;
+  height: 240px;
+  background: #fff;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-chico);
+}
+
+.secreto {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-2);
+  flex-wrap: wrap;
+  padding: var(--espacio-3);
+  background: var(--superficie-suave);
+  border-radius: var(--radio-chico);
+  margin-bottom: var(--espacio-4);
+}
+
+.secreto code {
+  font-size: var(--texto-base);
+  letter-spacing: 0.08em;
+  word-break: break-all;
+}
+
+.codigo {
+  letter-spacing: 0.4em;
+  font-size: var(--texto-grande);
+  text-align: center;
+  font-family: var(--fuente-mono);
+}
+
+/* ---------- Estructura principal ---------- */
+.estructura {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: var(--ancho-menu) 1fr;
+  grid-template-rows: var(--alto-encabezado) 1fr;
+  grid-template-areas:
+    'menu encabezado'
+    'menu contenido';
+}
+
+.estructura--minima {
+  grid-template-columns: 1fr;
+  grid-template-areas:
+    'encabezado'
+    'contenido';
+}
+
+.encabezado {
+  grid-area: encabezado;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-3);
+  padding: 0 var(--espacio-4);
+  background: var(--superficie);
+  border-bottom: 1px solid var(--borde);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.encabezado__izquierda,
+.encabezado__derecha {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-3);
+  min-width: 0;
+}
+
+.encabezado__empresa {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-2);
+  font-weight: 700;
+  min-width: 0;
+}
+
+.encabezado__empresa img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  border-radius: 6px;
+}
+
+.encabezado__empresa span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.encabezado__usuario {
+  text-align: right;
+  line-height: 1.2;
+  min-width: 0;
+}
+
+.encabezado__usuario small {
+  display: block;
+  color: var(--texto-suave);
+}
+
+.boton-menu {
+  display: none;
+}
+
+.menu {
+  grid-area: menu;
+  background: var(--superficie);
+  border-right: 1px solid var(--borde);
+  padding: var(--espacio-4) var(--espacio-3);
+}
+
+.menu__lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--espacio-1);
+}
+
+.menu__enlace {
+  display: block;
+  padding: var(--espacio-3);
+  border-radius: var(--radio-chico);
+  color: var(--texto);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.menu__enlace:hover {
+  background: var(--marca-suave);
+}
+
+.menu__enlace[aria-current='page'] {
+  background: var(--marca);
+  color: var(--marca-texto);
+}
+
+.contenido {
+  grid-area: contenido;
+  padding: var(--espacio-5);
+  min-width: 0;
+  max-width: 1200px;
+  width: 100%;
+}
+
+.estructura--minima .contenido {
+  margin-inline: auto;
+}
+
+.cabecera-pagina {
+  margin-bottom: var(--espacio-5);
+}
+
+.cabecera-pagina p {
+  color: var(--texto-suave);
+}
+
+.accesos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--espacio-4);
+  padding: 0;
+  list-style: none;
+}
+
+.accesos a {
+  display: block;
+  height: 100%;
+  padding: var(--espacio-4);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  background: var(--superficie);
+  color: var(--texto);
+  text-decoration: none;
+}
+
+.accesos a:hover {
+  border-color: var(--marca);
+}
+
+.accesos strong {
+  display: block;
+  color: var(--marca);
+  margin-bottom: var(--espacio-1);
+}
+
+/* ---------- Celular ---------- */
+@media (max-width: 800px) {
+  .estructura {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      'encabezado'
+      'contenido';
+  }
+
+  .boton-menu {
+    display: inline-flex;
+  }
+
+  .menu {
+    position: fixed;
+    inset: var(--alto-encabezado) 0 0 0;
+    z-index: 15;
+    width: min(320px, 85vw);
+    transform: translateX(-100%);
+    /* Cerrado queda fuera de la pantalla y fuera del orden de tabulación (visibility). */
+    visibility: hidden;
+    transition:
+      transform 0.2s ease,
+      visibility 0s linear 0.2s;
+  }
+
+  .menu[data-abierto='true'] {
+    transform: translateX(0);
+    visibility: visible;
+    box-shadow: var(--sombra-fuerte);
+    transition-delay: 0s;
+  }
+
+  .contenido {
+    padding: var(--espacio-4);
+  }
+
+  /* En celular el encabezado solo lleva botones; el nombre y el rol aparecen en la bienvenida. */
+  .encabezado__usuario,
+  .encabezado__empresa span {
+    display: none;
+  }
+}
