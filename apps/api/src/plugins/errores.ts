@@ -16,6 +16,11 @@ function estadoDe(error: unknown): number | undefined {
   return typeof error.statusCode === 'number' ? error.statusCode : undefined;
 }
 
+function codigoDe(error: unknown): string | undefined {
+  if (typeof error !== 'object' || error === null || !('code' in error)) return undefined;
+  return typeof error.code === 'string' ? error.code : undefined;
+}
+
 /**
  * Convierte cualquier error al formato uniforme de la API. Solo los errores propios (ErrorApp) y
  * los de validación muestran su mensaje; el resto se reduce a un texto genérico para no exponer
@@ -45,6 +50,25 @@ export function traducirError(error: unknown): Traduccion {
           detalles: error.problemas,
         },
       },
+    };
+  }
+
+  const codigoFastify = codigoDe(error);
+  if (codigoFastify === 'FST_REQ_FILE_TOO_LARGE') {
+    return {
+      estado: 413,
+      cuerpo: {
+        error: {
+          codigo: 'ARCHIVO_DEMASIADO_GRANDE',
+          mensaje: 'El archivo supera el tamaño máximo permitido (1 MB).',
+        },
+      },
+    };
+  }
+  if (codigoFastify === 'FST_FILES_LIMIT') {
+    return {
+      estado: 400,
+      cuerpo: { error: { codigo: 'ARCHIVO_INVALIDO', mensaje: 'Envía un solo archivo.' } },
     };
   }
 

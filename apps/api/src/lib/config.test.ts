@@ -1,3 +1,5 @@
+import { resolve } from 'node:path';
+
 import { describe, expect, it } from 'vitest';
 
 import { leerConfig } from './config.js';
@@ -20,6 +22,7 @@ describe('leerConfig', () => {
       SESION_PARCIAL_MINUTOS: 10,
       LOGIN_INTENTOS_MAXIMOS: 5,
       LOGIN_BLOQUEO_MINUTOS: 15,
+      CARPETA_SUBIDAS: resolve('./uploads'),
       CONFIAR_PROXY: false,
       RATE_LIMIT_MAX: 100,
       RATE_LIMIT_VENTANA_SEGUNDOS: 60,
@@ -38,6 +41,15 @@ describe('leerConfig', () => {
     expect(config.PUERTO_API).toBe(4000);
     expect(config.RATE_LIMIT_MAX).toBe(5);
     expect(config.CONFIAR_PROXY).toBe(true);
+  });
+
+  it('la carpeta de subidas se convierte en una ruta absoluta', () => {
+    expect(leerConfig({ ...ENTORNO_MINIMO, CARPETA_SUBIDAS: './logos' }).CARPETA_SUBIDAS).toBe(
+      resolve('./logos'),
+    );
+    expect(
+      leerConfig({ ...ENTORNO_MINIMO, CARPETA_SUBIDAS: resolve('/datos/subidas') }).CARPETA_SUBIDAS,
+    ).toBe(resolve('/datos/subidas'));
   });
 
   it('sin DATABASE_URL falla y dice cuál variable falta', () => {

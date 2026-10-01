@@ -1,3 +1,5 @@
+import { resolve } from 'node:path';
+
 import { z } from 'zod';
 
 const esquemaConfig = z.object({
@@ -24,6 +26,12 @@ const esquemaConfig = z.object({
   SESION_PARCIAL_MINUTOS: z.coerce.number().int().positive().default(10),
   LOGIN_INTENTOS_MAXIMOS: z.coerce.number().int().positive().default(5),
   LOGIN_BLOQUEO_MINUTOS: z.coerce.number().int().positive().default(15),
+  /** Carpeta local para el logo de la empresa; una ruta relativa se calcula desde donde se arranca la API. */
+  CARPETA_SUBIDAS: z
+    .string()
+    .min(1)
+    .default('./uploads')
+    .transform((ruta) => resolve(ruta)),
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(100),
   RATE_LIMIT_VENTANA_SEGUNDOS: z.coerce.number().int().positive().default(60),
   LOG_NIVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),

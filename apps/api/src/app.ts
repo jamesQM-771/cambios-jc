@@ -1,10 +1,15 @@
 import Fastify, { type FastifyInstance } from 'fastify';
 
+import { crearAlmacenamiento } from './lib/almacenamiento.js';
 import type { Config } from './lib/config.js';
 import { opcionesLogger } from './lib/enmascarar-logs.js';
 import type { PrismaClient } from './lib/prisma.js';
+import { rutasAuditoria } from './modulos/auditoria/rutas.js';
+import { crearServicioAuditoria } from './modulos/auditoria/servicio.js';
 import { rutasAuth, NOMBRE_COOKIE_SESION } from './modulos/auth/rutas.js';
 import { crearServicioAuth } from './modulos/auth/servicio.js';
+import { rutasEmpresa } from './modulos/empresa/rutas.js';
+import { crearServicioEmpresa } from './modulos/empresa/servicio.js';
 import { rutasSalud } from './modulos/salud/rutas.js';
 import { rutasUsuarios } from './modulos/usuarios/rutas.js';
 import { crearServicioUsuarios } from './modulos/usuarios/servicio.js';
@@ -56,6 +61,14 @@ export function construirApp({
     rutasSalud(rutas, prisma);
     rutasAuth(rutas, { servicio: servicioAuth, prisma, config });
     rutasUsuarios(rutas, crearServicioUsuarios({ prisma, auth: servicioAuth }));
+    rutasEmpresa(
+      rutas,
+      crearServicioEmpresa({
+        prisma,
+        almacenamiento: crearAlmacenamiento(config.CARPETA_SUBIDAS),
+      }),
+    );
+    rutasAuditoria(rutas, crearServicioAuditoria({ prisma }));
     listo();
   });
 

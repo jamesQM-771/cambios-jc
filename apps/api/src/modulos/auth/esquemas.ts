@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { esquemaContrasenaNueva, LONGITUD_MAXIMA_CONTRASENA } from '../../lib/contrasenas.js';
+import { esquemaEmpresa } from '../empresa/esquemas.js';
 
 export const esquemaSiguientePaso = z.enum([
   'cambiar_contrasena',
@@ -49,19 +50,7 @@ export const respuestaAcceso = z.object({ usuario: usuarioPublico });
 export const respuestaYo = z.object({
   usuario: usuarioPublico,
   permisos: z.array(z.string()),
-  empresa: z
-    .object({
-      nombre: z.string(),
-      nit: z.string().nullable(),
-      telefono: z.string().nullable(),
-      whatsapp: z.string().nullable(),
-      direccion: z.string().nullable(),
-      logoUrl: z.string().nullable(),
-      monedaLocal: z.string(),
-      zonaHoraria: z.string(),
-      textoPieRecibo: z.string().nullable(),
-    })
-    .nullable(),
+  empresa: esquemaEmpresa.nullable(),
 });
 
 export const respuestaOk = z.object({ ok: z.literal(true) });

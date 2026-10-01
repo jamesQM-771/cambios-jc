@@ -8,6 +8,8 @@ export type CodigoError =
   | 'CUENTA_BLOQUEADA'
   | 'ESTADO_INVALIDO'
   | 'LOGIN_EN_USO'
+  | 'ARCHIVO_INVALIDO'
+  | 'ARCHIVO_DEMASIADO_GRANDE'
   | 'ULTIMO_ADMINISTRADOR'
   | 'NO_PUEDES_DESACTIVARTE'
   | 'SIN_PERMISO'
@@ -64,6 +66,7 @@ export const errores = {
     ),
   noPuedesDesactivarte: () =>
     new ErrorApp(409, 'NO_PUEDES_DESACTIVARTE', 'No puedes desactivar tu propio usuario.'),
+  archivoInvalido: (mensaje: string) => new ErrorApp(400, 'ARCHIVO_INVALIDO', mensaje),
   sinPermiso: () =>
     new ErrorApp(403, 'SIN_PERMISO', 'No tienes permiso para realizar esta acción.'),
   noEncontrado: (mensaje = 'El recurso solicitado no existe.') =>

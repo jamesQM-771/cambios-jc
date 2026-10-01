@@ -110,6 +110,7 @@ model Auditoria {
   agenteUsuario String?  @map("agente_usuario")
 
   @@index([fecha])
+  @@index([accion])
   @@index([usuarioId])
   @@index([entidad, entidadId])
   @@map("auditoria")

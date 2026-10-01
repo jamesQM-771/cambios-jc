@@ -97,3 +97,10 @@ CONSERVAR_BASE_PRUEBAS=1 npx vitest run --project api
 ```bash
 node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 ```
+
+## Logo y archivos subidos
+
+El logo de la empresa se sube desde el sistema (PNG o JPG, máximo 1 MB) y se guarda en la carpeta que indica `CARPETA_SUBIDAS` del `.env` (por defecto `uploads`, dentro de `apps/api`; Git la ignora).
+
+- **Respaldos:** esa carpeta no está en la base de datos, así que hay que respaldarla junto con ella.
+- Al reemplazar el logo, el archivo anterior se conserva en disco; solo cambia cuál está activo.

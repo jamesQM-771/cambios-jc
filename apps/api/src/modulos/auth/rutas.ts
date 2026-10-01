@@ -5,6 +5,7 @@ import type { Config } from '../../lib/config.js';
 import { errores } from '../../lib/errores.js';
 import type { PrismaClient } from '../../lib/prisma.js';
 import type { ProveedorZod } from '../../plugins/validacion-zod.js';
+import { aEmpresaPublica } from '../empresa/servicio.js';
 
 import {
   esquemaCambioContrasena,
@@ -147,7 +148,7 @@ export function rutasAuth(
       return {
         usuario: { id: usuario.id, nombre: usuario.nombre, login: usuario.login, rol: usuario.rol },
         permisos: [...permisosDeRol(usuario.rol)],
-        empresa,
+        empresa: empresa ? aEmpresaPublica(empresa) : null,
       };
     },
   );

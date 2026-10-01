@@ -2,4 +2,5 @@
 export const NOMBRE_SISTEMA = 'Cambios JC';
 
 export * from './dinero/index.js';
+export * from './fechas/index.js';
 export * from './permisos/index.js';
