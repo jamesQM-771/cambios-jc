@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   esquemaContrasenaNueva,
+  generarContrasenaTemporal,
   hashContrasena,
   verificarContraHashFalso,
   verificarContrasena,
@@ -51,5 +52,22 @@ describe('política de contraseñas nuevas', () => {
     expect(corta.error?.issues[0]?.message).toBe(
       'La contraseña debe tener al menos 10 caracteres.',
     );
+  });
+});
+
+describe('contraseña temporal generada', () => {
+  it('tiene 16 caracteres, sin letras que se confunden, y cumple la política', () => {
+    for (let i = 0; i < 50; i++) {
+      const contrasena = generarContrasenaTemporal();
+
+      expect(contrasena).toMatch(/^[a-km-zA-HJ-NP-Z2-9]{16}$/);
+      expect(contrasena).not.toMatch(/[0oO1lI]/);
+      expect(esquemaContrasenaNueva.safeParse(contrasena).success).toBe(true);
+    }
+  });
+
+  it('nunca se repite', () => {
+    const contrasenas = new Set(Array.from({ length: 500 }, () => generarContrasenaTemporal()));
+    expect(contrasenas.size).toBe(500);
   });
 });

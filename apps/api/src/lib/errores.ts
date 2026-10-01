@@ -7,6 +7,9 @@ export type CodigoError =
   | 'CODIGO_INVALIDO'
   | 'CUENTA_BLOQUEADA'
   | 'ESTADO_INVALIDO'
+  | 'LOGIN_EN_USO'
+  | 'ULTIMO_ADMINISTRADOR'
+  | 'NO_PUEDES_DESACTIVARTE'
   | 'SIN_PERMISO'
   | 'VALIDACION_FALLIDA'
   | 'SOLICITUD_INVALIDA'
@@ -49,6 +52,18 @@ export const errores = {
       { minutosRestantes },
     ),
   estadoInvalido: (mensaje: string) => new ErrorApp(409, 'ESTADO_INVALIDO', mensaje),
+  loginEnUso: () =>
+    new ErrorApp(409, 'LOGIN_EN_USO', 'Ya existe un usuario con ese nombre de usuario.', [
+      { campo: 'login', mensaje: 'Ya está en uso.' },
+    ]),
+  ultimoAdministrador: () =>
+    new ErrorApp(
+      409,
+      'ULTIMO_ADMINISTRADOR',
+      'No se puede dejar el sistema sin administradores activos. Crea o activa otro administrador primero.',
+    ),
+  noPuedesDesactivarte: () =>
+    new ErrorApp(409, 'NO_PUEDES_DESACTIVARTE', 'No puedes desactivar tu propio usuario.'),
   sinPermiso: () =>
     new ErrorApp(403, 'SIN_PERMISO', 'No tienes permiso para realizar esta acción.'),
   noEncontrado: (mensaje = 'El recurso solicitado no existe.') =>

@@ -103,6 +103,7 @@ Reglas:
 
 ### 0.9 Configuración de la empresa (API)
 - Leer y editar los datos de `Empresa` (§4.2 de `PROYECTO.md`, solo los campos de esta fase).
+- Consulta de la bitácora: `GET /auditoria` con filtros por fecha, usuario, acción y entidad, y paginación (la necesita la pantalla de bitácora de la 0.10; ver D44).
 - Subida del logo (PNG/JPG, máximo 1 MB) a una carpeta local configurable (en fases siguientes pasará a almacenamiento compatible S3).
 
 **Aceptación:** cambio registrado en la bitácora con valores antes/después.
@@ -128,6 +129,7 @@ Reglas:
 
 ### 0.12 Respaldo y monitoreo (mínimo)
 - Script `scripts/respaldo.sh` con `pg_dump` comprimido y con fecha; documentar cómo restaurar.
+- Script de emergencia en el servidor para restablecer el acceso de un administrador (contraseña temporal y 2FA reiniciado) cuando no queda otro administrador que pueda hacerlo (ver D43).
 - Integración opcional con Sentry (API y web) activada solo si existe la variable `SENTRY_DSN`.
 - Guía en el README para programar el respaldo diario.
 

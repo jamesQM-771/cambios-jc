@@ -1,3 +1,5 @@
+import { randomInt } from 'node:crypto';
+
 import argon2 from 'argon2';
 import { z } from 'zod';
 
@@ -37,4 +39,15 @@ let hashFalso: Promise<string> | undefined;
 export async function verificarContraHashFalso(contrasena: string): Promise<void> {
   hashFalso ??= hashContrasena('contrasena-falsa-para-igualar-tiempos');
   await verificarContrasena(await hashFalso, contrasena);
+}
+
+// Sin caracteres que se confunden al leerlos o dictarlos: 0/O, 1/l/I.
+const ALFABETO_TEMPORAL = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const LONGITUD_TEMPORAL = 16;
+
+/** Contraseña temporal aleatoria (criptográficamente segura) para usuarios nuevos y restablecimientos. */
+export function generarContrasenaTemporal(): string {
+  return Array.from({ length: LONGITUD_TEMPORAL }, () =>
+    ALFABETO_TEMPORAL.charAt(randomInt(ALFABETO_TEMPORAL.length)),
+  ).join('');
 }

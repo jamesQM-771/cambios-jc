@@ -9,7 +9,8 @@ export const esquemaSiguientePaso = z.enum([
 ]);
 
 export const esquemaLogin = z.object({
-  login: z.string().trim().min(1, 'Escribe tu usuario.').max(60),
+  // Los usuarios se guardan en minúsculas (D40): "Admin" y "admin" son el mismo.
+  login: z.string().trim().toLowerCase().min(1, 'Escribe tu usuario.').max(60),
   // Sin mínimo: al iniciar sesión no se revela la política, solo se verifica lo escrito.
   contrasena: z.string().min(1, 'Escribe tu contraseña.').max(LONGITUD_MAXIMA_CONTRASENA),
 });

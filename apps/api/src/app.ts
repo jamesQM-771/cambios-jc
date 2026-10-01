@@ -6,6 +6,8 @@ import type { PrismaClient } from './lib/prisma.js';
 import { rutasAuth, NOMBRE_COOKIE_SESION } from './modulos/auth/rutas.js';
 import { crearServicioAuth } from './modulos/auth/servicio.js';
 import { rutasSalud } from './modulos/salud/rutas.js';
+import { rutasUsuarios } from './modulos/usuarios/rutas.js';
+import { crearServicioUsuarios } from './modulos/usuarios/servicio.js';
 import { instalarAuditoria } from './plugins/auditoria.js';
 import { instalarErrores } from './plugins/errores.js';
 import { instalarPermisos, type ResolverSesion } from './plugins/permisos.js';
@@ -53,6 +55,7 @@ export function construirApp({
   app.register((rutas, _opciones, listo) => {
     rutasSalud(rutas, prisma);
     rutasAuth(rutas, { servicio: servicioAuth, prisma, config });
+    rutasUsuarios(rutas, crearServicioUsuarios({ prisma, auth: servicioAuth }));
     listo();
   });
 

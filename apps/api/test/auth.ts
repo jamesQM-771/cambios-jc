@@ -8,6 +8,7 @@ import { cifrar, leerClave } from '../src/lib/cifrado.js';
 import { hashContrasena } from '../src/lib/contrasenas.js';
 import type { CuerpoError } from '../src/lib/errores.js';
 import type { PrismaClient } from '../src/lib/prisma.js';
+import { generarToken, hashToken } from '../src/lib/tokens.js';
 import { generarSecretoTotp } from '../src/lib/totp.js';
 import { NOMBRE_COOKIE_SESION } from '../src/modulos/auth/rutas.js';
 
@@ -110,3 +111,64 @@ export const aTexto = (valor: unknown): string =>
   JSON.stringify(valor, (_clave, contenido: unknown) =>
     typeof contenido === 'bigint' ? contenido.toString() : contenido,
   );
+
+/** Abre una sesión completa y válida directamente en la base y devuelve su token (sin pasar por el login). */
+export async function abrirSesion(prisma: PrismaClient, usuarioId: string): Promise<string> {
+  const token = generarToken();
+  await prisma.sesion.create({
+    data: {
+      usuarioId,
+      tokenHash: hashToken(token),
+      completa: true,
+      expiraEn: new Date(Date.now() + 12 * 3_600_000),
+    },
+  });
+  return token;
+}
+
+export interface OpcionesLlamada {
+  token?: string | undefined;
+  cuerpo?: unknown;
+  consulta?: string;
+}
+
+/** Petición HTTP con sesión opcional, para cualquier método. */
+export function llamar(
+  app: FastifyInstance,
+  metodo: 'GET' | 'POST' | 'PATCH',
+  url: string,
+  { token, cuerpo, consulta }: OpcionesLlamada = {},
+): Promise<LightMyRequestResponse> {
+  return app.inject({
+    method: metodo,
+    url: consulta ? `${url}?${consulta}` : url,
+    headers: conSesion(token),
+    ...(cuerpo === undefined ? {} : { payload: cuerpo as object }),
+  });
+}
+
+/**
+ * Deja como únicos administradores activos a los indicados, desactivando temporalmente a los demás
+ * (otras pruebas también crean administradores). Devuelve la función que los reactiva.
+ * Los archivos de prueba se ejecutan uno tras otro, así que nadie más ve este estado intermedio.
+ */
+export async function aislarAdministradores(
+  prisma: PrismaClient,
+  conservar: string[],
+): Promise<() => Promise<void>> {
+  const otros = await prisma.usuario.findMany({
+    where: { rol: 'administrador', activo: true, id: { notIn: conservar } },
+    select: { id: true },
+  });
+  const ids = otros.map((otro) => otro.id);
+  await prisma.usuario.updateMany({ where: { id: { in: ids } }, data: { activo: false } });
+  return async () => {
+    await prisma.usuario.updateMany({ where: { id: { in: ids } }, data: { activo: true } });
+  };
+}
+
+/** Un valor que la prueba ya comprobó que existe, sin usar `!` (que el lint no permite). */
+export function presente<T>(valor: T | null | undefined, nombre = 'valor'): T {
+  if (valor === null || valor === undefined) throw new Error(`Se esperaba ${nombre} y no está.`);
+  return valor;
+}

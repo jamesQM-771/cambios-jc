@@ -21,7 +21,7 @@ export async function sembrar(
   prisma: PrismaClient,
   datos: DatosSemilla,
 ): Promise<ResultadoSemilla> {
-  const login = datos.loginAdmin.trim();
+  const login = datos.loginAdmin.trim().toLowerCase();
   if (!login) throw new Error('ADMIN_LOGIN_INICIAL está vacío.');
   if (datos.contrasenaAdmin.length < LONGITUD_MINIMA_CONTRASENA) {
     throw new Error(
