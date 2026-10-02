@@ -14,7 +14,8 @@ export function renderizarApp(ruta = '/') {
     ...cliente.getDefaultOptions(),
     queries: { ...cliente.getDefaultOptions().queries, retryDelay: 0 },
   });
-  const usuario = userEvent.setup();
+  // Un navegador deja elegir "todos los archivos" aunque el campo diga `accept`: así se prueba la validación propia.
+  const usuario = userEvent.setup({ applyAccept: false });
   const resultado = render(
     <QueryClientProvider client={cliente}>
       <MemoryRouter initialEntries={[ruta]}>

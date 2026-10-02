@@ -9,9 +9,11 @@ import { PaginaCambiarContrasena } from './paginas/acceso/PaginaCambiarContrasen
 import { PaginaConfigurar2fa } from './paginas/acceso/PaginaConfigurar2fa.js';
 import { PaginaLogin } from './paginas/acceso/PaginaLogin.js';
 import { PaginaVerificar2fa } from './paginas/acceso/PaginaVerificar2fa.js';
-import { PaginaEnConstruccion } from './paginas/PaginaEnConstruccion.js';
+import { PaginaBitacora } from './paginas/bitacora/PaginaBitacora.js';
+import { PaginaEmpresa } from './paginas/empresa/PaginaEmpresa.js';
 import { PaginaInicio } from './paginas/PaginaInicio.js';
 import { PaginaNoEncontrada } from './paginas/PaginaNoEncontrada.js';
+import { PaginaUsuarios } from './paginas/usuarios/PaginaUsuarios.js';
 
 /** Rutas de la aplicación. El enrutador y los proveedores se montan en `main.tsx` (o en las pruebas). */
 export function App() {
@@ -53,7 +55,7 @@ export function App() {
             path="usuarios"
             element={
               <RutaConPermiso permiso="usuario.gestionar">
-                <PaginaEnConstruccion titulo="Usuarios" />
+                <PaginaUsuarios />
               </RutaConPermiso>
             }
           />
@@ -61,7 +63,7 @@ export function App() {
             path="empresa"
             element={
               <RutaConPermiso permiso="empresa.configurar">
-                <PaginaEnConstruccion titulo="Empresa" />
+                <PaginaEmpresa />
               </RutaConPermiso>
             }
           />
@@ -69,7 +71,7 @@ export function App() {
             path="bitacora"
             element={
               <RutaConPermiso permiso="auditoria.ver">
-                <PaginaEnConstruccion titulo="Bitácora" />
+                <PaginaBitacora />
               </RutaConPermiso>
             }
           />

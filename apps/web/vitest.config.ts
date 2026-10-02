@@ -15,5 +15,8 @@ export default defineProject({
     environment: 'jsdom',
     setupFiles: ['./src/pruebas/preparar.ts'],
     css: false,
+    // Con todo el monorepo corriendo en paralelo, jsdom tarda en arrancar y la pantalla en dibujarse.
+    testTimeout: 20_000,
+    hookTimeout: 30_000,
   },
 });

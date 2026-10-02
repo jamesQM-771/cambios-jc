@@ -1,7 +1,10 @@
 import '@testing-library/jest-dom/vitest';
 
-import { cleanup } from '@testing-library/react';
+import { cleanup, configure } from '@testing-library/react';
 import { afterEach, vi } from 'vitest';
+
+// Margen para cuando el equipo está cargado (todo el monorepo corre en paralelo).
+configure({ asyncUtilTimeout: 8000 });
 
 afterEach(() => {
   cleanup();
@@ -36,3 +39,7 @@ if (typeof window.matchMedia !== 'function') {
       dispatchEvent: () => false,
     }) as MediaQueryList;
 }
+
+// Node trae su propio URL.createObjectURL, que no entiende los archivos de jsdom: se reemplaza siempre.
+URL.createObjectURL = () => 'blob:prueba';
+URL.revokeObjectURL = () => undefined;

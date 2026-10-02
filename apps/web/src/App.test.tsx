@@ -185,11 +185,24 @@ describe('permisos de las pantallas', () => {
     ['/empresa', 'Empresa'],
     ['/bitacora', 'Bitácora'],
   ])('el administrador abre %s', async (ruta, titulo) => {
-    simularApi({ 'GET /auth/yo': { cuerpo: sesionFalsa('administrador') } });
+    simularApi({
+      'GET /auth/yo': { cuerpo: sesionFalsa('administrador') },
+      'GET /usuarios': { cuerpo: { usuarios: [], total: 0, pagina: 1, porPagina: 20 } },
+      'GET /sucursales': { cuerpo: { sucursales: [] } },
+      'GET /auditoria': { cuerpo: { registros: [], total: 0, pagina: 1, porPagina: 50 } },
+      'GET /empresa': {
+        cuerpo: {
+          empresa: {
+            ...sesionFalsa('administrador').empresa,
+            actualizadaEn: '2026-03-10T15:00:00.000Z',
+          },
+        },
+      },
+    });
 
     renderizarApp(ruta);
 
-    expect(await screen.findByRole('heading', { name: titulo })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: titulo, level: 1 })).toBeInTheDocument();
   });
 
   it('una dirección que no existe muestra la página no encontrada dentro del sistema', async () => {
