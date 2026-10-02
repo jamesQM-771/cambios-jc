@@ -32,6 +32,8 @@ jobs:
           --health-retries 10
 
     env:
+      # Prisma exige DATABASE_URL incluso para generar el cliente; en CI es la misma base desechable.
+      DATABASE_URL: postgresql://cambios_jc:clave_solo_para_ci@localhost:5432/cambios_jc_pruebas
       DATABASE_URL_PRUEBAS: postgresql://cambios_jc:clave_solo_para_ci@localhost:5432/cambios_jc_pruebas
 
     steps:
