@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 
 import { ErrorApp, type CodigoError, type CuerpoError } from '../lib/errores.js';
+import { capturarError } from '../lib/sentry.js';
 
 import { ErrorValidacion } from './validacion-zod.js';
 
@@ -89,7 +90,10 @@ export function traducirError(error: unknown): Traduccion {
 export function instalarErrores(app: FastifyInstance): void {
   app.setErrorHandler((error, request, reply) => {
     const { estado, cuerpo } = traducirError(error);
-    if (estado >= 500) request.log.error({ err: error }, 'Error interno');
+    if (estado >= 500) {
+      request.log.error({ err: error }, 'Error interno');
+      capturarError(error);
+    }
     return reply.status(estado).send(cuerpo);
   });
 

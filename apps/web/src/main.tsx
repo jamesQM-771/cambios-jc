@@ -9,7 +9,10 @@ import { BrowserRouter } from 'react-router';
 
 import { App } from './App.js';
 import { crearClienteConsultas } from './lib/consulta.js';
+import { iniciarSentry } from './lib/sentry.js';
 import { iniciarTema } from './lib/tema.js';
+
+iniciarSentry(import.meta.env.VITE_SENTRY_DSN, import.meta.env.MODE);
 
 // El tema elegido se aplica antes de pintar la primera pantalla.
 iniciarTema();

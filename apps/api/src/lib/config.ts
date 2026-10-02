@@ -34,6 +34,8 @@ const esquemaConfig = z.object({
     .transform((ruta) => resolve(ruta)),
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(100),
   RATE_LIMIT_VENTANA_SEGUNDOS: z.coerce.number().int().positive().default(60),
+  /** Opcional: si no se define, Sentry queda desactivado (un valor vacío del .env cuenta como no definido). */
+  SENTRY_DSN: z.preprocess((v) => (v === '' ? undefined : v), z.url().optional()),
   LOG_NIVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
 });
 

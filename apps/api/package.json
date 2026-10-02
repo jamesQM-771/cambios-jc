@@ -11,7 +11,8 @@
     "start": "node --env-file-if-exists=../../.env dist/servidor.js",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
-    "db:seed": "prisma db seed"
+    "db:seed": "prisma db seed",
+    "admin:restablecer": "node --env-file-if-exists=../../.env dist/restablecer-admin.js"
   },
   "dependencies": {
     "@cambios-jc/shared": "0.0.0",
@@ -22,6 +23,7 @@
     "@fastify/rate-limit": "11.2.0",
     "@prisma/adapter-pg": "7.10.0",
     "@prisma/client": "7.10.0",
+    "@sentry/node": "11.2.0",
     "argon2": "0.45.1",
     "fastify": "5.12.5",
     "otplib": "13.5.0",

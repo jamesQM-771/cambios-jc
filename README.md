@@ -109,5 +109,82 @@ node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 
 El logo de la empresa se sube desde el sistema (PNG o JPG, máximo 1 MB) y se guarda en la carpeta que indica `CARPETA_SUBIDAS` del `.env` (por defecto `uploads`, dentro de `apps/api`; Git la ignora).
 
-- **Respaldos:** esa carpeta no está en la base de datos, así que hay que respaldarla junto con ella.
+- **Respaldos:** esa carpeta no está en la base de datos; `scripts/respaldo.sh` la respalda junto con ella (ver abajo).
 - Al reemplazar el logo, el archivo anterior se conserva en disco; solo cambia cuál está activo.
+
+## Respaldo y restauración
+
+`scripts/respaldo.sh` guarda dos archivos con la fecha y la hora en el nombre: la base de datos (`cambios_jc_AAAA-MM-DD_HHMMSS.dump`, formato comprimido de `pg_dump`) y la carpeta de subidas (`subidas_….tar.gz`). Lee `DATABASE_URL` y `CARPETA_SUBIDAS` del `.env`.
+
+```bash
+scripts/respaldo.sh
+```
+
+| Variable (opcional)   | Para qué                                                            | Por defecto                             |
+| --------------------- | ------------------------------------------------------------------- | --------------------------------------- |
+| `RESPALDOS_DIR`       | Carpeta de destino                                                  | `respaldos/` en la raíz (Git la ignora) |
+| `RESPALDOS_CONSERVAR` | Cuántos respaldos de cada tipo se guardan; los más viejos se borran | 14                                      |
+| `PG_BIN`              | Carpeta de `pg_dump` si no está en el `PATH`                        | —                                       |
+
+Necesita el cliente de PostgreSQL 18 (`pg_dump`) y Node. **Guarda una copia fuera del servidor** (otro disco o un servicio en la nube): un respaldo en el mismo disco no sirve si el disco se daña.
+
+### Restaurar en una base vacía
+
+1. Crea una base vacía (con un usuario que pueda crear bases):
+
+   ```bash
+   createdb -U postgres cambios_jc_restaurada
+   ```
+
+2. Restaura el respaldo de la base de datos:
+
+   ```bash
+   pg_restore --no-owner --exit-on-error -U postgres -d cambios_jc_restaurada respaldos/cambios_jc_2026-10-02_030000.dump
+   ```
+
+3. Restaura las subidas (el logo) en la carpeta de `CARPETA_SUBIDAS`:
+
+   ```bash
+   mkdir -p apps/api/uploads && tar -xzf respaldos/subidas_2026-10-02_030000.tar.gz -C apps/api/uploads
+   ```
+
+4. Apunta `DATABASE_URL` del `.env` a la base restaurada y arranca la API. La bitácora, los usuarios y las sesiones vuelven tal como estaban (los triggers que impiden editar la bitácora también se restauran).
+
+> Prueba la restauración de vez en cuando en una base de prueba: un respaldo que nunca se ha restaurado no es una garantía.
+
+### Programar el respaldo diario
+
+En el servidor Linux, con `cron` (`crontab -e`), por ejemplo todos los días a las 3:00 a. m.:
+
+```cron
+0 3 * * * cd /ruta/a/cambios-jc && scripts/respaldo.sh >> respaldos/respaldo.log 2>&1
+```
+
+En Windows (equipo de desarrollo), el Programador de tareas puede ejecutar `bash scripts/respaldo.sh` (con Git Bash) a la hora que quieras.
+
+## Recuperar el acceso de un administrador
+
+Si ningún administrador puede entrar (perdió el teléfono con el 2FA y no hay otro administrador que lo reinicie), se usa el script de emergencia **en el servidor**. No está en la API: hace falta acceso al servidor y a su `.env`.
+
+```bash
+npm run build
+npm run admin:restablecer -w @cambios-jc/api -- login-del-administrador
+```
+
+Pide escribir el login otra vez para confirmar. Después:
+
+- La contraseña pasa a ser una **temporal nueva**, que se muestra una sola vez. Entrégala en persona.
+- El 2FA se reinicia: al entrar tendrá que configurarlo de nuevo.
+- Si el usuario estaba desactivado, se reactiva; se levanta el bloqueo y se cierran sus sesiones.
+- Solo funciona con usuarios administradores y queda registrado en la bitácora (`usuario.restablecer_acceso_emergencia`, sin usuario y con origen "script de emergencia").
+
+Para no llegar a esto: **tener al menos dos administradores** y escanear el QR del 2FA en más de un teléfono.
+
+## Monitoreo de errores (Sentry, opcional)
+
+Sentry está desactivado a menos que haya un DSN. Para activarlo, define en el `.env`:
+
+- `SENTRY_DSN` para la API.
+- `VITE_SENTRY_DSN` para la web (se lee al compilar o arrancar la web; normalmente es otro DSN).
+
+Solo se envían errores inesperados (los 500 de la API y los errores no controlados de la pantalla), con la traza y el tipo de error. **No se envían** usuario, IP, cookies, cabeceras, cuerpos de las peticiones, parámetros de la dirección, variables locales ni código fuente; las cuentas bancarias que aparezcan en un mensaje se enmascaran.

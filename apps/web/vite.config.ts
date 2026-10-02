@@ -9,6 +9,8 @@ export default defineConfig(({ mode }) => {
   const puertoApi = Number(entorno.PUERTO_API ?? 3000);
 
   return {
+    // El .env es el de la raíz del monorepo; Vite solo expone a la web las variables que empiezan con VITE_.
+    envDir: fileURLToPath(new URL('../..', import.meta.url)),
     plugins: [react()],
     resolve: {
       // La web solo usa los tipos de `shared`, pero se resuelve a su código fuente (D31).

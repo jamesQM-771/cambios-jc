@@ -52,6 +52,18 @@ describe('leerConfig', () => {
     ).toBe(resolve('/datos/subidas'));
   });
 
+  it('SENTRY_DSN es opcional: vacío o ausente es lo mismo, y debe ser una dirección válida', () => {
+    expect(leerConfig(ENTORNO_MINIMO).SENTRY_DSN).toBeUndefined();
+    expect(leerConfig({ ...ENTORNO_MINIMO, SENTRY_DSN: '' }).SENTRY_DSN).toBeUndefined();
+    expect(
+      leerConfig({ ...ENTORNO_MINIMO, SENTRY_DSN: 'https://llave@o1.ingest.sentry.io/2' })
+        .SENTRY_DSN,
+    ).toBe('https://llave@o1.ingest.sentry.io/2');
+    expect(() => leerConfig({ ...ENTORNO_MINIMO, SENTRY_DSN: 'no-es-una-url' })).toThrow(
+      /SENTRY_DSN/,
+    );
+  });
+
   it('sin DATABASE_URL falla y dice cuál variable falta', () => {
     expect(() => leerConfig({ CLAVE_CIFRADO_2FA: CLAVE })).toThrow(/DATABASE_URL/);
   });
