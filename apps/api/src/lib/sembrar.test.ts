@@ -4,6 +4,7 @@ import argon2 from 'argon2';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { BANCOS_VENEZUELA } from './bancos-venezuela.js';
+import { DENOMINACIONES_SEMILLA } from './denominaciones-semilla.js';
 import { crearPrisma, type PrismaClient } from './prisma.js';
 import { sembrar } from './sembrar.js';
 
@@ -68,6 +69,7 @@ describe('sembrar', () => {
       sucursalCreada: false,
       administradorCreado: false,
       bancosCreados: 0,
+      denominacionesCreadas: 0,
     });
     expect(await prisma.usuario.count({ where: { login } })).toBe(1);
     expect(await prisma.empresa.count()).toBe(1);
@@ -107,5 +109,26 @@ describe('sembrar', () => {
       pais: 'VE',
       activo: true,
     });
+  });
+
+  it('siembra las denominaciones de COP, USD y VES, sin duplicar', async () => {
+    // No se compara el total de la tabla: otras pruebas del módulo de denominaciones crean las
+    // suyas. Se cuentan solo las filas exactas de la semilla (OR de moneda+valor).
+    const sonDeLaSemilla = {
+      OR: DENOMINACIONES_SEMILLA.map((d) => ({ moneda: d.moneda, valor: Number(d.valor) })),
+    };
+
+    await sembrar(prisma, { loginAdmin: loginUnico(), contrasenaAdmin: contrasena });
+    const antes = await prisma.denominacion.count({ where: sonDeLaSemilla });
+
+    await sembrar(prisma, { loginAdmin: loginUnico(), contrasenaAdmin: contrasena });
+
+    const despues = await prisma.denominacion.count({ where: sonDeLaSemilla });
+    expect(antes).toBe(DENOMINACIONES_SEMILLA.length);
+    expect(despues).toBe(DENOMINACIONES_SEMILLA.length);
+    const billeteCien = await prisma.denominacion.findFirst({
+      where: { moneda: 'COP', valor: 100000 },
+    });
+    expect(billeteCien).toMatchObject({ activa: true });
   });
 });

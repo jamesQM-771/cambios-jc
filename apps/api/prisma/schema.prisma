@@ -77,6 +77,21 @@ model Banco {
   @@map("banco")
 }
 
+/// Catálogo de billetes y monedas por divisa (fase 1), para el conteo por denominación del arqueo
+/// de caja (§5.16 de PROYECTO.md, fase 3). "Activa" solo significa que es una denominación válida
+/// hoy en esa moneda; no implica que esta instalación opere esa moneda en efectivo (eso lo decide la
+/// línea de negocio). El valor se guarda con la precisión de dinero de cada moneda (CLAUDE.md §6):
+/// 2 decimales para COP/USD, 3 para VES (D15), por eso la columna usa la de VES (la más precisa).
+model Denominacion {
+  id       String   @id @default(uuid(7)) @db.Uuid
+  moneda   String   @db.Char(3)
+  valor    Decimal  @db.Decimal(18, 3)
+  activa   Boolean  @default(true)
+  creadoEn DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
+
+  @@map("denominacion")
+}
+
 model Usuario {
   id                    String      @id @default(uuid(7)) @db.Uuid
   nombre                String

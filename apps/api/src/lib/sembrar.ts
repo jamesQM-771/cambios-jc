@@ -1,5 +1,6 @@
 import { BANCOS_VENEZUELA } from './bancos-venezuela.js';
 import { hashContrasena, LONGITUD_MINIMA_CONTRASENA } from './contrasenas.js';
+import { DENOMINACIONES_SEMILLA } from './denominaciones-semilla.js';
 import type { PrismaClient } from './prisma.js';
 
 export interface DatosSemilla {
@@ -12,6 +13,7 @@ export interface ResultadoSemilla {
   sucursalCreada: boolean;
   administradorCreado: boolean;
   bancosCreados: number;
+  denominacionesCreadas: number;
 }
 
 /**
@@ -39,6 +41,7 @@ export async function sembrar(
       sucursalCreada: false,
       administradorCreado: false,
       bancosCreados: 0,
+      denominacionesCreadas: 0,
     };
 
     if (!(await tx.empresa.findUnique({ where: { unica: true } }))) {
@@ -99,6 +102,19 @@ export async function sembrar(
       skipDuplicates: true,
     });
     resultado.bancosCreados = count;
+
+    // Denominacion no tiene un índice único (dos pueden coexistir si una está inactiva, tarea 1.4):
+    // no se puede usar createMany/skipDuplicates. Se compara a mano, igual que empresa/sucursal/admin.
+    const existentes = await tx.denominacion.findMany({ select: { moneda: true, valor: true } });
+    const clave = (moneda: string, valor: string) => `${moneda}:${Number(valor).toFixed(3)}`;
+    const yaExisten = new Set(existentes.map((d) => clave(d.moneda, d.valor.toString())));
+    const faltantes = DENOMINACIONES_SEMILLA.filter(
+      (d) => !yaExisten.has(clave(d.moneda, d.valor)),
+    );
+    if (faltantes.length > 0) {
+      const resultadoDenominaciones = await tx.denominacion.createMany({ data: faltantes });
+      resultado.denominacionesCreadas = resultadoDenominaciones.count;
+    }
 
     return resultado;
   });

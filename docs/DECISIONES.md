@@ -87,3 +87,9 @@ Cada decisión técnica o de negocio no obvia se anota aquí. Formato: fecha · 
 | # | Decisión | Motivo | Descartado |
 |---|---|---|---|
 | D66 | El campo `codigo` del catálogo de bancos nunca viaja tal cual hacia la bitácora: `sanearParaAuditoria` oculta cualquier campo llamado `codigo` en cualquier entidad (pensado para el código del 2FA, CLAUDE.md §7), así que el servicio arma el payload de auditoría con la clave `codigoBanco` en vez de reusar el objeto completo. Se detectó con una prueba que comparaba el registro de auditoría | No debilitar una protección que exige CLAUDE.md por una colisión de nombre en un módulo nuevo | Quitar `codigo` de la lista de campos ocultos (afectaría al 2FA); renombrar el campo público `codigo` del banco (se aleja del lenguaje de `PROYECTO.md` §5.1) |
+
+## Tarea 1.4 (2026-10-08)
+
+| # | Decisión | Motivo | Descartado |
+|---|---|---|---|
+| D67 | `Denominacion` no tiene restricción única en la base de datos: dos filas pueden compartir moneda y valor si una está inactiva (ej. se desactivó por error y se volvió a crear). La regla "no se repite un valor activo en la misma moneda" se valida en el servicio, no en PostgreSQL; `reactivar` repite la misma validación, porque pudo crearse una activa igual mientras la otra estaba inactiva | La semilla usa `BANCOS_VENEZUELA` con un `@unique` real porque nunca convive un duplicado inactivo a propósito; aquí sí puede pasar | Índice único parcial (`WHERE activa`) con SQL a mano en la migración: más difícil de mantener para una regla que ya vive en el servicio |

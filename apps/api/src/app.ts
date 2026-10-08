@@ -11,6 +11,8 @@ import { rutasBancos } from './modulos/bancos/rutas.js';
 import { crearServicioBancos } from './modulos/bancos/servicio.js';
 import { rutasCajas } from './modulos/cajas/rutas.js';
 import { crearServicioCajas } from './modulos/cajas/servicio.js';
+import { rutasDenominaciones } from './modulos/denominaciones/rutas.js';
+import { crearServicioDenominaciones } from './modulos/denominaciones/servicio.js';
 import { crearServicioAuth } from './modulos/auth/servicio.js';
 import { rutasEmpresa } from './modulos/empresa/rutas.js';
 import { crearServicioEmpresa } from './modulos/empresa/servicio.js';
@@ -78,6 +80,7 @@ export function construirApp({
     rutasBancos(rutas, crearServicioBancos({ prisma }));
     rutasSucursales(rutas, crearServicioSucursales({ prisma }));
     rutasCajas(rutas, crearServicioCajas({ prisma }));
+    rutasDenominaciones(rutas, crearServicioDenominaciones({ prisma }));
     listo();
   });
 
