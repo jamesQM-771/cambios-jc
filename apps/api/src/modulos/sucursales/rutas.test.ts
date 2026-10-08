@@ -258,6 +258,27 @@ describe('desactivar y reactivar sucursal', () => {
     expect(despues.activa).toBe(true);
   });
 
+  it('no se puede desactivar con una caja activa', async () => {
+    const { token } = await administradorConSesion();
+    const api = nuevaApp();
+    const creada = await llamar(api, 'POST', '/sucursales', {
+      token,
+      cuerpo: { nombre: nombreUnico(), ciudad: 'Cúcuta' },
+    });
+    const { sucursal } = creada.json<{ sucursal: SucursalJson }>();
+    await llamar(api, 'POST', '/cajas', {
+      token,
+      cuerpo: { nombre: nombreUnico('Caja'), sucursalId: sucursal.id },
+    });
+
+    const respuesta = await llamar(api, 'POST', `/sucursales/${sucursal.id}/desactivar`, {
+      token,
+    });
+
+    expect(respuesta.statusCode).toBe(409);
+    expect(cuerpoError(respuesta).codigo).toBe('ESTADO_INVALIDO');
+  });
+
   it('sí se puede desactivar si el usuario asignado ya está inactivo', async () => {
     const { token } = await administradorConSesion();
     const api = nuevaApp();

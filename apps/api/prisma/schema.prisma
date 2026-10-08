@@ -46,8 +46,22 @@ model Sucursal {
   ciudad   String
   activa   Boolean   @default(true)
   usuarios Usuario[]
+  cajas    Caja[]
 
   @@map("sucursal")
+}
+
+/// Caja de una sucursal (fase 1). El nombre es único dentro de su sucursal, no en todo el sistema.
+model Caja {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  nombre     String
+  sucursalId String   @map("sucursal_id") @db.Uuid
+  sucursal   Sucursal @relation(fields: [sucursalId], references: [id], onDelete: Restrict)
+  activa     Boolean  @default(true)
+  creadoEn   DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
+
+  @@unique([sucursalId, nombre])
+  @@map("caja")
 }
 
 /// Catálogo de bancos (fase 1). El código son los 4 primeros dígitos de una cuenta venezolana (§5.1

@@ -122,14 +122,19 @@ export function crearServicioSucursales({ prisma }: { prisma: PrismaClient }) {
       const antes = await cargar(id);
       if (!antes.activa) return antes;
 
-      // No se puede dejar sin sucursal asignada a un usuario activo. Cuando exista la tabla de
-      // cajas (tarea 1.3), se agrega aquí la misma validación para cajas activas.
-      const usuariosActivos = await prisma.usuario.count({
-        where: { sucursalId: id, activo: true },
-      });
+      // No se puede dejar sin sucursal asignada a un usuario activo ni a una caja activa.
+      const [usuariosActivos, cajasActivas] = await Promise.all([
+        prisma.usuario.count({ where: { sucursalId: id, activo: true } }),
+        prisma.caja.count({ where: { sucursalId: id, activa: true } }),
+      ]);
       if (usuariosActivos > 0) {
         throw errores.estadoInvalido(
           `No se puede desactivar: tiene ${String(usuariosActivos)} usuario(s) activo(s) asignado(s). Reasígnalos o desactívalos primero.`,
+        );
+      }
+      if (cajasActivas > 0) {
+        throw errores.estadoInvalido(
+          `No se puede desactivar: tiene ${String(cajasActivas)} caja(s) activa(s). Desactívalas primero.`,
         );
       }
 
