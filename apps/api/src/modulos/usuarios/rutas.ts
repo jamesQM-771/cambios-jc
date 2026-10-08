@@ -13,7 +13,6 @@ import {
   respuestaListaUsuarios,
   respuestaOk,
   respuestaSesionesCerradas,
-  respuestaSucursales,
   respuestaUsuario,
 } from './esquemas.js';
 import type { ServicioUsuarios } from './servicio.js';
@@ -129,12 +128,5 @@ export function rutasUsuarios(app: FastifyInstance, servicio: ServicioUsuarios):
         contextoDe(request),
       ),
     }),
-  );
-
-  // Solo lectura, para el formulario de usuarios. La gestión de sucursales es de la fase 1.
-  rutas.get(
-    '/sucursales',
-    { config: PERMISO, schema: { response: { 200: respuestaSucursales } } },
-    async () => ({ sucursales: await servicio.listarSucursalesActivas() }),
   );
 }

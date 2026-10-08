@@ -13,6 +13,8 @@ import { crearServicioAuth } from './modulos/auth/servicio.js';
 import { rutasEmpresa } from './modulos/empresa/rutas.js';
 import { crearServicioEmpresa } from './modulos/empresa/servicio.js';
 import { rutasSalud } from './modulos/salud/rutas.js';
+import { rutasSucursales } from './modulos/sucursales/rutas.js';
+import { crearServicioSucursales } from './modulos/sucursales/servicio.js';
 import { rutasUsuarios } from './modulos/usuarios/rutas.js';
 import { crearServicioUsuarios } from './modulos/usuarios/servicio.js';
 import { instalarAuditoria } from './plugins/auditoria.js';
@@ -72,6 +74,7 @@ export function construirApp({
     );
     rutasAuditoria(rutas, crearServicioAuditoria({ prisma }));
     rutasBancos(rutas, crearServicioBancos({ prisma }));
+    rutasSucursales(rutas, crearServicioSucursales({ prisma }));
     listo();
   });
 

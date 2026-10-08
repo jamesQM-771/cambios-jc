@@ -29,6 +29,7 @@ export interface OpcionesUsuario {
   /** Con 2FA ya activado. Por defecto no. */
   con2fa?: boolean;
   activo?: boolean;
+  sucursalId?: string;
 }
 
 /** Crea un usuario real en la base de pruebas, con login y contraseña únicos por prueba. */
@@ -47,6 +48,7 @@ export async function crearUsuarioDePrueba(
       debeCambiarContrasena: opciones.debeCambiarContrasena ?? false,
       rol: opciones.rol ?? 'administrador',
       activo: opciones.activo ?? true,
+      sucursalId: opciones.sucursalId,
       tiene2fa: secreto !== null,
       secreto2fa: secreto ? cifrar(secreto, leerClave(CLAVE_CIFRADO_PRUEBAS)) : null,
     },

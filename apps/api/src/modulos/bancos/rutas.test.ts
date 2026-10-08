@@ -11,6 +11,7 @@ import {
   cuerpoError,
   llamar,
 } from '../../../test/auth.js';
+import { BANCOS_VENEZUELA } from '../../lib/bancos-venezuela.js';
 import { crearPrisma, type PrismaClient } from '../../lib/prisma.js';
 
 let prisma: PrismaClient;
@@ -35,15 +36,20 @@ function nuevaApp(): FastifyInstance {
   return app;
 }
 
-// Un contador de la corrida + 2 dígitos al azar: a diferencia de recortar un UUID (que reparte mal
-// sus dígitos y puede repetirse), esto no choca con otra prueba dentro de la misma corrida. Puede
-// repetirse entre corridas distintas de la suite contra la misma base sin reiniciar (CONSERVAR_BASE_
-// PRUEBAS=1): por eso ninguna prueba de este archivo asume que la base está vacía.
+// La hora del proceso varía entre corridas; el contador garantiza que no se repita dentro de la
+// misma corrida. Puede repetirse entre corridas contra la misma base sin reiniciar (CONSERVAR_BASE_
+// PRUEBAS=1) si caen justo en el mismo milisegundo módulo 10000, por eso ninguna prueba de este
+// archivo asume que la base está vacía.
+const semillaProceso = Date.now() % 10_000;
+const CODIGOS_REALES = new Set(BANCOS_VENEZUELA.map((b) => b.codigo));
 let contadorCodigo = 0;
-const codigoUnico = () => {
-  contadorCodigo += 1;
-  const aleatorio = Math.floor(Math.random() * 100);
-  return `${String(contadorCodigo % 100).padStart(2, '9')}${String(aleatorio).padStart(2, '0')}`;
+const codigoUnico = (): string => {
+  let candidato: string;
+  do {
+    contadorCodigo += 1;
+    candidato = String((semillaProceso + contadorCodigo) % 10_000).padStart(4, '0');
+  } while (CODIGOS_REALES.has(candidato));
+  return candidato;
 };
 
 async function administradorConSesion(): Promise<{ token: string }> {

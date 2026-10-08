@@ -90,7 +90,6 @@ describe('acceso a la API de usuarios', () => {
     ['POST', `/usuarios/${idCualquiera}/restablecer-contrasena`],
     ['POST', `/usuarios/${idCualquiera}/reiniciar-2fa`],
     ['POST', `/usuarios/${idCualquiera}/cerrar-sesiones`],
-    ['GET', '/sucursales'],
   ];
 
   it.each(rutas)('%s %s: sin sesión responde 401', async (metodo, url) => {
@@ -707,22 +706,8 @@ describe('reiniciar el 2FA y cerrar sesiones', () => {
   });
 });
 
-describe('sucursales', () => {
-  it('lista solo las activas, con sus datos básicos', async () => {
-    const { token } = await administradorConSesion();
-    const activa = await sucursal();
-    const inactiva = await sucursal(false);
-
-    const respuesta = await llamar(nuevaApp(), 'GET', '/sucursales', { token });
-
-    expect(respuesta.statusCode).toBe(200);
-    const { sucursales } = respuesta.json<{
-      sucursales: { id: string; nombre: string; ciudad: string }[];
-    }>();
-    expect(sucursales).toContainEqual({ id: activa.id, nombre: activa.nombre, ciudad: 'Cúcuta' });
-    expect(sucursales.map((s) => s.id)).not.toContain(inactiva.id);
-  });
-});
+// Las pruebas de la API de sucursales (gestión completa, fase 1) viven en
+// ../sucursales/rutas.test.ts; aquí solo se usa el helper sucursal() para asignar usuarios.
 
 describe('usuario en minúsculas', () => {
   it('el acceso no distingue mayúsculas del usuario', async () => {

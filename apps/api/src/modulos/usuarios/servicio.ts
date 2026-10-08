@@ -329,13 +329,5 @@ export function crearServicioUsuarios({
       await cargar(prisma, id);
       return auth.cerrarSesionesDeUsuario(id, actor.id, contexto);
     },
-
-    async listarSucursalesActivas() {
-      return prisma.sucursal.findMany({
-        where: { activa: true },
-        select: { id: true, nombre: true, ciudad: true },
-        orderBy: { nombre: 'asc' },
-      });
-    },
   };
 }

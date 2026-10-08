@@ -9,6 +9,7 @@ export type CodigoError =
   | 'ESTADO_INVALIDO'
   | 'LOGIN_EN_USO'
   | 'CODIGO_EN_USO'
+  | 'VALOR_EN_USO'
   | 'ARCHIVO_INVALIDO'
   | 'ARCHIVO_DEMASIADO_GRANDE'
   | 'ULTIMO_ADMINISTRADOR'
@@ -61,6 +62,9 @@ export const errores = {
     ]),
   codigoEnUso: (mensaje: string) =>
     new ErrorApp(409, 'CODIGO_EN_USO', mensaje, [{ campo: 'codigo', mensaje: 'Ya está en uso.' }]),
+  /** Para catálogos nuevos (sucursal, caja, línea de negocio…) con un campo único repetido. */
+  valorEnUso: (campo: string, mensaje: string) =>
+    new ErrorApp(409, 'VALOR_EN_USO', mensaje, [{ campo, mensaje: 'Ya está en uso.' }]),
   ultimoAdministrador: () =>
     new ErrorApp(
       409,

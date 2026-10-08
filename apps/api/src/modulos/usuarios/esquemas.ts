@@ -79,7 +79,3 @@ export const respuestaConContrasenaTemporal = z.object({
 export const respuestaOk = z.object({ ok: z.literal(true) });
 
 export const respuestaSesionesCerradas = z.object({ sesionesCerradas: z.number().int() });
-
-export const respuestaSucursales = z.object({
-  sucursales: z.array(z.object({ id: z.string(), nombre: z.string(), ciudad: z.string() })),
-});

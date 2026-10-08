@@ -19,7 +19,9 @@ export const listarUsuarios = (filtros: FiltrosUsuarios) =>
     porPagina: filtros.porPagina,
   });
 
-export const listarSucursales = () => api.get<{ sucursales: Sucursal[] }>('/sucursales');
+// Solo las activas: no tiene sentido asignar un usuario a una sucursal desactivada.
+export const listarSucursales = () =>
+  api.get<{ sucursales: Sucursal[] }>('/sucursales', { activa: true });
 
 export const crearUsuario = (datos: DatosUsuarioNuevo) =>
   api.post<UsuarioConContrasenaTemporal>('/usuarios', datos);
