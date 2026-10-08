@@ -50,6 +50,19 @@ model Sucursal {
   @@map("sucursal")
 }
 
+/// Catálogo de bancos (fase 1). El código son los 4 primeros dígitos de una cuenta venezolana (§5.1
+/// de PROYECTO.md); sirve para identificar el banco de una cuenta y, más adelante, de un beneficiario.
+model Banco {
+  id       String   @id @default(uuid(7)) @db.Uuid
+  codigo   String   @unique @db.VarChar(4)
+  nombre   String
+  pais     String   @default("VE") @db.Char(2)
+  activo   Boolean  @default(true)
+  creadoEn DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
+
+  @@map("banco")
+}
+
 model Usuario {
   id                    String      @id @default(uuid(7)) @db.Uuid
   nombre                String

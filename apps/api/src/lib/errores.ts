@@ -8,6 +8,7 @@ export type CodigoError =
   | 'CUENTA_BLOQUEADA'
   | 'ESTADO_INVALIDO'
   | 'LOGIN_EN_USO'
+  | 'CODIGO_EN_USO'
   | 'ARCHIVO_INVALIDO'
   | 'ARCHIVO_DEMASIADO_GRANDE'
   | 'ULTIMO_ADMINISTRADOR'
@@ -58,6 +59,8 @@ export const errores = {
     new ErrorApp(409, 'LOGIN_EN_USO', 'Ya existe un usuario con ese nombre de usuario.', [
       { campo: 'login', mensaje: 'Ya está en uso.' },
     ]),
+  codigoEnUso: (mensaje: string) =>
+    new ErrorApp(409, 'CODIGO_EN_USO', mensaje, [{ campo: 'codigo', mensaje: 'Ya está en uso.' }]),
   ultimoAdministrador: () =>
     new ErrorApp(
       409,

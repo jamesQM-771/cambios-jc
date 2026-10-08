@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import argon2 from 'argon2';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
+import { BANCOS_VENEZUELA } from './bancos-venezuela.js';
 import { crearPrisma, type PrismaClient } from './prisma.js';
 import { sembrar } from './sembrar.js';
 
@@ -62,10 +63,11 @@ describe('sembrar', () => {
       contrasenaAdmin: 'otra-clave-distinta',
     });
 
-    expect(segunda).toEqual({
+    expect(segunda).toMatchObject({
       empresaCreada: false,
       sucursalCreada: false,
       administradorCreado: false,
+      bancosCreados: 0,
     });
     expect(await prisma.usuario.count({ where: { login } })).toBe(1);
     expect(await prisma.empresa.count()).toBe(1);
@@ -83,5 +85,27 @@ describe('sembrar', () => {
     await expect(
       sembrar(prisma, { loginAdmin: '  ', contrasenaAdmin: contrasena }),
     ).rejects.toThrow(/vacío/);
+  });
+
+  it('siembra el catálogo de bancos de Venezuela, sin el 0001 (banco central), sin duplicar', async () => {
+    await sembrar(prisma, { loginAdmin: loginUnico(), contrasenaAdmin: contrasena });
+    const antes = await prisma.banco.count({
+      where: { codigo: { in: BANCOS_VENEZUELA.map((b) => b.codigo) } },
+    });
+
+    await sembrar(prisma, { loginAdmin: loginUnico(), contrasenaAdmin: contrasena });
+
+    // No se compara el total de la tabla: otras pruebas del módulo de bancos crean las suyas.
+    const despues = await prisma.banco.count({
+      where: { codigo: { in: BANCOS_VENEZUELA.map((b) => b.codigo) } },
+    });
+    expect(antes).toBe(27);
+    expect(despues).toBe(27);
+    expect(await prisma.banco.findUnique({ where: { codigo: '0001' } })).toBeNull();
+    expect(await prisma.banco.findUnique({ where: { codigo: '0102' } })).toMatchObject({
+      nombre: 'Banco de Venezuela',
+      pais: 'VE',
+      activo: true,
+    });
   });
 });

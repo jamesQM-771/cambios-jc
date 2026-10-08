@@ -7,6 +7,8 @@ import type { PrismaClient } from './lib/prisma.js';
 import { rutasAuditoria } from './modulos/auditoria/rutas.js';
 import { crearServicioAuditoria } from './modulos/auditoria/servicio.js';
 import { rutasAuth, NOMBRE_COOKIE_SESION } from './modulos/auth/rutas.js';
+import { rutasBancos } from './modulos/bancos/rutas.js';
+import { crearServicioBancos } from './modulos/bancos/servicio.js';
 import { crearServicioAuth } from './modulos/auth/servicio.js';
 import { rutasEmpresa } from './modulos/empresa/rutas.js';
 import { crearServicioEmpresa } from './modulos/empresa/servicio.js';
@@ -69,6 +71,7 @@ export function construirApp({
       }),
     );
     rutasAuditoria(rutas, crearServicioAuditoria({ prisma }));
+    rutasBancos(rutas, crearServicioBancos({ prisma }));
     listo();
   });
 

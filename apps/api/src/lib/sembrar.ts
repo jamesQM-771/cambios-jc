@@ -1,3 +1,4 @@
+import { BANCOS_VENEZUELA } from './bancos-venezuela.js';
 import { hashContrasena, LONGITUD_MINIMA_CONTRASENA } from './contrasenas.js';
 import type { PrismaClient } from './prisma.js';
 
@@ -10,6 +11,7 @@ export interface ResultadoSemilla {
   empresaCreada: boolean;
   sucursalCreada: boolean;
   administradorCreado: boolean;
+  bancosCreados: number;
 }
 
 /**
@@ -36,6 +38,7 @@ export async function sembrar(
       empresaCreada: false,
       sucursalCreada: false,
       administradorCreado: false,
+      bancosCreados: 0,
     };
 
     if (!(await tx.empresa.findUnique({ where: { unica: true } }))) {
@@ -89,6 +92,13 @@ export async function sembrar(
       });
       resultado.administradorCreado = true;
     }
+
+    // No se registra cada banco en la bitácora: son 27 filas de catálogo, no una acción de negocio.
+    const { count } = await tx.banco.createMany({
+      data: BANCOS_VENEZUELA.map(({ codigo, nombre }) => ({ codigo, nombre })),
+      skipDuplicates: true,
+    });
+    resultado.bancosCreados = count;
 
     return resultado;
   });
