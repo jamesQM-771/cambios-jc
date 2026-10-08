@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "prototipo-web",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "4500",
+        "--directory",
+        "C:\\Users\\james\\Downloads\\DivSoft\\prototipo-web"
+      ],
+      "port": 4500
+    }
+  ]
+}
