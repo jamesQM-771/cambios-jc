@@ -766,3 +766,12 @@
   color: var(--marca);
   border-bottom: 2px solid var(--marca);
 }
+
+/* Casilla con su etiqueta, para filtros simples (ej. "Mostrar desactivados"). */
+.campo__casilla {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espacio-2);
+  margin-bottom: var(--espacio-4);
+  cursor: pointer;
+}

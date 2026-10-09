@@ -12,6 +12,12 @@
         "C:\\Users\\james\\Downloads\\DivSoft\\prototipo-web"
       ],
       "port": 4500
+    },
+    {
+      "name": "cambios-jc-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 5173
     }
   ]
 }

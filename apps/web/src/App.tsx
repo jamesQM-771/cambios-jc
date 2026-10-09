@@ -4,6 +4,8 @@ import { Estructura } from './componentes/Estructura.js';
 import { RutaConPermiso } from './componentes/RutaConPermiso.js';
 import { RutaProtegida } from './componentes/RutaProtegida.js';
 import { PaginaConfiguracion } from './paginas/configuracion/PaginaConfiguracion.js';
+import { PaginaBancos } from './paginas/configuracion/bancos/PaginaBancos.js';
+import { PaginaSucursales } from './paginas/configuracion/sucursales/PaginaSucursales.js';
 import { EstructuraAcceso } from './paginas/acceso/EstructuraAcceso.js';
 import { GuardaPaso } from './paginas/acceso/GuardaPaso.js';
 import { PaginaCambiarContrasena } from './paginas/acceso/PaginaCambiarContrasena.js';
@@ -77,6 +79,8 @@ export function App() {
             }
           >
             <Route index element={<Navigate to="bancos" replace />} />
+            <Route path="bancos" element={<PaginaBancos />} />
+            <Route path="sucursales" element={<PaginaSucursales />} />
           </Route>
           <Route
             path="bitacora"
