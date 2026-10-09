@@ -47,6 +47,7 @@ model Sucursal {
   activa   Boolean   @default(true)
   usuarios Usuario[]
   cajas    Caja[]
+  cuentas  CuentaDinero[]
 
   @@map("sucursal")
 }
@@ -73,8 +74,41 @@ model Banco {
   pais     String   @default("VE") @db.Char(2)
   activo   Boolean  @default(true)
   creadoEn DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
+  cuentas  CuentaDinero[]
 
   @@map("banco")
+}
+
+enum TipoCuenta {
+  caja
+  banco
+  billetera
+
+  @@map("tipo_cuenta")
+}
+
+/// Cuenta de dinero (fase 1, §5.9 de PROYECTO.md): catálogo, sin saldo todavía (el saldo sale de los
+/// movimientos, que no existen hasta la fase 2/3). bancoId y ultimos4Digitos solo aplican a tipo "banco".
+model CuentaDinero {
+  id                 String       @id @default(uuid(7)) @db.Uuid
+  nombre             String
+  tipo               TipoCuenta
+  moneda             String       @db.Char(3)
+  bancoId            String?      @map("banco_id") @db.Uuid
+  banco              Banco?       @relation(fields: [bancoId], references: [id], onDelete: Restrict)
+  ultimos4Digitos    String?      @map("ultimos_4_digitos") @db.VarChar(4)
+  sucursalId         String       @map("sucursal_id") @db.Uuid
+  sucursal           Sucursal     @relation(fields: [sucursalId], references: [id], onDelete: Restrict)
+  /// Nombre de la persona titular, en texto libre (D65); se conecta con la tabla Contraparte en la fase 4.
+  titular            String?
+  responsableId      String?      @map("responsable_id") @db.Uuid
+  responsable        Usuario?     @relation(fields: [responsableId], references: [id], onDelete: Restrict)
+  activa             Boolean      @default(true)
+  limiteDiario       Decimal?     @map("limite_diario") @db.Decimal(18, 3)
+  comisionPorDefecto Decimal?     @map("comision_por_defecto") @db.Decimal(18, 3)
+  creadoEn           DateTime     @default(now()) @map("creado_en") @db.Timestamptz(6)
+
+  @@map("cuenta_dinero")
 }
 
 enum ClaseLinea {
@@ -173,6 +207,7 @@ model Usuario {
   sesiones              Sesion[]
   auditorias            Auditoria[]
   tasasPublicadas       Tasa[]
+  cuentasResponsable    CuentaDinero[]
 
   @@map("usuario")
 }
