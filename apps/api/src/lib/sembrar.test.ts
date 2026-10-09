@@ -154,7 +154,7 @@ describe('sembrar', () => {
       activa: true,
       modoTasa: 'porcentaje',
     });
-    expect(transferencias?.margenVenta.toString()).toBe('11');
+    expect(transferencias?.margenVenta?.toString()).toBe('11');
     expect(await prisma.lineaNegocio.findUnique({ where: { nombre: 'Dólares' } })).toMatchObject({
       clase: 'divisa_caja',
       monedaOrigen: 'USD',
