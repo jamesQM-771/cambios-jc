@@ -6,6 +6,9 @@ import { RutaProtegida } from './componentes/RutaProtegida.js';
 import { PaginaConfiguracion } from './paginas/configuracion/PaginaConfiguracion.js';
 import { PaginaBancos } from './paginas/configuracion/bancos/PaginaBancos.js';
 import { PaginaSucursales } from './paginas/configuracion/sucursales/PaginaSucursales.js';
+import { PaginaCajas } from './paginas/configuracion/cajas/PaginaCajas.js';
+import { PaginaDenominaciones } from './paginas/configuracion/denominaciones/PaginaDenominaciones.js';
+import { PaginaLineasNegocio } from './paginas/configuracion/lineas-negocio/PaginaLineasNegocio.js';
 import { EstructuraAcceso } from './paginas/acceso/EstructuraAcceso.js';
 import { GuardaPaso } from './paginas/acceso/GuardaPaso.js';
 import { PaginaCambiarContrasena } from './paginas/acceso/PaginaCambiarContrasena.js';
@@ -81,6 +84,9 @@ export function App() {
             <Route index element={<Navigate to="bancos" replace />} />
             <Route path="bancos" element={<PaginaBancos />} />
             <Route path="sucursales" element={<PaginaSucursales />} />
+            <Route path="cajas" element={<PaginaCajas />} />
+            <Route path="denominaciones" element={<PaginaDenominaciones />} />
+            <Route path="lineas-negocio" element={<PaginaLineasNegocio />} />
           </Route>
           <Route
             path="bitacora"
