@@ -10,6 +10,7 @@ import { PaginaCajas } from './paginas/configuracion/cajas/PaginaCajas.js';
 import { PaginaDenominaciones } from './paginas/configuracion/denominaciones/PaginaDenominaciones.js';
 import { PaginaLineasNegocio } from './paginas/configuracion/lineas-negocio/PaginaLineasNegocio.js';
 import { PaginaCuentas } from './paginas/configuracion/cuentas/PaginaCuentas.js';
+import { PaginaTasas } from './paginas/configuracion/tasas/PaginaTasas.js';
 import { EstructuraAcceso } from './paginas/acceso/EstructuraAcceso.js';
 import { GuardaPaso } from './paginas/acceso/GuardaPaso.js';
 import { PaginaCambiarContrasena } from './paginas/acceso/PaginaCambiarContrasena.js';
@@ -89,6 +90,7 @@ export function App() {
             <Route path="denominaciones" element={<PaginaDenominaciones />} />
             <Route path="lineas-negocio" element={<PaginaLineasNegocio />} />
             <Route path="cuentas" element={<PaginaCuentas />} />
+            <Route path="tasas" element={<PaginaTasas />} />
           </Route>
           <Route
             path="bitacora"

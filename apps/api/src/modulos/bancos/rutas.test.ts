@@ -41,7 +41,8 @@ function nuevaApp(): FastifyInstance {
 // PRUEBAS=1) si caen justo en el mismo milisegundo módulo 10000, por eso ninguna prueba de este
 // archivo asume que la base está vacía.
 const semillaProceso = Date.now() % 10_000;
-const CODIGOS_REALES = new Set(BANCOS_VENEZUELA.map((b) => b.codigo));
+// También se evita "0001" (BCV): la semilla lo excluye a propósito y una prueba no debe generarlo.
+const CODIGOS_REALES = new Set([...BANCOS_VENEZUELA.map((b) => b.codigo), '0001']);
 let contadorCodigo = 0;
 const codigoUnico = (): string => {
   let candidato: string;

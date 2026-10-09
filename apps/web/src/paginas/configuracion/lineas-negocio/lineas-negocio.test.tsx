@@ -18,6 +18,9 @@ const lineaFalsa = (cambios: Partial<LineaNegocio> = {}): LineaNegocio => ({
   monedaOrigen: 'COP',
   monedaDestino: 'VES',
   activa: true,
+  modoTasa: 'porcentaje',
+  margenCompra: null,
+  margenVenta: '11.000000',
   ...cambios,
 });
 

@@ -114,3 +114,9 @@ Cada decisión técnica o de negocio no obvia se anota aquí. Formato: fecha · 
 |---|---|---|---|
 | D72 | Componente reutilizable `TablaCatalogo` (columnas configurables + estado + Editar/Desactivar/Reactivar) para los 5 catálogos simples de la fase 1 y cuentas de dinero. Sin un "formulario genérico": los campos de cada entidad son distintos y forzar una abstracción ahí complica más de lo que ahorra, igual que ya hace el proyecto con un componente de formulario por entidad | Evita repetir la misma tabla 6 veces; un formulario genérico sería más código que los 6 formularios concretos juntos | Copiar y pegar la tabla en cada pantalla; un formulario genérico dirigido por un esquema |
 | D73 | La sección "Configuración" usa una sub-navegación propia dentro de la página (pestañas por sub-ruta), no el menú principal: agrupa 7 pantallas bajo un solo permiso (`empresa.configurar`) sin alargar el menú lateral | `PROYECTO.md` §12 agrupa estas pantallas como una sola fase ("Configuración"); el menú principal ya tiene varias entradas | Una entrada de menú por cada una de las 7 pantallas |
+
+## Tarea 1.8.5 (2026-10-09)
+
+| # | Decisión | Motivo | Descartado |
+|---|---|---|---|
+| D74 | El generador de códigos de prueba de bancos (`codigoUnico()`) también excluye "0001" (Banco Central de Venezuela), no solo los 27 códigos reales de la semilla: una corrida anterior generó por azar ese código, dejando una fila residual que hacía fallar la prueba de la semilla ("sin el 0001") en una corrida posterior sobre la misma base sin reiniciar | "0001" está excluido a propósito de la semilla (no es un banco para el público); una prueba no debe poder generarlo | Nada: es la misma idea ya aplicada a los 27 códigos reales, solo faltaba este caso |
