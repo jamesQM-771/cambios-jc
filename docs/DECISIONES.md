@@ -107,3 +107,10 @@ Cada decisión técnica o de negocio no obvia se anota aquí. Formato: fecha · 
 |---|---|---|---|
 | D70 | `CuentaDinero.comisionPorDefecto` es un **monto fijo** en la moneda de la cuenta (no un porcentaje), editable en cualquier momento — confirmado con el dueño: es lo que el banco le cobra al negocio por la transferencia, y esa tarifa puede cambiar con el tiempo | Confirmado por el dueño | Porcentaje sobre el monto de cada operación |
 | D71 | Los esquemas Zod de unión discriminada (`esquemaCrearCuentaDinero`) usan `.strict()` en cada variante. Sin esto, Zod descarta en silencio un campo que no corresponde a esa variante (ej. `bancoId` en una cuenta tipo `caja`) en vez de rechazar la petición — se detectó con una prueba que esperaba 400 y recibió 201 | Una petición con campos que no aplican a su propio tipo debe avisar, no ignorarse | Validar la combinación a mano en el servicio (ya lo hace Zod si se le pide ser estricto) |
+
+## Tarea 1.8.1 (2026-10-09)
+
+| # | Decisión | Motivo | Descartado |
+|---|---|---|---|
+| D72 | Componente reutilizable `TablaCatalogo` (columnas configurables + estado + Editar/Desactivar/Reactivar) para los 5 catálogos simples de la fase 1 y cuentas de dinero. Sin un "formulario genérico": los campos de cada entidad son distintos y forzar una abstracción ahí complica más de lo que ahorra, igual que ya hace el proyecto con un componente de formulario por entidad | Evita repetir la misma tabla 6 veces; un formulario genérico sería más código que los 6 formularios concretos juntos | Copiar y pegar la tabla en cada pantalla; un formulario genérico dirigido por un esquema |
+| D73 | La sección "Configuración" usa una sub-navegación propia dentro de la página (pestañas por sub-ruta), no el menú principal: agrupa 7 pantallas bajo un solo permiso (`empresa.configurar`) sin alargar el menú lateral | `PROYECTO.md` §12 agrupa estas pantallas como una sola fase ("Configuración"); el menú principal ya tiene varias entradas | Una entrada de menú por cada una de las 7 pantallas |

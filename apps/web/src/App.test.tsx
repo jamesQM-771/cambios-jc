@@ -108,7 +108,7 @@ describe('menús por rol', () => {
       within(menu)
         .getAllByRole('link')
         .map((enlace) => enlace.textContent),
-    ).toEqual(['Inicio', 'Usuarios', 'Empresa', 'Bitácora']);
+    ).toEqual(['Inicio', 'Usuarios', 'Empresa', 'Configuración', 'Bitácora']);
     expect(within(menu).getByRole('link', { name: 'Inicio' })).toHaveAttribute(
       'aria-current',
       'page',
@@ -141,7 +141,7 @@ describe('menús por rol', () => {
       unmount();
     }
 
-    expect(vistos).toEqual({ administrador: 4, vendedor: 0, digitador: 0 });
+    expect(vistos).toEqual({ administrador: 5, vendedor: 0, digitador: 0 });
   });
 
   it('el encabezado muestra la empresa, el nombre y el rol de la persona', async () => {
@@ -183,6 +183,7 @@ describe('permisos de las pantallas', () => {
   it.each([
     ['/usuarios', 'Usuarios'],
     ['/empresa', 'Empresa'],
+    ['/configuracion', 'Configuración'],
     ['/bitacora', 'Bitácora'],
   ])('el administrador abre %s', async (ruta, titulo) => {
     simularApi({

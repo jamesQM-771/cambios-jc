@@ -27,6 +27,12 @@ export const ENTRADAS_MENU: readonly EntradaMenu[] = [
     permiso: 'empresa.configurar',
   },
   {
+    ruta: '/configuracion',
+    etiqueta: 'Configuración',
+    descripcion: 'Sucursales, cajas, denominaciones, líneas de negocio, bancos, cuentas y tasas',
+    permiso: 'empresa.configurar',
+  },
+  {
     ruta: '/bitacora',
     etiqueta: 'Bitácora',
     descripcion: 'Quién hizo qué y cuándo',

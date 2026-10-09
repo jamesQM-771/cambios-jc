@@ -8,7 +8,13 @@ const etiquetasDe = (rol: (typeof ROLES)[number]) =>
 
 describe('menú según permisos', () => {
   it('el administrador ve todo', () => {
-    expect(etiquetasDe('administrador')).toEqual(['Inicio', 'Usuarios', 'Empresa', 'Bitácora']);
+    expect(etiquetasDe('administrador')).toEqual([
+      'Inicio',
+      'Usuarios',
+      'Empresa',
+      'Configuración',
+      'Bitácora',
+    ]);
   });
 
   it('el vendedor y el digitador solo ven Inicio por ahora', () => {

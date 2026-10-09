@@ -1,8 +1,9 @@
-import { Route, Routes } from 'react-router';
+import { Navigate, Route, Routes } from 'react-router';
 
 import { Estructura } from './componentes/Estructura.js';
 import { RutaConPermiso } from './componentes/RutaConPermiso.js';
 import { RutaProtegida } from './componentes/RutaProtegida.js';
+import { PaginaConfiguracion } from './paginas/configuracion/PaginaConfiguracion.js';
 import { EstructuraAcceso } from './paginas/acceso/EstructuraAcceso.js';
 import { GuardaPaso } from './paginas/acceso/GuardaPaso.js';
 import { PaginaCambiarContrasena } from './paginas/acceso/PaginaCambiarContrasena.js';
@@ -67,6 +68,16 @@ export function App() {
               </RutaConPermiso>
             }
           />
+          <Route
+            path="configuracion"
+            element={
+              <RutaConPermiso permiso="empresa.configurar">
+                <PaginaConfiguracion />
+              </RutaConPermiso>
+            }
+          >
+            <Route index element={<Navigate to="bancos" replace />} />
+          </Route>
           <Route
             path="bitacora"
             element={
