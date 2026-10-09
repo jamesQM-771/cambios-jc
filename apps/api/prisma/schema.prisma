@@ -77,6 +77,27 @@ model Banco {
   @@map("banco")
 }
 
+enum ClaseLinea {
+  remesa
+  divisa_caja
+
+  @@map("clase_linea")
+}
+
+/// Línea de negocio (fase 1, §4.3 de PROYECTO.md): remesa (envío a otro país) o divisa_caja (compra/
+/// venta de una divisa en efectivo). El modo de tasa y el margen se agregan en la tarea 1.6.
+model LineaNegocio {
+  id            String     @id @default(uuid(7)) @db.Uuid
+  nombre        String     @unique
+  clase         ClaseLinea
+  monedaOrigen  String     @map("moneda_origen") @db.Char(3)
+  monedaDestino String     @map("moneda_destino") @db.Char(3)
+  activa        Boolean    @default(true)
+  creadoEn      DateTime   @default(now()) @map("creado_en") @db.Timestamptz(6)
+
+  @@map("linea_negocio")
+}
+
 /// Catálogo de billetes y monedas por divisa (fase 1), para el conteo por denominación del arqueo
 /// de caja (§5.16 de PROYECTO.md, fase 3). "Activa" solo significa que es una denominación válida
 /// hoy en esa moneda; no implica que esta instalación opere esa moneda en efectivo (eso lo decide la

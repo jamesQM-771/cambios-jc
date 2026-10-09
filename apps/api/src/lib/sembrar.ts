@@ -14,6 +14,7 @@ export interface ResultadoSemilla {
   administradorCreado: boolean;
   bancosCreados: number;
   denominacionesCreadas: number;
+  lineasNegocioCreadas: number;
 }
 
 /**
@@ -42,6 +43,7 @@ export async function sembrar(
       administradorCreado: false,
       bancosCreados: 0,
       denominacionesCreadas: 0,
+      lineasNegocioCreadas: 0,
     };
 
     if (!(await tx.empresa.findUnique({ where: { unica: true } }))) {
@@ -115,6 +117,34 @@ export async function sembrar(
       const resultadoDenominaciones = await tx.denominacion.createMany({ data: faltantes });
       resultado.denominacionesCreadas = resultadoDenominaciones.count;
     }
+
+    // "Bolívares en efectivo" se crea desactivada: Cambios JC no opera bolívares en efectivo
+    // (D-confirmación #6 de PROYECTO.md), pero la línea existe para cuando otra instalación la active.
+    const { count: lineasCreadas } = await tx.lineaNegocio.createMany({
+      data: [
+        {
+          nombre: 'Transferencias a Venezuela',
+          clase: 'remesa',
+          monedaOrigen: 'COP',
+          monedaDestino: 'VES',
+        },
+        {
+          nombre: 'Dólares',
+          clase: 'divisa_caja',
+          monedaOrigen: 'USD',
+          monedaDestino: 'COP',
+        },
+        {
+          nombre: 'Bolívares en efectivo',
+          clase: 'divisa_caja',
+          monedaOrigen: 'VES',
+          monedaDestino: 'COP',
+          activa: false,
+        },
+      ],
+      skipDuplicates: true,
+    });
+    resultado.lineasNegocioCreadas = lineasCreadas;
 
     return resultado;
   });

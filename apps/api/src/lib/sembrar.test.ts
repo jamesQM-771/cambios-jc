@@ -70,6 +70,7 @@ describe('sembrar', () => {
       administradorCreado: false,
       bancosCreados: 0,
       denominacionesCreadas: 0,
+      lineasNegocioCreadas: 0,
     });
     expect(await prisma.usuario.count({ where: { login } })).toBe(1);
     expect(await prisma.empresa.count()).toBe(1);
@@ -130,5 +131,30 @@ describe('sembrar', () => {
       where: { moneda: 'COP', valor: 100000 },
     });
     expect(billeteCien).toMatchObject({ activa: true });
+  });
+
+  it('siembra las 3 líneas de negocio de Cambios JC, con "Bolívares en efectivo" desactivada', async () => {
+    await sembrar(prisma, { loginAdmin: loginUnico(), contrasenaAdmin: contrasena });
+    await sembrar(prisma, { loginAdmin: loginUnico(), contrasenaAdmin: contrasena });
+
+    expect(
+      await prisma.lineaNegocio.count({
+        where: {
+          nombre: { in: ['Transferencias a Venezuela', 'Dólares', 'Bolívares en efectivo'] },
+        },
+      }),
+    ).toBe(3);
+    expect(
+      await prisma.lineaNegocio.findUnique({ where: { nombre: 'Transferencias a Venezuela' } }),
+    ).toMatchObject({ clase: 'remesa', monedaOrigen: 'COP', monedaDestino: 'VES', activa: true });
+    expect(await prisma.lineaNegocio.findUnique({ where: { nombre: 'Dólares' } })).toMatchObject({
+      clase: 'divisa_caja',
+      monedaOrigen: 'USD',
+      monedaDestino: 'COP',
+      activa: true,
+    });
+    expect(
+      await prisma.lineaNegocio.findUnique({ where: { nombre: 'Bolívares en efectivo' } }),
+    ).toMatchObject({ activa: false });
   });
 });

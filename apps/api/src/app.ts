@@ -13,6 +13,8 @@ import { rutasCajas } from './modulos/cajas/rutas.js';
 import { crearServicioCajas } from './modulos/cajas/servicio.js';
 import { rutasDenominaciones } from './modulos/denominaciones/rutas.js';
 import { crearServicioDenominaciones } from './modulos/denominaciones/servicio.js';
+import { rutasLineasNegocio } from './modulos/lineas-negocio/rutas.js';
+import { crearServicioLineasNegocio } from './modulos/lineas-negocio/servicio.js';
 import { crearServicioAuth } from './modulos/auth/servicio.js';
 import { rutasEmpresa } from './modulos/empresa/rutas.js';
 import { crearServicioEmpresa } from './modulos/empresa/servicio.js';
@@ -81,6 +83,7 @@ export function construirApp({
     rutasSucursales(rutas, crearServicioSucursales({ prisma }));
     rutasCajas(rutas, crearServicioCajas({ prisma }));
     rutasDenominaciones(rutas, crearServicioDenominaciones({ prisma }));
+    rutasLineasNegocio(rutas, crearServicioLineasNegocio({ prisma }));
     listo();
   });
 
