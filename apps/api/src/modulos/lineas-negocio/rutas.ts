@@ -5,6 +5,7 @@ import type { ProveedorZod } from '../../plugins/validacion-zod.js';
 import type { ContextoPeticion } from '../auth/servicio.js';
 
 import {
+  esquemaConfigurarTasaLinea,
   esquemaCrearLineaNegocio,
   esquemaEditarLineaNegocio,
   esquemaId,
@@ -25,6 +26,7 @@ const actorDe = (request: FastifyRequest): { id: string } => {
 };
 
 const PERMISO = { permiso: 'empresa.configurar' } as const;
+const PERMISO_MARGEN = { permiso: 'margen.configurar' } as const;
 
 export function rutasLineasNegocio(app: FastifyInstance, servicio: ServicioLineasNegocio): void {
   const rutas = app.withTypeProvider<ProveedorZod>();
@@ -69,6 +71,26 @@ export function rutasLineasNegocio(app: FastifyInstance, servicio: ServicioLinea
     },
     async (request) => ({
       lineaNegocio: await servicio.editar(
+        request.params.id,
+        request.body,
+        actorDe(request),
+        contextoDe(request),
+      ),
+    }),
+  );
+
+  rutas.patch(
+    '/lineas-negocio/:id/configuracion-tasa',
+    {
+      config: PERMISO_MARGEN,
+      schema: {
+        params: esquemaId,
+        body: esquemaConfigurarTasaLinea,
+        response: { 200: respuestaLineaNegocio },
+      },
+    },
+    async (request) => ({
+      lineaNegocio: await servicio.configurarTasa(
         request.params.id,
         request.body,
         actorDe(request),

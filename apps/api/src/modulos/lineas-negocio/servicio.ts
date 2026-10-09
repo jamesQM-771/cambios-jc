@@ -1,3 +1,5 @@
+import { DECIMALES_TASA } from '@cambios-jc/shared';
+
 import { Prisma } from '../../generated/prisma/client.js';
 import { errores } from '../../lib/errores.js';
 import type { PrismaClient } from '../../lib/prisma.js';
@@ -13,8 +15,21 @@ const SELECCION_PUBLICA = {
   monedaOrigen: true,
   monedaDestino: true,
   activa: true,
+  modoTasa: true,
+  margenCompra: true,
+  margenVenta: true,
   creadoEn: true,
 } satisfies Prisma.LineaNegocioSelect;
+
+type FilaLineaNegocio = Prisma.LineaNegocioGetPayload<{ select: typeof SELECCION_PUBLICA }>;
+
+function aPublica(fila: FilaLineaNegocio): LineaNegocioPublica {
+  return {
+    ...fila,
+    margenCompra: fila.margenCompra?.toFixed(DECIMALES_TASA) ?? null,
+    margenVenta: fila.margenVenta?.toFixed(DECIMALES_TASA) ?? null,
+  };
+}
 
 export interface FiltroLineasNegocio {
   clase?: 'remesa' | 'divisa_caja' | undefined;
@@ -52,7 +67,7 @@ export function crearServicioLineasNegocio({ prisma }: { prisma: PrismaClient })
       agenteUsuario: contexto.agenteUsuario,
     });
 
-  async function cargar(id: string): Promise<LineaNegocioPublica> {
+  async function cargar(id: string): Promise<FilaLineaNegocio> {
     const linea = await prisma.lineaNegocio.findUnique({
       where: { id },
       select: SELECCION_PUBLICA,
@@ -63,7 +78,7 @@ export function crearServicioLineasNegocio({ prisma }: { prisma: PrismaClient })
 
   return {
     async listar(filtro: FiltroLineasNegocio): Promise<LineaNegocioPublica[]> {
-      return prisma.lineaNegocio.findMany({
+      const filas = await prisma.lineaNegocio.findMany({
         where: {
           ...(filtro.clase === undefined ? {} : { clase: filtro.clase }),
           ...(filtro.activa === undefined ? {} : { activa: filtro.activa }),
@@ -71,6 +86,7 @@ export function crearServicioLineasNegocio({ prisma }: { prisma: PrismaClient })
         orderBy: { nombre: 'asc' },
         select: SELECCION_PUBLICA,
       });
+      return filas.map(aPublica);
     },
 
     async crear(
@@ -79,10 +95,9 @@ export function crearServicioLineasNegocio({ prisma }: { prisma: PrismaClient })
       contexto: ContextoPeticion,
     ): Promise<LineaNegocioPublica> {
       try {
-        const creada = await prisma.lineaNegocio.create({
-          data: datos,
-          select: SELECCION_PUBLICA,
-        });
+        const creada = aPublica(
+          await prisma.lineaNegocio.create({ data: datos, select: SELECCION_PUBLICA }),
+        );
         await auditar(actor, contexto, {
           accion: 'linea_negocio.crear',
           entidadId: creada.id,
@@ -103,13 +118,15 @@ export function crearServicioLineasNegocio({ prisma }: { prisma: PrismaClient })
       actor: Actor,
       contexto: ContextoPeticion,
     ): Promise<LineaNegocioPublica> {
-      const antes = await cargar(id);
+      const antes = aPublica(await cargar(id));
       try {
-        const editada = await prisma.lineaNegocio.update({
-          where: { id },
-          data: cambios,
-          select: SELECCION_PUBLICA,
-        });
+        const editada = aPublica(
+          await prisma.lineaNegocio.update({
+            where: { id },
+            data: cambios,
+            select: SELECCION_PUBLICA,
+          }),
+        );
         await auditar(actor, contexto, {
           accion: 'linea_negocio.editar',
           entidadId: id,
@@ -130,13 +147,15 @@ export function crearServicioLineasNegocio({ prisma }: { prisma: PrismaClient })
       actor: Actor,
       contexto: ContextoPeticion,
     ): Promise<LineaNegocioPublica> {
-      const antes = await cargar(id);
+      const antes = aPublica(await cargar(id));
       if (!antes.activa) return antes;
-      const editada = await prisma.lineaNegocio.update({
-        where: { id },
-        data: { activa: false },
-        select: SELECCION_PUBLICA,
-      });
+      const editada = aPublica(
+        await prisma.lineaNegocio.update({
+          where: { id },
+          data: { activa: false },
+          select: SELECCION_PUBLICA,
+        }),
+      );
       await auditar(actor, contexto, { accion: 'linea_negocio.desactivar', entidadId: id });
       return editada;
     },
@@ -146,14 +165,53 @@ export function crearServicioLineasNegocio({ prisma }: { prisma: PrismaClient })
       actor: Actor,
       contexto: ContextoPeticion,
     ): Promise<LineaNegocioPublica> {
-      const antes = await cargar(id);
+      const antes = aPublica(await cargar(id));
       if (antes.activa) return antes;
-      const editada = await prisma.lineaNegocio.update({
-        where: { id },
-        data: { activa: true },
-        select: SELECCION_PUBLICA,
-      });
+      const editada = aPublica(
+        await prisma.lineaNegocio.update({
+          where: { id },
+          data: { activa: true },
+          select: SELECCION_PUBLICA,
+        }),
+      );
       await auditar(actor, contexto, { accion: 'linea_negocio.reactivar', entidadId: id });
+      return editada;
+    },
+
+    async configurarTasa(
+      id: string,
+      datos:
+        | { modoTasa: 'directo' }
+        | { modoTasa: 'porcentaje'; margenVenta: string; margenCompra?: string },
+      actor: Actor,
+      contexto: ContextoPeticion,
+    ): Promise<LineaNegocioPublica> {
+      const antes = aPublica(await cargar(id));
+      const data: Prisma.LineaNegocioUpdateInput =
+        datos.modoTasa === 'directo'
+          ? { modoTasa: 'directo', margenCompra: null, margenVenta: null }
+          : {
+              modoTasa: 'porcentaje',
+              margenVenta: datos.margenVenta,
+              margenCompra: datos.margenCompra ?? null,
+            };
+      const editada = aPublica(
+        await prisma.lineaNegocio.update({ where: { id }, data, select: SELECCION_PUBLICA }),
+      );
+      await auditar(actor, contexto, {
+        accion: 'linea_negocio.configurar_tasa',
+        entidadId: id,
+        antes: {
+          modoTasa: antes.modoTasa,
+          margenCompra: antes.margenCompra,
+          margenVenta: antes.margenVenta,
+        },
+        despues: {
+          modoTasa: editada.modoTasa,
+          margenCompra: editada.margenCompra,
+          margenVenta: editada.margenVenta,
+        },
+      });
       return editada;
     },
   };

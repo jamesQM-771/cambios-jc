@@ -84,8 +84,18 @@ enum ClaseLinea {
   @@map("clase_linea")
 }
 
+enum ModoTasa {
+  /// Se publican la tasa de compra y/o venta ya calculadas, tal como se las dan (ej. Dólares).
+  directo
+  /// Se publica una tasa de referencia del proveedor y un margen; el sistema calcula la venta
+  /// (ej. Transferencias a Venezuela: proveedor 4,68 + margen 11 % = venta 5,19). D64.
+  porcentaje
+
+  @@map("modo_tasa")
+}
+
 /// Línea de negocio (fase 1, §4.3 de PROYECTO.md): remesa (envío a otro país) o divisa_caja (compra/
-/// venta de una divisa en efectivo). El modo de tasa y el margen se agregan en la tarea 1.6.
+/// venta de una divisa en efectivo).
 model LineaNegocio {
   id            String     @id @default(uuid(7)) @db.Uuid
   nombre        String     @unique
@@ -93,9 +103,36 @@ model LineaNegocio {
   monedaOrigen  String     @map("moneda_origen") @db.Char(3)
   monedaDestino String     @map("moneda_destino") @db.Char(3)
   activa        Boolean    @default(true)
+  modoTasa      ModoTasa   @default(directo) @map("modo_tasa")
+  /// Margen vigente en modo "porcentaje" (D64); null si la línea es "directo" o aún no se configuró.
+  margenCompra  Decimal?   @map("margen_compra") @db.Decimal(18, 6)
+  margenVenta   Decimal?   @map("margen_venta") @db.Decimal(18, 6)
   creadoEn      DateTime   @default(now()) @map("creado_en") @db.Timestamptz(6)
+  tasas         Tasa[]
 
   @@map("linea_negocio")
+}
+
+/// Historial de tasas publicadas por línea de negocio (fase 1, §5.2 de PROYECTO.md). Nunca se
+/// sobrescribe: publicar una tasa nueva cierra la vigencia de la anterior de esa misma línea.
+model Tasa {
+  id             String       @id @default(uuid(7)) @db.Uuid
+  lineaNegocioId String       @map("linea_negocio_id") @db.Uuid
+  lineaNegocio   LineaNegocio @relation(fields: [lineaNegocioId], references: [id], onDelete: Restrict)
+  /// Solo en modo "porcentaje": la tasa del proveedor y el margen usados ese día (snapshot).
+  tasaReferencia Decimal?     @map("tasa_referencia") @db.Decimal(18, 6)
+  margenUsado    Decimal?     @map("margen_usado") @db.Decimal(18, 6)
+  /// Solo si la línea opera compra (hoy, Dólares). Null en remesas, que aún no compran (fase 4).
+  tasaCompra     Decimal?     @map("tasa_compra") @db.Decimal(18, 6)
+  tasaVenta      Decimal      @map("tasa_venta") @db.Decimal(18, 6)
+  publicadaPorId String       @map("publicada_por_id") @db.Uuid
+  publicadaPor   Usuario      @relation(fields: [publicadaPorId], references: [id], onDelete: Restrict)
+  motivo         String?
+  vigenteDesde   DateTime     @default(now()) @map("vigente_desde") @db.Timestamptz(6)
+  /// Null mientras es la tasa vigente de su línea; se llena al publicar la siguiente.
+  vigenteHasta   DateTime?    @map("vigente_hasta") @db.Timestamptz(6)
+
+  @@map("tasa")
 }
 
 /// Catálogo de billetes y monedas por divisa (fase 1), para el conteo por denominación del arqueo
@@ -135,6 +172,7 @@ model Usuario {
   creadoEn              DateTime    @default(now()) @map("creado_en") @db.Timestamptz(6)
   sesiones              Sesion[]
   auditorias            Auditoria[]
+  tasasPublicadas       Tasa[]
 
   @@map("usuario")
 }

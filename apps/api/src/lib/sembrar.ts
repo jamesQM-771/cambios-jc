@@ -123,16 +123,21 @@ export async function sembrar(
     const { count: lineasCreadas } = await tx.lineaNegocio.createMany({
       data: [
         {
+          // Modo "porcentaje" (D64): proveedor + margen de venta (confirmado: 11 %).
           nombre: 'Transferencias a Venezuela',
           clase: 'remesa',
           monedaOrigen: 'COP',
           monedaDestino: 'VES',
+          modoTasa: 'porcentaje',
+          margenVenta: '11',
         },
         {
+          // Modo "directo" (D64): compra y venta se publican ya calculadas, día a día.
           nombre: 'Dólares',
           clase: 'divisa_caja',
           monedaOrigen: 'USD',
           monedaDestino: 'COP',
+          modoTasa: 'directo',
         },
         {
           nombre: 'Bolívares en efectivo',
@@ -140,6 +145,7 @@ export async function sembrar(
           monedaOrigen: 'VES',
           monedaDestino: 'COP',
           activa: false,
+          modoTasa: 'directo',
         },
       ],
       skipDuplicates: true,

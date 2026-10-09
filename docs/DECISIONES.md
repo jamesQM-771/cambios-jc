@@ -93,3 +93,10 @@ Cada decisión técnica o de negocio no obvia se anota aquí. Formato: fecha · 
 | # | Decisión | Motivo | Descartado |
 |---|---|---|---|
 | D67 | `Denominacion` no tiene restricción única en la base de datos: dos filas pueden compartir moneda y valor si una está inactiva (ej. se desactivó por error y se volvió a crear). La regla "no se repite un valor activo en la misma moneda" se valida en el servicio, no en PostgreSQL; `reactivar` repite la misma validación, porque pudo crearse una activa igual mientras la otra estaba inactiva | La semilla usa `BANCOS_VENEZUELA` con un `@unique` real porque nunca convive un duplicado inactivo a propósito; aquí sí puede pasar | Índice único parcial (`WHERE activa`) con SQL a mano en la migración: más difícil de mantener para una regla que ya vive en el servicio |
+
+## Tarea 1.6 (2026-10-09)
+
+| # | Decisión | Motivo | Descartado |
+|---|---|---|---|
+| D68 | El margen de una línea en modo "porcentaje" se **configura aparte** (`PATCH /lineas-negocio/:id/configuracion-tasa`, permiso `margen.configurar`) y no se envía en cada publicación de tasa (`POST /tasas`, permiso `tasa.publicar`). Publicar una tasa solo pide la tasa del proveedor; el sistema usa el margen ya configurado. Cambiar de modo `porcentaje` a `directo` limpia los márgenes guardados | Son dos acciones de frecuencia distinta (el margen cambia rara vez; la tasa, a diario) y de permisos distintos en `PROYECTO.md` §6.2 ("Publicar tasa de referencia" vs. "Configurar... márgenes") | Pedir tasa de referencia y margen juntos en cada publicación (mezcla dos permisos en una sola acción) |
+| D69 | Las tasas y los márgenes se sirven siempre con 6 decimales (`DECIMALES_TASA`, ya documentado en `packages/shared`), para que la API sea consistente sin importar el modo. Esto es solo el formato de salida: el valor calculado en modo porcentaje sigue fijado a 2 decimales antes de guardarse (D64; "5.190000" es 5,19 con ceros de relleno, no 5,1948 redondeado distinto) | Consistencia de la API; evita que el frontend reciba a veces "11" y a veces "11.000000" | Mostrar cada campo con una cantidad de decimales distinta según el caso |

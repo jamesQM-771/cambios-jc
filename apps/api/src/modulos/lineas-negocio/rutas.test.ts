@@ -49,6 +49,9 @@ interface LineaNegocioJson {
   monedaOrigen: string;
   monedaDestino: string;
   activa: boolean;
+  modoTasa: string;
+  margenCompra: string | null;
+  margenVenta: string | null;
 }
 
 describe('acceso a la API de líneas de negocio', () => {
@@ -57,6 +60,7 @@ describe('acceso a la API de líneas de negocio', () => {
     ['GET', '/lineas-negocio'],
     ['POST', '/lineas-negocio'],
     ['PATCH', `/lineas-negocio/${idCualquiera}`],
+    ['PATCH', `/lineas-negocio/${idCualquiera}/configuracion-tasa`],
     ['POST', `/lineas-negocio/${idCualquiera}/desactivar`],
     ['POST', `/lineas-negocio/${idCualquiera}/reactivar`],
   ];
@@ -281,5 +285,96 @@ describe('desactivar y reactivar línea de negocio', () => {
     });
 
     expect(respuesta.json<{ lineaNegocio: LineaNegocioJson }>().lineaNegocio.activa).toBe(true);
+  });
+});
+
+describe('configurar el modo de tasa y el margen', () => {
+  async function crearLinea(api: FastifyInstance, token: string) {
+    const creada = await llamar(api, 'POST', '/lineas-negocio', {
+      token,
+      cuerpo: {
+        nombre: nombreUnico(),
+        clase: 'remesa',
+        monedaOrigen: 'COP',
+        monedaDestino: 'VES',
+      },
+    });
+    return creada.json<{ lineaNegocio: LineaNegocioJson }>().lineaNegocio;
+  }
+
+  it('por defecto una línea nueva queda en modo directo, sin margen', async () => {
+    const { token } = await administradorConSesion();
+    const api = nuevaApp();
+    const linea = await crearLinea(api, token);
+
+    expect(linea).toMatchObject({ modoTasa: 'directo', margenCompra: null, margenVenta: null });
+  });
+
+  it('pasa a modo porcentaje con margen de venta', async () => {
+    const { token } = await administradorConSesion();
+    const api = nuevaApp();
+    const linea = await crearLinea(api, token);
+
+    const respuesta = await llamar(api, 'PATCH', `/lineas-negocio/${linea.id}/configuracion-tasa`, {
+      token,
+      cuerpo: { modoTasa: 'porcentaje', margenVenta: '11' },
+    });
+
+    expect(respuesta.statusCode).toBe(200);
+    const { lineaNegocio } = respuesta.json<{ lineaNegocio: LineaNegocioJson }>();
+    expect(lineaNegocio.modoTasa).toBe('porcentaje');
+    expect(lineaNegocio.margenVenta).toBe('11.000000');
+    expect(lineaNegocio.margenCompra).toBeNull();
+  });
+
+  it('modo porcentaje sin margenVenta se rechaza', async () => {
+    const { token } = await administradorConSesion();
+    const api = nuevaApp();
+    const linea = await crearLinea(api, token);
+
+    const respuesta = await llamar(api, 'PATCH', `/lineas-negocio/${linea.id}/configuracion-tasa`, {
+      token,
+      cuerpo: { modoTasa: 'porcentaje' },
+    });
+
+    expect(respuesta.statusCode).toBe(400);
+  });
+
+  it('volver a modo directo limpia los márgenes guardados', async () => {
+    const { token } = await administradorConSesion();
+    const api = nuevaApp();
+    const linea = await crearLinea(api, token);
+    await llamar(api, 'PATCH', `/lineas-negocio/${linea.id}/configuracion-tasa`, {
+      token,
+      cuerpo: { modoTasa: 'porcentaje', margenVenta: '11' },
+    });
+
+    const respuesta = await llamar(api, 'PATCH', `/lineas-negocio/${linea.id}/configuracion-tasa`, {
+      token,
+      cuerpo: { modoTasa: 'directo' },
+    });
+
+    const { lineaNegocio } = respuesta.json<{ lineaNegocio: LineaNegocioJson }>();
+    expect(lineaNegocio).toMatchObject({
+      modoTasa: 'directo',
+      margenCompra: null,
+      margenVenta: null,
+    });
+  });
+
+  it('queda registrado en la bitácora', async () => {
+    const { token } = await administradorConSesion();
+    const api = nuevaApp();
+    const linea = await crearLinea(api, token);
+
+    await llamar(api, 'PATCH', `/lineas-negocio/${linea.id}/configuracion-tasa`, {
+      token,
+      cuerpo: { modoTasa: 'porcentaje', margenVenta: '11' },
+    });
+
+    const registro = await prisma.auditoria.findFirstOrThrow({
+      where: { accion: 'linea_negocio.configurar_tasa', entidadId: linea.id },
+    });
+    expect(registro.despues).toMatchObject({ modoTasa: 'porcentaje', margenVenta: '11.000000' });
   });
 });
