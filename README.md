@@ -4,8 +4,27 @@ Sistema de operación y contabilidad para Cambios JC: remesas COP → VES, compr
 
 - Especificación: [`docs/PROYECTO.md`](docs/PROYECTO.md)
 - Reglas de trabajo: [`CLAUDE.md`](CLAUDE.md)
-- Fase actual: [`docs/fases/FASE-0.md`](docs/fases/FASE-0.md)
+- Fase actual: [`docs/fases/FASE-1.md`](docs/fases/FASE-1.md)
 - Decisiones: [`docs/DECISIONES.md`](docs/DECISIONES.md)
+
+## Estado y plan de fases
+
+El proyecto se entrega en 14 fases agrupadas en 4 versiones (detalle en `docs/PROYECTO.md` §12).
+
+| Versión                               | Fases                                                                                                                          |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| **MVP** — primer uso real             | 0. Base · 1. Configuración · 2. Remesas · 3. Caja                                                                              |
+| **v1** — reemplazo completo del Excel | 4. Inventario y contrapartes · 5. Divisas en caja · 6. Facturación DIAN (opcional) · 7. Cumplimiento · 8. Reportes y migración |
+| **v1.5** — control y comodidad        | 9. Liquidez · 10. Doble control · 11. Tasa asistida · 12. WhatsApp · 12b. Comprobante (OCR) · 13. Permisos                     |
+| **v2** — otros negocios               | Solo después de varios meses estables en Cambios JC                                                                            |
+
+| Fase             | Estado                                                                                                                    |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| 0. Base          | Completa                                                                                                                  |
+| 1. Configuración | Completa en la rama `fase-1-configuracion`: bancos, sucursales, cajas, denominaciones, líneas de negocio, tasas y cuentas |
+| 2. Remesas       | No iniciada                                                                                                               |
+
+Cada fase vive en su propia rama (`fase-0-base`, `fase-1-configuracion`…) y se fusiona a `main` al cerrarla.
 
 ## Requisitos
 
@@ -53,12 +72,39 @@ Completa en `.env` la clave de `DATABASE_URL` y `DATABASE_URL_PRUEBAS`. Cada var
 
 ### 5. Arrancar en desarrollo
 
+La primera vez (y cada vez que haya migraciones nuevas), prepara la base:
+
+```bash
+npm run db:migrate
+npm run db:seed
+```
+
+Luego:
+
 ```bash
 npm run dev
 ```
 
 - API: http://localhost:3000
 - Web: http://localhost:5173
+
+La API está lista cuando la terminal muestra `Server listening at http://127.0.0.1:3000`; antes de eso la web responde con un error de conexión.
+
+#### Si la API no arranca con `npm run dev`
+
+En algunos equipos la API en modo desarrollo se queda sin escuchar en el puerto 3000. Mientras se investiga la causa, se puede usar la versión compilada, en dos terminales:
+
+```bash
+npm run build -w @cambios-jc/shared
+npm run build -w @cambios-jc/api
+npm run start -w @cambios-jc/api
+```
+
+```bash
+npm run dev -w @cambios-jc/web
+```
+
+Con este modo, un cambio en el código de la API no se refleja hasta volver a compilar. Si un puerto queda ocupado, cierra las terminales de arranques anteriores.
 
 ## Comandos
 
