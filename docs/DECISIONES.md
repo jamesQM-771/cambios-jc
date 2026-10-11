@@ -120,3 +120,16 @@ Cada decisión técnica o de negocio no obvia se anota aquí. Formato: fecha · 
 | # | Decisión | Motivo | Descartado |
 |---|---|---|---|
 | D74 | El generador de códigos de prueba de bancos (`codigoUnico()`) también excluye "0001" (Banco Central de Venezuela), no solo los 27 códigos reales de la semilla: una corrida anterior generó por azar ese código, dejando una fila residual que hacía fallar la prueba de la semilla ("sin el 0001") en una corrida posterior sobre la misma base sin reiniciar | "0001" está excluido a propósito de la semilla (no es un banco para el público); una prueba no debe poder generarlo | Nada: es la misma idea ya aplicada a los 27 códigos reales, solo faltaba este caso |
+
+## Rediseño de la interfaz (2026-10-11)
+
+Trabajo fuera de las fases numeradas, pedido por el dueño tras la fase 1, en la rama `rediseno-interfaz`. No cambia backend, rutas, permisos ni consultas. La maqueta aprobada está en un lienzo de diseño privado; el plan, en la conversación de ese día.
+
+| # | Decisión | Motivo | Descartado |
+|---|---|---|---|
+| D75 | Estilo **neutro con acento índigo** (`--marca: #4f46e5` en claro, `#818cf8` en oscuro), sobre grises fríos. Se conservan los nombres de los tokens de `tokens.css`, así que las pantallas existentes heredan el cambio sin tocarse. Contraste de texto 4,5:1 en ambos temas | El dueño lo eligió entre tres direcciones; la interfaz anterior (verde único, fuente del sistema) se veía plana | Evolucionar el verde con acento dorado; tema oscuro primero tipo terminal |
+| D76 | Tipografía **Inter** (texto) y **JetBrains Mono** (cifras y códigos) como archivos `.woff2` dentro de `apps/web/src/estilos/fuentes/`, con su licencia OFL | Sin dependencia npm y sin peticiones a terceros: funciona igual en el local sin depender de Google, y no hay que abrir la política de seguridad | Google Fonts por enlace; paquetes `@fontsource`; fuentes del sistema |
+| D77 | Iconos **propios** en `componentes/Icono.tsx`: SVG en línea, una sola familia de trazo, siempre decorativos (`aria-hidden`) junto a un texto o a un `aria-label` | `CLAUDE.md` §4 prohíbe librerías de componentes; son pocos iconos y así pesan casi nada | Librería de iconos (Lucide, Phosphor) |
+| D78 | El encabezado ocupa todo el ancho (empresa a la izquierda; avatar, nombre, rol, tema y salir a la derecha) y el menú lateral queda debajo. En la maqueta la persona iba al pie del menú | El digitador no tiene menú: con un único encabezado las dos estructuras (con y sin menú) comparten el mismo componente y las pruebas existentes no cambian | Bloque de usuario al pie del menú (habría exigido dos variantes del encabezado) |
+| D79 | Las tasas y los márgenes se **muestran** con coma decimal y sin ceros de relleno (`5.190000` → `5,19`) mediante `formatearTasa` en `apps/web/src/lib/formato.ts`, que solo reacomoda el texto de la API: no convierte a número ni redondea. La API sigue enviando y recibiendo punto | Pedido del dueño; coincide con el formato de pantalla de `CLAUDE.md` §6. Se ajustaron tres aserciones de `tasas.test.tsx` | Mostrar el valor crudo de la API. **Pendiente:** el campo "Tasa del proveedor" todavía exige punto al escribir (`4.68`) |
+| D80 | El estado "Inactivo" de los catálogos usa la etiqueta neutra (gris), no la roja | El rojo se reserva para errores; un banco desactivado no es un error | Mantener el rojo |

@@ -6,6 +6,7 @@ import { Aviso } from '../../../componentes/Aviso.js';
 import { Boton } from '../../../componentes/Boton.js';
 import { Campo } from '../../../componentes/Campo.js';
 import { erroresPorCampo, mensajeDe } from '../../../lib/api.js';
+import { formatearTasa } from '../../../lib/formato.js';
 import type { LineaNegocio } from '../../../modulos/lineas-negocio/tipos.js';
 import { publicarTasa } from '../../../modulos/tasas/api.js';
 import { CLAVE_TASAS } from '../../../modulos/tasas/consultas.js';
@@ -85,7 +86,7 @@ export function FormularioPublicarTasa({ linea, alPublicar }: PropiedadesFormula
             etiqueta="Tasa del proveedor"
             autoComplete="off"
             inputMode="decimal"
-            ayuda={`Margen configurado: ${linea.margenVenta ?? '—'}%.`}
+            ayuda={`El sistema suma el margen configurado: ${linea.margenVenta === null ? '—' : formatearTasa(linea.margenVenta, 0)} %.`}
             required
             disabled={sinMargen}
             value={tasaReferencia}
@@ -93,8 +94,8 @@ export function FormularioPublicarTasa({ linea, alPublicar }: PropiedadesFormula
             error={delServidor.tasaReferencia}
           />
           {previa && (
-            <p className="formulario-tasa__previa">
-              Tasa de venta calculada: <strong>{previa}</strong>
+            <p className="formulario-tasa__previa" role="status">
+              Tasa de venta calculada <strong>{formatearTasa(previa)}</strong>
             </p>
           )}
         </>

@@ -1,34 +1,71 @@
 /*
  * Tokens de diseño de Cambios JC. Todo color, espacio y tamaño sale de aquí (CLAUDE.md §6).
- * Claro por defecto; oscuro según el sistema, o el que elija la persona con el botón de tema
- * (guarda data-tema="claro" | "oscuro" en <html>).
+ * Estilo neutro con acento índigo (D75). Claro por defecto; oscuro según el sistema, o el que elija
+ * la persona con el botón de tema (guarda data-tema="claro" | "oscuro" en <html>).
  */
+
+/* Fuentes servidas desde el propio sitio (D76): sin peticiones a terceros. Licencia OFL en ./fuentes. */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('./fuentes/InterVariable.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('./fuentes/JetBrainsMono-Medium.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('./fuentes/JetBrainsMono-SemiBold.woff2') format('woff2');
+}
+
 :root {
-  --fondo: #f6f8f7;
+  --fondo: #f7f8fa;
   --superficie: #ffffff;
-  --superficie-suave: #eef3f1;
-  --texto: #10231e;
-  --texto-suave: #4f615b;
-  --borde: #d5dfdb;
-  --marca: #0f5d4a;
-  --marca-fuerte: #0a4636;
+  --superficie-suave: #f1f3f7;
+  --texto: #0f172a;
+  --texto-suave: #5b6475;
+  --borde: #e3e6ec;
+  --borde-fuerte: #cbd1dc;
+  --marca: #4f46e5;
+  --marca-fuerte: #4338ca;
   --marca-texto: #ffffff;
-  --marca-suave: #e7f2ee;
-  --acento: #f4c542;
-  --exito: #1e7b46;
-  --exito-fondo: #dcf3e5;
-  --alerta: #8a4b00;
-  --alerta-fondo: #fff1d6;
-  --error: #b3261e;
-  --error-fondo: #fbe0de;
-  --info-fondo: #e3f0fb;
-  --info: #0b4a7a;
-  --foco: #f4c542;
+  --marca-suave: #eef0ff;
+  --marca-anillo: rgb(79 70 229 / 0.25);
+  --acento: #4f46e5;
+  --exito: #15803d;
+  --exito-fondo: #e7f6ec;
+  --alerta: #92400e;
+  --alerta-fondo: #fdf1dc;
+  --error: #b91c1c;
+  --error-fondo: #fdeaea;
+  --info: #1d4ed8;
+  --info-fondo: #e8effd;
+  --foco: #4f46e5;
+  --velo: rgb(15 23 42 / 0.5);
+
+  /* Panel de marca de la pantalla de acceso: igual en claro y en oscuro. */
+  --panel-fondo: #1e1b4b;
+  --panel-texto: #eef0ff;
+  --panel-texto-suave: #c7d2fe;
+  --panel-acento: #818cf8;
 
   --radio: 12px;
   --radio-chico: 8px;
-  --sombra: 0 1px 3px rgb(0 0 0 / 0.08);
-  --sombra-fuerte: 0 8px 24px rgb(0 0 0 / 0.16);
+  --radio-grande: 14px;
+  --sombra: 0 1px 2px rgb(15 23 42 / 0.06), 0 1px 1px rgb(15 23 42 / 0.04);
+  --sombra-media: 0 6px 16px rgb(15 23 42 / 0.08);
+  --sombra-fuerte: 0 16px 40px rgb(15 23 42 / 0.14);
 
   --espacio-1: 4px;
   --espacio-2: 8px;
@@ -38,67 +75,87 @@
   --espacio-6: 32px;
   --espacio-7: 48px;
 
-  --fuente: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --fuente-mono: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  --fuente: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --fuente-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Code', Consolas, monospace;
+  --texto-mini: 0.75rem;
   --texto-chico: 0.875rem;
-  --texto-base: 1rem;
-  --texto-grande: 1.25rem;
-  --titulo: clamp(1.5rem, 3vw, 2rem);
+  --texto-base: 0.9375rem;
+  --texto-grande: 1.125rem;
+  --titulo: clamp(1.5rem, 2.4vw, 1.75rem);
+  --cifra: clamp(2.75rem, 5vw, 3.5rem);
 
-  --ancho-menu: 248px;
-  --alto-encabezado: 60px;
+  /* Movimiento: las salidas son más cortas que las entradas. */
+  --transicion-rapida: 0.1s ease-out;
+  --transicion: 0.15s ease-out;
+  --transicion-entrada: 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  --ancho-menu: 256px;
+  --alto-encabezado: 64px;
+  --ancho-contenido: 1120px;
 
   color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-tema='claro']) {
-    --fondo: #0d1512;
-    --superficie: #15211d;
-    --superficie-suave: #1b2a25;
-    --texto: #e6efec;
-    --texto-suave: #a5b8b1;
-    --borde: #2b3a35;
-    --marca: #4fbf9b;
-    --marca-fuerte: #6fd3b3;
-    --marca-texto: #0d1512;
-    --marca-suave: #1b2e28;
-    --exito: #5fcf8c;
-    --exito-fondo: #17301f;
-    --alerta: #f0a254;
-    --alerta-fondo: #33260f;
-    --error: #f2877f;
-    --error-fondo: #3a1a18;
-    --info: #8ec5f0;
-    --info-fondo: #14283a;
-    --sombra: 0 1px 3px rgb(0 0 0 / 0.4);
-    --sombra-fuerte: 0 8px 24px rgb(0 0 0 / 0.6);
+    --fondo: #0b0d12;
+    --superficie: #12151c;
+    --superficie-suave: #191d26;
+    --texto: #e7eaf0;
+    --texto-suave: #9aa3b5;
+    --borde: #262b37;
+    --borde-fuerte: #394050;
+    --marca: #818cf8;
+    --marca-fuerte: #a5b4fc;
+    --marca-texto: #0b0d12;
+    --marca-suave: #1c1f3a;
+    --marca-anillo: rgb(129 140 248 / 0.35);
+    --acento: #818cf8;
+    --exito: #4ade80;
+    --exito-fondo: #12281b;
+    --alerta: #fbbf24;
+    --alerta-fondo: #2b2110;
+    --error: #f87171;
+    --error-fondo: #2e1516;
+    --info: #93c5fd;
+    --info-fondo: #13213a;
+    --foco: #a5b4fc;
+    --velo: rgb(0 0 0 / 0.65);
+    --sombra: 0 1px 2px rgb(0 0 0 / 0.5);
+    --sombra-media: 0 6px 16px rgb(0 0 0 / 0.45);
+    --sombra-fuerte: 0 16px 40px rgb(0 0 0 / 0.6);
 
     color-scheme: dark;
   }
 }
 
 :root[data-tema='oscuro'] {
-  --fondo: #0d1512;
-  --superficie: #15211d;
-  --superficie-suave: #1b2a25;
-  --texto: #e6efec;
-  --texto-suave: #a5b8b1;
-  --borde: #2b3a35;
-  --marca: #4fbf9b;
-  --marca-fuerte: #6fd3b3;
-  --marca-texto: #0d1512;
-  --marca-suave: #1b2e28;
-  --exito: #5fcf8c;
-  --exito-fondo: #17301f;
-  --alerta: #f0a254;
-  --alerta-fondo: #33260f;
-  --error: #f2877f;
-  --error-fondo: #3a1a18;
-  --info: #8ec5f0;
-  --info-fondo: #14283a;
-  --sombra: 0 1px 3px rgb(0 0 0 / 0.4);
-  --sombra-fuerte: 0 8px 24px rgb(0 0 0 / 0.6);
+  --fondo: #0b0d12;
+  --superficie: #12151c;
+  --superficie-suave: #191d26;
+  --texto: #e7eaf0;
+  --texto-suave: #9aa3b5;
+  --borde: #262b37;
+  --borde-fuerte: #394050;
+  --marca: #818cf8;
+  --marca-fuerte: #a5b4fc;
+  --marca-texto: #0b0d12;
+  --marca-suave: #1c1f3a;
+  --marca-anillo: rgb(129 140 248 / 0.35);
+  --acento: #818cf8;
+  --exito: #4ade80;
+  --exito-fondo: #12281b;
+  --alerta: #fbbf24;
+  --alerta-fondo: #2b2110;
+  --error: #f87171;
+  --error-fondo: #2e1516;
+  --info: #93c5fd;
+  --info-fondo: #13213a;
+  --foco: #a5b4fc;
+  --velo: rgb(0 0 0 / 0.65);
+  --sombra: 0 1px 2px rgb(0 0 0 / 0.5);
+  --sombra-media: 0 6px 16px rgb(0 0 0 / 0.45);
+  --sombra-fuerte: 0 16px 40px rgb(0 0 0 / 0.6);
 
   color-scheme: dark;
 }

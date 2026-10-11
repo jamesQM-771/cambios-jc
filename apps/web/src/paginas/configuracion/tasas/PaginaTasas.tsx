@@ -4,7 +4,7 @@ import { Aviso } from '../../../componentes/Aviso.js';
 import { Cargando } from '../../../componentes/Cargando.js';
 import { CampoSelector } from '../../../componentes/CampoSelector.js';
 import { mensajeDe } from '../../../lib/api.js';
-import { formatearFechaHora } from '../../../lib/formato.js';
+import { formatearFechaHora, formatearTasa } from '../../../lib/formato.js';
 import { useTitulo } from '../../../lib/titulo.js';
 import { useSesionActual } from '../../../modulos/auth/ContextoSesion.js';
 import { useLineasNegocio } from '../../../modulos/lineas-negocio/consultas.js';
@@ -30,6 +30,7 @@ export function PaginaTasas() {
 
   const vigente = useTasas({ lineaNegocioId: lineaId, vigente: true });
   const historial = useTasas({ lineaNegocioId: lineaId });
+  const tasaVigente = vigente.data?.tasas[0];
 
   return (
     <>
@@ -59,48 +60,63 @@ export function PaginaTasas() {
 
       {lineaElegida && (
         <>
-          <section className="tarjeta">
-            <h3>Tasa vigente</h3>
-            {vigente.isPending && <Cargando texto="Cargando la tasa vigente…" />}
-            {vigente.data?.tasas.length === 0 && <p>Esta línea todavía no tiene tasa publicada.</p>}
-            {vigente.data?.tasas[0] && (
-              <dl className="datos-registro">
-                {lineaElegida.modoTasa === 'porcentaje' && (
-                  <>
-                    <dt>Tasa del proveedor</dt>
-                    <dd>{vigente.data.tasas[0].tasaReferencia}</dd>
-                    <dt>Margen usado</dt>
-                    <dd>{vigente.data.tasas[0].margenUsado}%</dd>
-                  </>
-                )}
-                {vigente.data.tasas[0].tasaCompra && (
-                  <>
-                    <dt>Tasa de compra</dt>
-                    <dd>{vigente.data.tasas[0].tasaCompra}</dd>
-                  </>
-                )}
-                <dt>Tasa de venta</dt>
-                <dd>
-                  <strong>{vigente.data.tasas[0].tasaVenta}</strong>
-                </dd>
-                <dt>Publicada por</dt>
-                <dd>{vigente.data.tasas[0].publicadaPorNombre}</dd>
-                <dt>Desde</dt>
-                <dd>{formatearFechaHora(vigente.data.tasas[0].vigenteDesde, zonaHoraria)}</dd>
-              </dl>
-            )}
-          </section>
+          <div className="dos-columnas">
+            <section className="tarjeta" aria-labelledby="titulo-tasa-vigente">
+              <div className="tasa-vigente__cabecera">
+                <h3 id="titulo-tasa-vigente">Tasa vigente</h3>
+                {tasaVigente && <span className="etiqueta etiqueta--exito">Vigente</span>}
+              </div>
+              {vigente.isPending && <Cargando texto="Cargando la tasa vigente…" />}
+              {vigente.data?.tasas.length === 0 && (
+                <p className="tasa-vigente__rotulo">Esta línea todavía no tiene tasa publicada.</p>
+              )}
+              {tasaVigente && (
+                <>
+                  <p className="tasa-vigente__cifra">{formatearTasa(tasaVigente.tasaVenta)}</p>
+                  <p className="tasa-vigente__rotulo">Tasa de venta · {lineaElegida.nombre}</p>
+                  <dl className="tasa-vigente__datos">
+                    {tasaVigente.tasaReferencia && (
+                      <div>
+                        <dt>Tasa del proveedor</dt>
+                        <dd className="mono">{formatearTasa(tasaVigente.tasaReferencia)}</dd>
+                      </div>
+                    )}
+                    {tasaVigente.margenUsado && (
+                      <div>
+                        <dt>Margen usado</dt>
+                        <dd className="mono">{formatearTasa(tasaVigente.margenUsado, 0)} %</dd>
+                      </div>
+                    )}
+                    {tasaVigente.tasaCompra && (
+                      <div>
+                        <dt>Tasa de compra</dt>
+                        <dd className="mono">{formatearTasa(tasaVigente.tasaCompra)}</dd>
+                      </div>
+                    )}
+                    <div>
+                      <dt>Publicada por</dt>
+                      <dd>{tasaVigente.publicadaPorNombre}</dd>
+                    </div>
+                    <div>
+                      <dt>Desde</dt>
+                      <dd>{formatearFechaHora(tasaVigente.vigenteDesde, zonaHoraria)}</dd>
+                    </div>
+                  </dl>
+                </>
+              )}
+            </section>
 
-          <section className="tarjeta">
-            <h3>Publicar tasa</h3>
-            <FormularioPublicarTasa
-              linea={lineaElegida}
-              alPublicar={() => setMensaje('Se publicó la tasa.')}
-            />
-          </section>
+            <section className="tarjeta" aria-labelledby="titulo-publicar-tasa">
+              <h3 id="titulo-publicar-tasa">Publicar tasa</h3>
+              <FormularioPublicarTasa
+                linea={lineaElegida}
+                alPublicar={() => setMensaje('Se publicó la tasa.')}
+              />
+            </section>
+          </div>
 
-          <section>
-            <h3>Historial</h3>
+          <section aria-labelledby="titulo-historial-tasas">
+            <h3 id="titulo-historial-tasas">Historial</h3>
             {historial.isPending && <Cargando texto="Cargando el historial…" />}
             {historial.isError && <Aviso tipo="error">{mensajeDe(historial.error)}</Aviso>}
             {historial.data && (
@@ -111,28 +127,44 @@ export function PaginaTasas() {
                     <tr>
                       <th scope="col">Desde</th>
                       <th scope="col">Hasta</th>
-                      <th scope="col">Venta</th>
+                      <th scope="col" className="tabla__numero">
+                        {lineaElegida.modoTasa === 'porcentaje' ? 'Proveedor' : 'Compra'}
+                      </th>
+                      <th scope="col" className="tabla__numero">
+                        Venta
+                      </th>
                       <th scope="col">Publicada por</th>
                       <th scope="col">Motivo</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {historial.data.tasas.map((tasa) => (
-                      <tr key={tasa.id}>
-                        <td>{formatearFechaHora(tasa.vigenteDesde, zonaHoraria)}</td>
-                        <td>
-                          {tasa.vigenteHasta
-                            ? formatearFechaHora(tasa.vigenteHasta, zonaHoraria)
-                            : 'Vigente'}
-                        </td>
-                        <td>{tasa.tasaVenta}</td>
-                        <td>{tasa.publicadaPorNombre}</td>
-                        <td>{tasa.motivo ?? '—'}</td>
-                      </tr>
-                    ))}
+                    {historial.data.tasas.map((tasa) => {
+                      const base =
+                        lineaElegida.modoTasa === 'porcentaje'
+                          ? tasa.tasaReferencia
+                          : tasa.tasaCompra;
+                      return (
+                        <tr key={tasa.id}>
+                          <td>{formatearFechaHora(tasa.vigenteDesde, zonaHoraria)}</td>
+                          <td>
+                            {tasa.vigenteHasta ? (
+                              formatearFechaHora(tasa.vigenteHasta, zonaHoraria)
+                            ) : (
+                              <span className="etiqueta etiqueta--exito">Vigente</span>
+                            )}
+                          </td>
+                          <td className="tabla__numero mono">{base ? formatearTasa(base) : '—'}</td>
+                          <td className="tabla__numero mono">{formatearTasa(tasa.tasaVenta)}</td>
+                          <td>{tasa.publicadaPorNombre}</td>
+                          <td>{tasa.motivo ?? '—'}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
-                {historial.data.tasas.length === 0 && <p>No hay tasas publicadas todavía.</p>}
+                {historial.data.tasas.length === 0 && (
+                  <p className="vacio">No hay tasas publicadas todavía.</p>
+                )}
               </div>
             )}
           </section>

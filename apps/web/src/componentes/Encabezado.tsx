@@ -10,12 +10,21 @@ import { CLAVE_SESION } from '../modulos/auth/sesion.js';
 
 import { Boton } from './Boton.js';
 import { BotonTema } from './BotonTema.js';
+import { Icono } from './Icono.js';
 
 interface PropiedadesEncabezado {
   /** Si hay menú lateral, muestra el botón que lo abre en celular. */
   conMenu: boolean;
   menuAbierto: boolean;
   alAlternarMenu: () => void;
+}
+
+/** Iniciales para el avatar: primera letra del nombre y del primer apellido. */
+function inicialesDe(nombre: string): string {
+  const palabras = nombre.trim().split(/\s+/).filter(Boolean);
+  const primera = palabras[0]?.charAt(0) ?? '';
+  const segunda = palabras.length > 1 ? (palabras[1]?.charAt(0) ?? '') : '';
+  return (primera + segunda).toUpperCase();
 }
 
 export function Encabezado({ conMenu, menuAbierto, alAlternarMenu }: PropiedadesEncabezado) {
@@ -39,34 +48,47 @@ export function Encabezado({ conMenu, menuAbierto, alAlternarMenu }: Propiedades
       <div className="encabezado__izquierda">
         {conMenu && (
           <Boton
-            variante="secundario"
-            chico
-            className="boton-menu"
+            variante="fantasma"
+            className="boton-menu boton--icono"
+            aria-label="Menú"
             aria-expanded={menuAbierto}
             aria-controls="menu-principal"
             onClick={alAlternarMenu}
           >
-            Menú
+            <Icono nombre="menu" grande />
           </Boton>
         )}
         <div className="encabezado__empresa">
-          {empresa?.logoUrl && <img src={urlApi(empresa.logoUrl)} alt="" />}
+          {empresa?.logoUrl ? (
+            <img src={urlApi(empresa.logoUrl)} alt="" />
+          ) : (
+            <span className="encabezado__sello" aria-hidden="true">
+              <Icono nombre="flecha" />
+            </span>
+          )}
           <span>{empresa?.nombre ?? 'Cambios JC'}</span>
         </div>
       </div>
       <div className="encabezado__derecha">
-        <div className="encabezado__usuario">
-          {usuario.nombre}
-          <small>{ETIQUETAS_ROL[usuario.rol]}</small>
+        <div className="encabezado__persona">
+          <span className="avatar" aria-hidden="true">
+            {inicialesDe(usuario.nombre)}
+          </span>
+          <div className="encabezado__usuario">
+            {usuario.nombre}
+            <small>{ETIQUETAS_ROL[usuario.rol]}</small>
+          </div>
         </div>
         <BotonTema />
         <Boton
-          variante="secundario"
-          chico
+          variante="fantasma"
+          className="boton--icono"
+          aria-label="Salir"
+          title="Salir"
           cargando={salir.isPending}
           onClick={() => salir.mutate()}
         >
-          Salir
+          <Icono nombre="salir" grande />
         </Boton>
       </div>
     </header>

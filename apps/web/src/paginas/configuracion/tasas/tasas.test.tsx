@@ -91,7 +91,7 @@ describe('pantalla de tasas', () => {
     ).toBeInTheDocument();
     await usuario.type(screen.getByLabelText('Tasa del proveedor'), '4.68');
 
-    expect(await screen.findByText('5.19')).toBeInTheDocument();
+    expect(await screen.findByText('5,19')).toBeInTheDocument();
 
     await usuario.click(screen.getByRole('button', { name: 'Publicar tasa' }));
 
@@ -150,8 +150,8 @@ describe('pantalla de tasas', () => {
     );
 
     const tabla = await screen.findByRole('table');
-    expect(tabla).toHaveTextContent('5.190000');
-    expect(tabla).toHaveTextContent('5.100000');
+    expect(tabla).toHaveTextContent('5,19');
+    expect(tabla).toHaveTextContent('5,10');
     expect(tabla).toHaveTextContent('Vigente');
   });
 

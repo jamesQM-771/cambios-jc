@@ -1,6 +1,7 @@
 import { Link } from 'react-router';
 
 import { Aviso } from '../componentes/Aviso.js';
+import { Icono } from '../componentes/Icono.js';
 import { ETIQUETAS_ROL } from '../lib/formato.js';
 import { useTitulo } from '../lib/titulo.js';
 import { useSesionActual } from '../modulos/auth/ContextoSesion.js';
@@ -25,8 +26,17 @@ export function PaginaInicio() {
           {accesos.map((acceso) => (
             <li key={acceso.ruta}>
               <Link to={acceso.ruta}>
-                <strong>{acceso.etiqueta}</strong>
-                {acceso.descripcion}
+                <span className="accesos__icono">
+                  <Icono nombre={acceso.icono} grande />
+                </span>
+                <span>
+                  <strong>{acceso.etiqueta}</strong>
+                  {acceso.descripcion}
+                </span>
+                <span className="accesos__ir">
+                  Abrir
+                  <Icono nombre="flecha" />
+                </span>
               </Link>
             </li>
           ))}

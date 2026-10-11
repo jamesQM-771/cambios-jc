@@ -5,6 +5,7 @@ import { useSesionActual } from '../modulos/auth/ContextoSesion.js';
 import { entradasVisibles } from '../modulos/navegacion/menu.js';
 
 import { Encabezado } from './Encabezado.js';
+import { Icono } from './Icono.js';
 
 /**
  * Estructura de las pantallas con sesión: encabezado, menú lateral y contenido. Si la persona solo
@@ -43,12 +44,22 @@ export function Estructura() {
                   className="menu__enlace"
                   onClick={() => setMenuAbierto(false)}
                 >
+                  <Icono nombre={entrada.icono} />
                   {entrada.etiqueta}
                 </NavLink>
               </li>
             ))}
           </ul>
         </nav>
+      )}
+      {conMenu && menuAbierto && (
+        <button
+          type="button"
+          className="menu-velo"
+          aria-label="Cerrar el menú"
+          tabIndex={-1}
+          onClick={() => setMenuAbierto(false)}
+        />
       )}
       <main id="contenido" className="contenido" tabIndex={-1}>
         <Outlet />

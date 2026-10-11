@@ -64,7 +64,7 @@ export function TablaCatalogo<T>({
                   {activa ? (
                     <span className="etiqueta etiqueta--exito">Activo</span>
                   ) : (
-                    <span className="etiqueta etiqueta--error">Inactivo</span>
+                    <span className="etiqueta">Inactivo</span>
                   )}
                 </td>
                 <td>
@@ -103,7 +103,7 @@ export function TablaCatalogo<T>({
           })}
         </tbody>
       </table>
-      {items.length === 0 && <p>No hay registros todavía.</p>}
+      {items.length === 0 && <p className="vacio">No hay registros todavía.</p>}
     </div>
   );
 }
