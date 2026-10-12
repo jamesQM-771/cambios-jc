@@ -22,9 +22,22 @@ El proyecto se entrega en 14 fases agrupadas en 4 versiones (detalle en `docs/PR
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------- |
 | 0. Base          | Completa                                                                                                                  |
 | 1. Configuración | Completa en la rama `fase-1-configuracion`: bancos, sucursales, cajas, denominaciones, líneas de negocio, tasas y cuentas |
+| Rediseño         | Interfaz nueva en la rama `rediseno-interfaz` (fuera de las fases numeradas; no cambia backend, rutas ni permisos)        |
 | 2. Remesas       | No iniciada                                                                                                               |
 
 Cada fase vive en su propia rama (`fase-0-base`, `fase-1-configuracion`…) y se fusiona a `main` al cerrarla.
+
+Lo que existe hoy son los cimientos: acceso, usuarios, empresa, bitácora y configuración. La parte de ventas empieza en la fase 2 (remesas) y la contable en la fase 3 (caja); el menú crece con cada fase.
+
+## Interfaz
+
+Estilo neutro con acento índigo, en tema claro y oscuro (decisiones D75 a D80 en `docs/DECISIONES.md`).
+
+- **Tokens:** todo color, espacio y tamaño sale de `apps/web/src/estilos/tokens.css`. Los componentes usan clases propias de `componentes.css`; no hay Tailwind ni librerías de componentes.
+- **Tipografía:** Inter para texto y JetBrains Mono para cifras y códigos, servidas desde `apps/web/src/estilos/fuentes/` (licencia OFL incluida). No se pide nada a terceros.
+- **Iconos:** propios, en `apps/web/src/componentes/Icono.tsx`.
+- **Cifras:** las tasas se muestran con coma decimal (`5,19`) mediante `formatearTasa` en `apps/web/src/lib/formato.ts`. La API sigue enviando y recibiendo punto (`5.190000`), y los campos donde se escribe una tasa todavía esperan punto (`4.68`).
+- **Estructura:** encabezado con la empresa y la persona, menú lateral con iconos (cajón en celular) y, para quien solo tiene "Inicio" (el digitador), una estructura mínima sin menú.
 
 ## Requisitos
 
@@ -140,6 +153,14 @@ CONSERVAR_BASE_PRUEBAS=1 npx vitest run --project api
 5. Los accesos siguientes piden usuario, contraseña y el código de la aplicación.
 
 > Si recargas la página a mitad del acceso, empiezas de nuevo desde el usuario y la contraseña.
+
+### Credenciales en la instalación local
+
+- **Usuario:** el de `ADMIN_LOGIN_INICIAL` en `.env` (en la instalación de desarrollo de Cambios JC es `admin`).
+- **Contraseña:** la que el administrador eligió en su primer acceso. **No se escribe en este repositorio** ni en ningún archivo que se suba a Git (ver `CLAUDE.md` §7); guárdala en un gestor de contraseñas.
+- **Código de 6 dígitos:** el de la aplicación de autenticación del teléfono.
+- La semilla (`npm run db:seed`) solo crea al administrador la primera vez: cambiar `ADMIN_CONTRASENA_INICIAL` después no cambia la contraseña de un administrador que ya existe.
+- Si se olvida la contraseña o se pierde el teléfono, ver [Recuperar el acceso de un administrador](#recuperar-el-acceso-de-un-administrador).
 
 ## Cómo se conecta la web con la API
 
