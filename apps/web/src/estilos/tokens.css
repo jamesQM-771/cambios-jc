@@ -89,7 +89,14 @@
   --transicion: 0.15s ease-out;
   --transicion-entrada: 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
 
+  /* Capas: cada elemento flotante tiene su altura fija, sin números sueltos. */
+  --capa-encabezado: 20;
+  --capa-menu: 15;
+  --capa-desplegable: 30;
+  --capa-notificacion: 60;
+
   --ancho-menu: 256px;
+  --ancho-formulario: 720px;
   --alto-encabezado: 64px;
   --ancho-contenido: 1120px;
 

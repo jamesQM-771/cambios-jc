@@ -2,11 +2,16 @@ import type { Permiso } from '@cambios-jc/shared';
 
 import type { NombreIcono } from '../../componentes/Icono.js';
 
+/** Grupos del menú, en el orden en que se muestran. Las fases siguientes añaden "Operación". */
+export const GRUPOS_MENU = ['General', 'Administración', 'Seguridad'] as const;
+export type GrupoMenu = (typeof GRUPOS_MENU)[number];
+
 export interface EntradaMenu {
   ruta: string;
   etiqueta: string;
   descripcion: string;
   icono: NombreIcono;
+  grupo: GrupoMenu;
   /** Permiso que hace falta para verla. Sin permiso = la ve cualquier usuario con sesión. */
   permiso?: Permiso;
 }
@@ -16,9 +21,16 @@ export interface EntradaMenu {
  * si cambia qué puede hacer cada rol, la web no se toca.
  */
 export const ENTRADAS_MENU: readonly EntradaMenu[] = [
-  { ruta: '/', etiqueta: 'Inicio', descripcion: 'Resumen y accesos', icono: 'inicio' },
+  {
+    ruta: '/',
+    etiqueta: 'Inicio',
+    descripcion: 'Resumen y accesos',
+    icono: 'inicio',
+    grupo: 'General',
+  },
   {
     ruta: '/usuarios',
+    grupo: 'Administración',
     icono: 'usuarios',
     etiqueta: 'Usuarios',
     descripcion: 'Crear usuarios, cambiar roles y gestionar su acceso',
@@ -26,6 +38,7 @@ export const ENTRADAS_MENU: readonly EntradaMenu[] = [
   },
   {
     ruta: '/empresa',
+    grupo: 'Administración',
     icono: 'empresa',
     etiqueta: 'Empresa',
     descripcion: 'Datos de la empresa y logo',
@@ -33,6 +46,7 @@ export const ENTRADAS_MENU: readonly EntradaMenu[] = [
   },
   {
     ruta: '/configuracion',
+    grupo: 'Administración',
     icono: 'configuracion',
     etiqueta: 'Configuración',
     descripcion: 'Sucursales, cajas, denominaciones, líneas de negocio, bancos, cuentas y tasas',
@@ -40,6 +54,7 @@ export const ENTRADAS_MENU: readonly EntradaMenu[] = [
   },
   {
     ruta: '/bitacora',
+    grupo: 'Seguridad',
     icono: 'bitacora',
     etiqueta: 'Bitácora',
     descripcion: 'Quién hizo qué y cuándo',

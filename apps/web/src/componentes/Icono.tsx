@@ -56,6 +56,21 @@ const TRAZOS = {
       <path d="M12 7.5v5M12 16h.01" />
     </>
   ),
+  cerrar: <path d="M6 6l12 12M18 6 6 18" />,
+  mas: (
+    <>
+      <circle cx="5" cy="12" r="1" />
+      <circle cx="12" cy="12" r="1" />
+      <circle cx="19" cy="12" r="1" />
+    </>
+  ),
+  buscar: (
+    <>
+      <circle cx="11" cy="11" r="6.5" />
+      <path d="m16 16 4.5 4.5" />
+    </>
+  ),
+  agregar: <path d="M12 5v14M5 12h14" />,
 } satisfies Record<string, ReactNode>;
 
 export type NombreIcono = keyof typeof TRAZOS;
