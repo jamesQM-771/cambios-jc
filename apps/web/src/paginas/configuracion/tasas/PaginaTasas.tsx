@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import { Aviso } from '../../../componentes/Aviso.js';
+import { useNotificar } from '../../../componentes/Notificaciones.js';
 import { Cargando } from '../../../componentes/Cargando.js';
 import { CampoSelector } from '../../../componentes/CampoSelector.js';
 import { mensajeDe } from '../../../lib/api.js';
@@ -22,7 +23,7 @@ export function PaginaTasas() {
   const { empresa } = useSesionActual();
   const zonaHoraria = empresa?.zonaHoraria ?? 'America/Bogota';
   const [lineaId, setLineaId] = useState('');
-  const [mensaje, setMensaje] = useState<string | null>(null);
+  const notificar = useNotificar();
 
   const lineas = useLineasNegocio();
   const lineasActivas = (lineas.data?.lineasNegocio ?? []).filter((l) => l.activa);
@@ -38,8 +39,6 @@ export function PaginaTasas() {
         <h2>Tasas</h2>
         <p>Publica la tasa del día de cada línea de negocio. El historial nunca se sobrescribe.</p>
       </div>
-
-      {mensaje && <Aviso tipo="exito">{mensaje}</Aviso>}
 
       {lineas.isPending && <Cargando texto="Cargando las líneas de negocio…" />}
       {lineas.isError && <Aviso tipo="error">{mensajeDe(lineas.error)}</Aviso>}
@@ -110,7 +109,9 @@ export function PaginaTasas() {
               <h3 id="titulo-publicar-tasa">Publicar tasa</h3>
               <FormularioPublicarTasa
                 linea={lineaElegida}
-                alPublicar={() => setMensaje('Se publicó la tasa.')}
+                alPublicar={() => {
+                  notificar('Se publicó la tasa.');
+                }}
               />
             </section>
           </div>

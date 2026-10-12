@@ -35,3 +35,32 @@ export function formatearTasa(valor: string, decimalesMinimos = 2): string {
   const miles = entera.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
   return decimales === '' ? miles : `${miles},${decimales}`;
 }
+
+/**
+ * Número escrito a mano, listo para la API: acepta coma o punto como decimal ("4,68" y "4.68" →
+ * "4.68") y quita los puntos de miles cuando hay coma ("3.200,50" → "3200.50"). No valida: si lo
+ * escrito no es un número, la API responde con su error.
+ */
+export function normalizarDecimal(texto: string): string {
+  const limpio = texto.trim().replace(/\s/g, '');
+  if (!limpio.includes(',')) return limpio;
+  return limpio.replace(/\./g, '').replace(',', '.');
+}
+
+/**
+ * Lo escrito se puede leer de dos maneras: "3.200" es tres mil doscientos para quien usa el punto
+ * de miles y tres coma dos para la API. Publicar la lectura equivocada de una tasa es plata
+ * perdida, así que en ese caso no se adivina: se pide escribirlo sin ambigüedad.
+ */
+export function decimalAmbiguo(texto: string): boolean {
+  return /^\d{1,3}(\.\d{3})+$/.test(texto.trim());
+}
+
+/** Mensaje para un valor ambiguo, con las dos formas de escribirlo bien; `null` si está claro. */
+export function avisoDecimalAmbiguo(texto: string): string | null {
+  if (!decimalAmbiguo(texto)) return null;
+  const limpio = texto.trim();
+  const comoMiles = limpio.replace(/\./g, '');
+  const comoDecimal = limpio.replace('.', ',');
+  return `No queda claro si es ${comoMiles} o ${comoDecimal}. Escribe ${comoMiles} (sin punto de miles) o ${comoDecimal} (con coma decimal).`;
+}

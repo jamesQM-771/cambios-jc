@@ -3,9 +3,10 @@ import { useState } from 'react';
 
 import { Aviso } from '../../../componentes/Aviso.js';
 import { Boton } from '../../../componentes/Boton.js';
-import { Cargando } from '../../../componentes/Cargando.js';
 import { Dialogo } from '../../../componentes/Dialogo.js';
 import { DialogoConfirmacion } from '../../../componentes/DialogoConfirmacion.js';
+import { useNotificar } from '../../../componentes/Notificaciones.js';
+import { Esqueleto } from '../../../componentes/Pagina.js';
 import { TablaCatalogo } from '../../../componentes/TablaCatalogo.js';
 import { mensajeDe } from '../../../lib/api.js';
 import { useTitulo } from '../../../lib/titulo.js';
@@ -24,6 +25,7 @@ interface MensajePagina {
 export function PaginaBancos() {
   useTitulo('Bancos · Configuración');
   const cliente = useQueryClient();
+  const notificar = useNotificar();
   const [mostrarInactivos, setMostrarInactivos] = useState(false);
   const [dialogo, setDialogo] = useState<DialogoActivo | null>(null);
   const [mensaje, setMensaje] = useState<MensajePagina | null>(null);
@@ -31,7 +33,8 @@ export function PaginaBancos() {
   const lista = useBancos();
 
   const alExito = (texto: string) => {
-    setMensaje({ tipo: 'exito', texto });
+    setMensaje(null);
+    notificar(texto);
     setDialogo(null);
     return cliente.invalidateQueries({ queryKey: CLAVE_BANCOS });
   };
@@ -67,16 +70,7 @@ export function PaginaBancos() {
 
       {mensaje && <Aviso tipo={mensaje.tipo}>{mensaje.texto}</Aviso>}
 
-      <label className="campo__casilla">
-        <input
-          type="checkbox"
-          checked={mostrarInactivos}
-          onChange={(evento) => setMostrarInactivos(evento.target.checked)}
-        />
-        Mostrar desactivados
-      </label>
-
-      {lista.isPending && <Cargando texto="Cargando los bancos…" />}
+      {lista.isPending && <Esqueleto texto="Cargando los bancos…" />}
       {lista.isError && <Aviso tipo="error">{mensajeDe(lista.error)}</Aviso>}
       {lista.data && (
         <TablaCatalogo
@@ -89,6 +83,20 @@ export function PaginaBancos() {
             { encabezado: 'Código', render: (b) => b.codigo },
             { encabezado: 'Nombre', render: (b) => b.nombre },
           ]}
+          buscarEn={(b) => `${b.codigo} ${b.nombre}`}
+          nombrePlural="bancos"
+          filtros={
+            <>
+              <label className="campo__casilla">
+                <input
+                  type="checkbox"
+                  checked={mostrarInactivos}
+                  onChange={(evento) => setMostrarInactivos(evento.target.checked)}
+                />
+                Mostrar desactivados
+              </label>
+            </>
+          }
           alEditar={(banco) => {
             setMensaje(null);
             setDialogo({ tipo: 'editar', banco });

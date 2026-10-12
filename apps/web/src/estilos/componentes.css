@@ -798,7 +798,13 @@ textarea.campo__entrada {
   display: flex;
   gap: var(--espacio-1);
   align-items: center;
-  flex-wrap: wrap;
+}
+
+/* La columna de acciones ocupa solo lo que necesita y nunca parte los botones en dos renglones. */
+.tabla th:last-child,
+.tabla td:last-child {
+  width: 1%;
+  white-space: nowrap;
 }
 
 .vacio,

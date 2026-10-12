@@ -6,7 +6,7 @@ import { Aviso } from '../../../componentes/Aviso.js';
 import { Boton } from '../../../componentes/Boton.js';
 import { Campo } from '../../../componentes/Campo.js';
 import { erroresPorCampo, mensajeDe } from '../../../lib/api.js';
-import { formatearTasa } from '../../../lib/formato.js';
+import { avisoDecimalAmbiguo, formatearTasa, normalizarDecimal } from '../../../lib/formato.js';
 import type { LineaNegocio } from '../../../modulos/lineas-negocio/tipos.js';
 import { publicarTasa } from '../../../modulos/tasas/api.js';
 import { CLAVE_TASAS } from '../../../modulos/tasas/consultas.js';
@@ -21,7 +21,7 @@ interface PropiedadesFormulario {
 function ventaCalculada(referencia: string, margenVenta: string | null): string | null {
   if (referencia.trim() === '' || margenVenta === null) return null;
   try {
-    return tasaDesdeMargenPorcentaje(referencia, margenVenta).toFixed(2);
+    return tasaDesdeMargenPorcentaje(normalizarDecimal(referencia), margenVenta).toFixed(2);
   } catch {
     return null;
   }
@@ -40,14 +40,14 @@ export function FormularioPublicarTasa({ linea, alPublicar }: PropiedadesFormula
         ? publicarTasa({
             modoTasa: 'porcentaje',
             lineaNegocioId: linea.id,
-            tasaReferencia,
+            tasaReferencia: normalizarDecimal(tasaReferencia),
             ...(motivo.trim() === '' ? {} : { motivo }),
           })
         : publicarTasa({
             modoTasa: 'directo',
             lineaNegocioId: linea.id,
-            tasaVenta,
-            ...(tasaCompra.trim() === '' ? {} : { tasaCompra }),
+            tasaVenta: normalizarDecimal(tasaVenta),
+            ...(tasaCompra.trim() === '' ? {} : { tasaCompra: normalizarDecimal(tasaCompra) }),
             ...(motivo.trim() === '' ? {} : { motivo }),
           }),
     onSuccess: async () => {
@@ -62,14 +62,28 @@ export function FormularioPublicarTasa({ linea, alPublicar }: PropiedadesFormula
 
   const delServidor = erroresPorCampo(publicar.error);
 
+  // Un valor como "3.200" no se envía: no se sabe si es 3200 o 3,2 (ver `avisoDecimalAmbiguo`).
+  const ambiguos = {
+    tasaReferencia: avisoDecimalAmbiguo(tasaReferencia),
+    tasaCompra: avisoDecimalAmbiguo(tasaCompra),
+    tasaVenta: avisoDecimalAmbiguo(tasaVenta),
+  };
+  const hayAmbiguo =
+    linea.modoTasa === 'porcentaje'
+      ? ambiguos.tasaReferencia !== null
+      : ambiguos.tasaCompra !== null || ambiguos.tasaVenta !== null;
+
   const enviar = (evento: SyntheticEvent) => {
     evento.preventDefault();
-    publicar.mutate();
+    if (!hayAmbiguo) publicar.mutate();
   };
 
   const modoPorcentaje = linea.modoTasa === 'porcentaje';
   const sinMargen = modoPorcentaje && linea.margenVenta === null;
-  const previa = modoPorcentaje ? ventaCalculada(tasaReferencia, linea.margenVenta) : null;
+  const previa =
+    modoPorcentaje && ambiguos.tasaReferencia === null
+      ? ventaCalculada(tasaReferencia, linea.margenVenta)
+      : null;
 
   return (
     <form onSubmit={enviar} noValidate className="formulario-tasa">
@@ -91,7 +105,7 @@ export function FormularioPublicarTasa({ linea, alPublicar }: PropiedadesFormula
             disabled={sinMargen}
             value={tasaReferencia}
             onChange={(evento) => setTasaReferencia(evento.target.value)}
-            error={delServidor.tasaReferencia}
+            error={ambiguos.tasaReferencia ?? delServidor.tasaReferencia}
           />
           {previa && (
             <p className="formulario-tasa__previa" role="status">
@@ -105,10 +119,10 @@ export function FormularioPublicarTasa({ linea, alPublicar }: PropiedadesFormula
             etiqueta="Tasa de compra"
             autoComplete="off"
             inputMode="decimal"
-            ayuda="Opcional."
+            ayuda="Opcional. Puedes escribirla con coma o con punto."
             value={tasaCompra}
             onChange={(evento) => setTasaCompra(evento.target.value)}
-            error={delServidor.tasaCompra}
+            error={ambiguos.tasaCompra ?? delServidor.tasaCompra}
           />
           <Campo
             etiqueta="Tasa de venta"
@@ -117,7 +131,7 @@ export function FormularioPublicarTasa({ linea, alPublicar }: PropiedadesFormula
             required
             value={tasaVenta}
             onChange={(evento) => setTasaVenta(evento.target.value)}
-            error={delServidor.tasaVenta}
+            error={ambiguos.tasaVenta ?? delServidor.tasaVenta}
           />
         </>
       )}
@@ -134,7 +148,9 @@ export function FormularioPublicarTasa({ linea, alPublicar }: PropiedadesFormula
           type="submit"
           cargando={publicar.isPending}
           disabled={
-            sinMargen || (modoPorcentaje ? tasaReferencia.trim() === '' : tasaVenta.trim() === '')
+            sinMargen ||
+            hayAmbiguo ||
+            (modoPorcentaje ? tasaReferencia.trim() === '' : tasaVenta.trim() === '')
           }
         >
           Publicar tasa

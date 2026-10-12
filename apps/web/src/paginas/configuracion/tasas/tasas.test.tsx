@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import type { LineaNegocio } from '../../../modulos/lineas-negocio/tipos.js';
@@ -110,6 +110,53 @@ describe('pantalla de tasas', () => {
     expect(screen.queryByLabelText('Tasa del proveedor')).not.toBeInTheDocument();
     expect(await screen.findByLabelText('Tasa de compra')).toBeInTheDocument();
     expect(screen.getByLabelText('Tasa de venta')).toBeInTheDocument();
+  });
+
+  it('modo directo: "3.200" es ambiguo y no deja publicar hasta aclararlo', async () => {
+    const { api, usuario } = abrirTasas([lineaDirecta], {
+      'GET /tasas': () => ({ cuerpo: { tasas: [] } }),
+      'POST /tasas': () => ({ estado: 201, cuerpo: { tasa: tasaFalsa() } }),
+    });
+    await usuario.selectOptions(
+      await screen.findByLabelText('Línea de negocio'),
+      'Dólares — Directo (compra y venta ya calculadas)',
+    );
+    const venta = await screen.findByLabelText('Tasa de venta');
+
+    await usuario.type(venta, '3.200');
+
+    expect(venta).toBeInvalid();
+    expect(screen.getByText(/No queda claro si es 3200 o 3,200/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Publicar tasa' })).toBeDisabled();
+
+    await usuario.clear(venta);
+    await usuario.type(venta, '3200');
+    await usuario.type(screen.getByLabelText('Tasa de compra'), '3.000,50');
+    await usuario.click(screen.getByRole('button', { name: 'Publicar tasa' }));
+
+    await waitFor(() => expect(api.de('POST', '/tasas')).toHaveLength(1));
+    expect(api.de('POST', '/tasas')[0]?.cuerpo).toMatchObject({
+      tasaVenta: '3200',
+      tasaCompra: '3000.50',
+    });
+  });
+
+  it('modo porcentaje: la tasa del proveedor se puede escribir con coma', async () => {
+    const { api, usuario } = abrirTasas([lineaPorcentaje], {
+      'GET /tasas': () => ({ cuerpo: { tasas: [] } }),
+      'POST /tasas': () => ({ estado: 201, cuerpo: { tasa: tasaFalsa() } }),
+    });
+    await usuario.selectOptions(
+      await screen.findByLabelText('Línea de negocio'),
+      'Transferencias a Venezuela — Porcentaje (proveedor + margen)',
+    );
+
+    await usuario.type(await screen.findByLabelText('Tasa del proveedor'), '4,68');
+    expect(await screen.findByText('5,19')).toBeInTheDocument();
+    await usuario.click(screen.getByRole('button', { name: 'Publicar tasa' }));
+
+    await waitFor(() => expect(api.de('POST', '/tasas')).toHaveLength(1));
+    expect(api.de('POST', '/tasas')[0]?.cuerpo).toMatchObject({ tasaReferencia: '4.68' });
   });
 
   it('sin margen configurado, avisa y deshabilita el campo', async () => {

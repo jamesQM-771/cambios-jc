@@ -3,9 +3,10 @@ import { useState } from 'react';
 
 import { Aviso } from '../../../componentes/Aviso.js';
 import { Boton } from '../../../componentes/Boton.js';
-import { Cargando } from '../../../componentes/Cargando.js';
 import { Dialogo } from '../../../componentes/Dialogo.js';
 import { DialogoConfirmacion } from '../../../componentes/DialogoConfirmacion.js';
+import { useNotificar } from '../../../componentes/Notificaciones.js';
+import { Esqueleto } from '../../../componentes/Pagina.js';
 import { TablaCatalogo } from '../../../componentes/TablaCatalogo.js';
 import { mensajeDe } from '../../../lib/api.js';
 import { useTitulo } from '../../../lib/titulo.js';
@@ -24,6 +25,7 @@ interface MensajePagina {
 export function PaginaSucursales() {
   useTitulo('Sucursales · Configuración');
   const cliente = useQueryClient();
+  const notificar = useNotificar();
   const [mostrarInactivas, setMostrarInactivas] = useState(false);
   const [dialogo, setDialogo] = useState<DialogoActivo | null>(null);
   const [mensaje, setMensaje] = useState<MensajePagina | null>(null);
@@ -31,7 +33,8 @@ export function PaginaSucursales() {
   const lista = useSucursalesTodas();
 
   const alExito = (texto: string) => {
-    setMensaje({ tipo: 'exito', texto });
+    setMensaje(null);
+    notificar(texto);
     setDialogo(null);
     return cliente.invalidateQueries({ queryKey: CLAVE_SUCURSALES });
   };
@@ -68,16 +71,7 @@ export function PaginaSucursales() {
 
       {mensaje && <Aviso tipo={mensaje.tipo}>{mensaje.texto}</Aviso>}
 
-      <label className="campo__casilla">
-        <input
-          type="checkbox"
-          checked={mostrarInactivas}
-          onChange={(evento) => setMostrarInactivas(evento.target.checked)}
-        />
-        Mostrar desactivadas
-      </label>
-
-      {lista.isPending && <Cargando texto="Cargando las sucursales…" />}
+      {lista.isPending && <Esqueleto texto="Cargando las sucursales…" />}
       {lista.isError && <Aviso tipo="error">{mensajeDe(lista.error)}</Aviso>}
       {lista.data && (
         <TablaCatalogo
@@ -90,6 +84,20 @@ export function PaginaSucursales() {
             { encabezado: 'Nombre', render: (s) => s.nombre },
             { encabezado: 'Ciudad', render: (s) => s.ciudad },
           ]}
+          buscarEn={(s) => `${s.nombre} ${s.ciudad}`}
+          nombrePlural="sucursales"
+          filtros={
+            <>
+              <label className="campo__casilla">
+                <input
+                  type="checkbox"
+                  checked={mostrarInactivas}
+                  onChange={(evento) => setMostrarInactivas(evento.target.checked)}
+                />
+                Mostrar desactivadas
+              </label>
+            </>
+          }
           alEditar={(sucursal) => {
             setMensaje(null);
             setDialogo({ tipo: 'editar', sucursal });

@@ -3,9 +3,10 @@ import { useState } from 'react';
 
 import { Aviso } from '../../../componentes/Aviso.js';
 import { Boton } from '../../../componentes/Boton.js';
-import { Cargando } from '../../../componentes/Cargando.js';
 import { Dialogo } from '../../../componentes/Dialogo.js';
 import { DialogoConfirmacion } from '../../../componentes/DialogoConfirmacion.js';
+import { useNotificar } from '../../../componentes/Notificaciones.js';
+import { Esqueleto } from '../../../componentes/Pagina.js';
 import { TablaCatalogo } from '../../../componentes/TablaCatalogo.js';
 import { mensajeDe } from '../../../lib/api.js';
 import { useTitulo } from '../../../lib/titulo.js';
@@ -24,6 +25,7 @@ interface MensajePagina {
 export function PaginaCajas() {
   useTitulo('Cajas · Configuración');
   const cliente = useQueryClient();
+  const notificar = useNotificar();
   const [mostrarInactivas, setMostrarInactivas] = useState(false);
   const [dialogo, setDialogo] = useState<DialogoActivo | null>(null);
   const [mensaje, setMensaje] = useState<MensajePagina | null>(null);
@@ -31,7 +33,8 @@ export function PaginaCajas() {
   const lista = useCajas();
 
   const alExito = (texto: string) => {
-    setMensaje({ tipo: 'exito', texto });
+    setMensaje(null);
+    notificar(texto);
     setDialogo(null);
     return cliente.invalidateQueries({ queryKey: CLAVE_CAJAS });
   };
@@ -67,16 +70,7 @@ export function PaginaCajas() {
 
       {mensaje && <Aviso tipo={mensaje.tipo}>{mensaje.texto}</Aviso>}
 
-      <label className="campo__casilla">
-        <input
-          type="checkbox"
-          checked={mostrarInactivas}
-          onChange={(evento) => setMostrarInactivas(evento.target.checked)}
-        />
-        Mostrar desactivadas
-      </label>
-
-      {lista.isPending && <Cargando texto="Cargando las cajas…" />}
+      {lista.isPending && <Esqueleto texto="Cargando las cajas…" />}
       {lista.isError && <Aviso tipo="error">{mensajeDe(lista.error)}</Aviso>}
       {lista.data && (
         <TablaCatalogo
@@ -89,6 +83,20 @@ export function PaginaCajas() {
             { encabezado: 'Nombre', render: (c) => c.nombre },
             { encabezado: 'Sucursal', render: (c) => c.sucursalNombre },
           ]}
+          buscarEn={(c) => `${c.nombre} ${c.sucursalNombre}`}
+          nombrePlural="cajas"
+          filtros={
+            <>
+              <label className="campo__casilla">
+                <input
+                  type="checkbox"
+                  checked={mostrarInactivas}
+                  onChange={(evento) => setMostrarInactivas(evento.target.checked)}
+                />
+                Mostrar desactivadas
+              </label>
+            </>
+          }
           alEditar={(caja) => {
             setMensaje(null);
             setDialogo({ tipo: 'editar', caja });

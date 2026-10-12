@@ -3,12 +3,15 @@ import { useState } from 'react';
 
 import { Aviso } from '../../../componentes/Aviso.js';
 import { Boton } from '../../../componentes/Boton.js';
-import { Cargando } from '../../../componentes/Cargando.js';
 import { Dialogo } from '../../../componentes/Dialogo.js';
 import { DialogoConfirmacion } from '../../../componentes/DialogoConfirmacion.js';
+import { useNotificar } from '../../../componentes/Notificaciones.js';
+import { Esqueleto } from '../../../componentes/Pagina.js';
 import { TablaCatalogo } from '../../../componentes/TablaCatalogo.js';
 import { mensajeDe } from '../../../lib/api.js';
+import { formatearTasa } from '../../../lib/formato.js';
 import { useTitulo } from '../../../lib/titulo.js';
+import { useSesionActual } from '../../../modulos/auth/ContextoSesion.js';
 import {
   desactivarLineaNegocio,
   reactivarLineaNegocio,
@@ -19,6 +22,7 @@ import {
 } from '../../../modulos/lineas-negocio/consultas.js';
 import type { LineaNegocio } from '../../../modulos/lineas-negocio/tipos.js';
 
+import { FormularioConfiguracionTasa } from './FormularioConfiguracionTasa.js';
 import { FormularioLineaNegocio } from './FormularioLineaNegocio.js';
 
 const ETIQUETAS_CLASE = {
@@ -26,7 +30,8 @@ const ETIQUETAS_CLASE = {
   divisa_caja: 'Divisa en caja',
 } as const;
 
-type DialogoActivo = { tipo: 'crear' } | { tipo: 'editar' | 'desactivar'; linea: LineaNegocio };
+type DialogoActivo =
+  { tipo: 'crear' } | { tipo: 'editar' | 'desactivar' | 'configurar'; linea: LineaNegocio };
 interface MensajePagina {
   tipo: 'exito' | 'error';
   texto: string;
@@ -35,6 +40,9 @@ interface MensajePagina {
 export function PaginaLineasNegocio() {
   useTitulo('Líneas de negocio · Configuración');
   const cliente = useQueryClient();
+  const notificar = useNotificar();
+  const { permisos } = useSesionActual();
+  const puedeConfigurarMargen = permisos.includes('margen.configurar');
   const [mostrarInactivas, setMostrarInactivas] = useState(false);
   const [dialogo, setDialogo] = useState<DialogoActivo | null>(null);
   const [mensaje, setMensaje] = useState<MensajePagina | null>(null);
@@ -42,7 +50,8 @@ export function PaginaLineasNegocio() {
   const lista = useLineasNegocio();
 
   const alExito = (texto: string) => {
-    setMensaje({ tipo: 'exito', texto });
+    setMensaje(null);
+    notificar(texto);
     setDialogo(null);
     return cliente.invalidateQueries({ queryKey: CLAVE_LINEAS_NEGOCIO });
   };
@@ -78,16 +87,7 @@ export function PaginaLineasNegocio() {
 
       {mensaje && <Aviso tipo={mensaje.tipo}>{mensaje.texto}</Aviso>}
 
-      <label className="campo__casilla">
-        <input
-          type="checkbox"
-          checked={mostrarInactivas}
-          onChange={(evento) => setMostrarInactivas(evento.target.checked)}
-        />
-        Mostrar desactivadas
-      </label>
-
-      {lista.isPending && <Cargando texto="Cargando las líneas de negocio…" />}
+      {lista.isPending && <Esqueleto texto="Cargando las líneas de negocio…" />}
       {lista.isError && <Aviso tipo="error">{mensajeDe(lista.error)}</Aviso>}
       {lista.data && (
         <TablaCatalogo
@@ -103,7 +103,43 @@ export function PaginaLineasNegocio() {
               encabezado: 'Monedas',
               render: (l) => `${l.monedaOrigen} → ${l.monedaDestino}`,
             },
+            {
+              encabezado: 'Tasa',
+              render: (l) =>
+                l.modoTasa === 'directo'
+                  ? 'Directo'
+                  : l.margenVenta === null
+                    ? 'Porcentaje, sin margen'
+                    : `Proveedor + ${formatearTasa(l.margenVenta, 0)} %`,
+            },
           ]}
+          buscarEn={(l) => `${l.nombre} ${l.monedaOrigen} ${l.monedaDestino}`}
+          nombrePlural="líneas"
+          filtros={
+            <>
+              <label className="campo__casilla">
+                <input
+                  type="checkbox"
+                  checked={mostrarInactivas}
+                  onChange={(evento) => setMostrarInactivas(evento.target.checked)}
+                />
+                Mostrar desactivadas
+              </label>
+            </>
+          }
+          accionesExtra={(linea) =>
+            puedeConfigurarMargen
+              ? [
+                  {
+                    etiqueta: 'Modo y margen de la tasa',
+                    alElegir: () => {
+                      setMensaje(null);
+                      setDialogo({ tipo: 'configurar', linea });
+                    },
+                  },
+                ]
+              : []
+          }
           alEditar={(linea) => {
             setMensaje(null);
             setDialogo({ tipo: 'editar', linea });
@@ -134,6 +170,24 @@ export function PaginaLineasNegocio() {
           }}
           alCancelar={() => setDialogo(null)}
         />
+      </Dialogo>
+
+      <Dialogo
+        abierto={dialogo?.tipo === 'configurar'}
+        alCerrar={() => setDialogo(null)}
+        titulo={
+          dialogo?.tipo === 'configurar' ? `Tasa de ${dialogo.linea.nombre}` : 'Modo y margen'
+        }
+      >
+        {dialogo?.tipo === 'configurar' && (
+          <FormularioConfiguracionTasa
+            linea={dialogo.linea}
+            alGuardar={() => {
+              void alExito('Se guardó la configuración de la tasa.');
+            }}
+            alCancelar={() => setDialogo(null)}
+          />
+        )}
       </Dialogo>
 
       <DialogoConfirmacion

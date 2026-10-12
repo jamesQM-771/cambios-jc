@@ -26,3 +26,6 @@ export interface DatosLineaNegocioNueva {
 export interface CambiosLineaNegocio {
   nombre: string;
 }
+
+export type ConfiguracionTasaLinea =
+  { modoTasa: 'directo' } | { modoTasa: 'porcentaje'; margenVenta: string; margenCompra?: string };
