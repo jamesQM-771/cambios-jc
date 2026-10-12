@@ -5,7 +5,7 @@ import { Aviso } from '../../componentes/Aviso.js';
 import { Boton } from '../../componentes/Boton.js';
 import { Campo } from '../../componentes/Campo.js';
 import { CampoSelector } from '../../componentes/CampoSelector.js';
-import { Cargando } from '../../componentes/Cargando.js';
+import { EncabezadoPagina, EstadoVacio, Esqueleto } from '../../componentes/Pagina.js';
 import { Paginacion } from '../../componentes/Paginacion.js';
 import { mensajeDe } from '../../lib/api.js';
 import { formatearFechaHora } from '../../lib/formato.js';
@@ -15,6 +15,11 @@ import {
   type FiltrosAuditoria,
   type RegistroAuditoria,
 } from '../../modulos/auditoria/api.js';
+import {
+  describirAccion,
+  ETIQUETAS_ENTIDAD,
+  FRASES_ACCION,
+} from '../../modulos/auditoria/lenguaje.js';
 import { useSesionActual } from '../../modulos/auth/ContextoSesion.js';
 import { listarUsuarios } from '../../modulos/usuarios/api.js';
 
@@ -33,7 +38,7 @@ const FILTROS_VACIOS: FiltrosAuditoria = {
 };
 
 export function PaginaBitacora() {
-  useTitulo('Bitácora');
+  useTitulo('Actividad');
   const { empresa } = useSesionActual();
   const zonaHoraria = empresa?.zonaHoraria ?? 'America/Bogota';
 
@@ -77,13 +82,15 @@ export function PaginaBitacora() {
 
   return (
     <>
-      <div className="cabecera-pagina">
-        <h1>Bitácora</h1>
-        <p>
-          Quién hizo qué y cuándo. Los registros no se pueden modificar ni borrar. Las fechas se
-          muestran en la zona horaria de la empresa ({zonaHoraria}).
-        </p>
-      </div>
+      <EncabezadoPagina
+        titulo="Actividad"
+        descripcion={
+          <>
+            Quién hizo qué y cuándo. Estos registros no se pueden modificar ni borrar. Las fechas se
+            muestran en la zona horaria de la empresa ({zonaHoraria}).
+          </>
+        }
+      />
 
       <form className="filtros" onSubmit={filtrar} noValidate>
         <Campo
@@ -111,22 +118,30 @@ export function PaginaBitacora() {
             </option>
           ))}
         </CampoSelector>
-        <Campo
+        <CampoSelector
           etiqueta="Acción"
-          placeholder="ej. usuario.crear"
-          autoCapitalize="none"
-          spellCheck={false}
           value={borrador.accion}
           onChange={(evento) => cambiar('accion')(evento.target.value)}
-        />
-        <Campo
-          etiqueta="Entidad"
-          placeholder="ej. usuario"
-          autoCapitalize="none"
-          spellCheck={false}
+        >
+          <option value="">Todas</option>
+          {Object.entries(FRASES_ACCION).map(([codigo, frase]) => (
+            <option key={codigo} value={codigo}>
+              {frase.charAt(0).toUpperCase() + frase.slice(1)}
+            </option>
+          ))}
+        </CampoSelector>
+        <CampoSelector
+          etiqueta="Sobre qué"
           value={borrador.entidad}
           onChange={(evento) => cambiar('entidad')(evento.target.value)}
-        />
+        >
+          <option value="">Todo</option>
+          {Object.entries(ETIQUETAS_ENTIDAD).map(([codigo, etiqueta]) => (
+            <option key={codigo} value={codigo}>
+              {etiqueta}
+            </option>
+          ))}
+        </CampoSelector>
         <div className="filtros__acciones">
           <Boton type="submit">Filtrar</Boton>
           <Boton variante="secundario" onClick={limpiar}>
@@ -135,22 +150,27 @@ export function PaginaBitacora() {
         </div>
       </form>
 
-      {consulta.isPending && <Cargando texto="Cargando la bitácora…" />}
+      {consulta.isPending && <Esqueleto texto="Cargando la actividad…" filas={8} />}
       {consulta.isError && <Aviso tipo="error">{mensajeDe(consulta.error)}</Aviso>}
       {consulta.data &&
         (consulta.data.registros.length === 0 ? (
-          <p className="vacio">No hay registros con esos filtros.</p>
+          <div className="tabla-contenedor">
+            <EstadoVacio
+              icono="buscar"
+              titulo="No hay registros con esos filtros."
+              descripcion="Prueba con otras fechas o quita algún filtro."
+            />
+          </div>
         ) : (
           <>
             <div className="tabla-contenedor">
               <table className="tabla">
-                <caption className="solo-lectores">Registros de la bitácora</caption>
+                <caption className="solo-lectores">Registros de actividad</caption>
                 <thead>
                   <tr>
                     <th scope="col">Fecha</th>
-                    <th scope="col">Usuario</th>
-                    <th scope="col">Acción</th>
-                    <th scope="col">Entidad</th>
+                    <th scope="col">Quién</th>
+                    <th scope="col">Qué pasó</th>
                     <th scope="col">Detalle</th>
                   </tr>
                 </thead>
@@ -169,10 +189,13 @@ export function PaginaBitacora() {
                         )}
                       </td>
                       <td>
-                        <code>{registro.accion}</code>
-                      </td>
-                      <td>
-                        <code>{registro.entidad}</code>
+                        {describirAccion(registro.accion)}
+                        {/* Sin traducción ya se está mostrando el código: no se repite. */}
+                        {describirAccion(registro.accion) !== registro.accion && (
+                          <small>
+                            <code>{registro.accion}</code>
+                          </small>
+                        )}
                       </td>
                       <td>
                         <Boton

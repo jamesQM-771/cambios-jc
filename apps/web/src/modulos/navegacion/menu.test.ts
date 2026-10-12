@@ -13,7 +13,7 @@ describe('menú según permisos', () => {
       'Usuarios',
       'Empresa',
       'Configuración',
-      'Bitácora',
+      'Actividad',
     ]);
   });
 

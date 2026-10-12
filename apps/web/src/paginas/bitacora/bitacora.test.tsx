@@ -118,8 +118,8 @@ describe('filtros de la bitácora', () => {
       ).toBeInTheDocument(),
     );
     await usuario.selectOptions(screen.getByLabelText('Usuario'), 'Ana Pérez (ana)');
-    await usuario.type(screen.getByLabelText('Acción'), '  usuario.crear ');
-    await usuario.type(screen.getByLabelText('Entidad'), 'usuario');
+    await usuario.selectOptions(screen.getByLabelText('Acción'), 'usuario.crear');
+    await usuario.selectOptions(screen.getByLabelText('Sobre qué'), 'usuario');
     const antes = api.de('GET', '/auditoria').length;
     await usuario.click(screen.getByRole('button', { name: 'Filtrar' }));
 
@@ -140,7 +140,7 @@ describe('filtros de la bitácora', () => {
     await screen.findByRole('table');
     const antes = api.de('GET', '/auditoria').length;
 
-    await usuario.type(screen.getByLabelText('Acción'), 'usuario.crear');
+    await usuario.selectOptions(screen.getByLabelText('Acción'), 'usuario.crear');
 
     expect(api.de('GET', '/auditoria')).toHaveLength(antes);
   });
@@ -164,14 +164,14 @@ describe('filtros de la bitácora', () => {
   it('Limpiar borra los filtros y vuelve a consultar sin ellos', async () => {
     const { api, usuario } = abrirBitacora([registroFalso()]);
     await screen.findByRole('table');
-    await usuario.type(screen.getByLabelText('Entidad'), 'usuario');
+    await usuario.selectOptions(screen.getByLabelText('Sobre qué'), 'usuario');
     await usuario.click(screen.getByRole('button', { name: 'Filtrar' }));
     await waitFor(() => expect(ultimaConsulta(api)?.get('entidad')).toBe('usuario'));
 
     await usuario.click(screen.getByRole('button', { name: 'Limpiar' }));
 
     // La consulta sin filtros ya estaba en caché: se restablecen los campos y vuelve el listado completo.
-    expect(screen.getByLabelText('Entidad')).toHaveValue('');
+    expect(screen.getByLabelText('Sobre qué')).toHaveValue('');
     expect(screen.getByLabelText('Desde')).toHaveValue('');
     expect(await screen.findByRole('table')).toBeInTheDocument();
   });
@@ -188,7 +188,7 @@ describe('filtros de la bitácora', () => {
       }),
     });
     await screen.findByRole('table');
-    await usuario.type(screen.getByLabelText('Entidad'), 'usuario');
+    await usuario.selectOptions(screen.getByLabelText('Sobre qué'), 'usuario');
     await usuario.click(screen.getByRole('button', { name: 'Filtrar' }));
     expect(await screen.findByText('Mostrando 1–50 de 120')).toBeInTheDocument();
 
@@ -222,6 +222,10 @@ describe('detalle de un registro', () => {
     expect(
       within(dialogo).getByRole('heading', { name: 'Después' }).nextElementSibling,
     ).toHaveTextContent('"nombre": "Casa Nueva"');
+    const cambios = within(dialogo).getByRole('table', { name: 'Campos que cambiaron' });
+    expect(
+      within(cambios).getByRole('row', { name: 'Nombre Casa Vieja Casa Nueva' }),
+    ).toBeVisible();
     expect(within(dialogo).getByText('10.0.0.7')).toBeInTheDocument();
     expect(within(dialogo).getByText('Navegador de prueba')).toBeInTheDocument();
     expect(within(dialogo).getByText('Ana Pérez (ana)')).toBeInTheDocument();
@@ -245,7 +249,7 @@ describe('detalle de un registro', () => {
     const dialogo = await screen.findByRole('dialog', { name: 'Detalle del registro' });
     expect(within(dialogo).getAllByText('Sin datos')).toHaveLength(2);
     expect(within(dialogo).getByText(/Sin usuario/)).toBeInTheDocument();
-    expect(within(dialogo).getAllByText('—').length).toBeGreaterThanOrEqual(3);
+    expect(within(dialogo).getAllByText('—').length).toBeGreaterThanOrEqual(2);
   });
 
   it('el botón Cerrar cierra el detalle', async () => {

@@ -358,8 +358,8 @@ describe('acciones sobre un usuario', () => {
     accion: string,
   ) => {
     const fila = await filaDe(nombre);
-    await usuario.click(within(fila).getByText('Más acciones'));
-    await usuario.click(within(fila).getByRole('button', { name: accion }));
+    await usuario.click(within(fila).getByRole('button', { name: /Más acciones/ }));
+    await usuario.click(within(fila).getByRole('menuitem', { name: accion }));
   };
 
   it('desactivar pide confirmación; cancelar no hace nada', async () => {
@@ -414,15 +414,15 @@ describe('acciones sobre un usuario', () => {
     const { usuario } = abrirUsuarios([MIO, usuarioFalso()]);
 
     const propia = await filaDe('Persona administrador');
-    await usuario.click(within(propia).getByText('Más acciones'));
+    await usuario.click(within(propia).getByRole('button', { name: /Más acciones/ }));
 
-    expect(within(propia).queryByRole('button', { name: 'Desactivar' })).not.toBeInTheDocument();
+    expect(within(propia).queryByRole('menuitem', { name: 'Desactivar' })).not.toBeInTheDocument();
     expect(
-      within(propia).getByRole('button', { name: 'Restablecer contraseña' }),
+      within(propia).getByRole('menuitem', { name: 'Restablecer contraseña' }),
     ).toBeInTheDocument();
     const otra = await filaDe('Ana Pérez');
-    await usuario.click(within(otra).getByText('Más acciones'));
-    expect(within(otra).getByRole('button', { name: 'Desactivar' })).toBeInTheDocument();
+    await usuario.click(within(otra).getByRole('button', { name: /Más acciones/ }));
+    expect(within(otra).getByRole('menuitem', { name: 'Desactivar' })).toBeInTheDocument();
   });
 
   it('reactivar actúa de inmediato y avisa', async () => {

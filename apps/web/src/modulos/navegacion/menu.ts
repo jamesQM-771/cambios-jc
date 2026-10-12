@@ -56,8 +56,8 @@ export const ENTRADAS_MENU: readonly EntradaMenu[] = [
     ruta: '/bitacora',
     grupo: 'Seguridad',
     icono: 'bitacora',
-    etiqueta: 'Bitácora',
-    descripcion: 'Quién hizo qué y cuándo',
+    etiqueta: 'Actividad',
+    descripcion: 'Quién hizo qué y cuándo, con el antes y el después',
     permiso: 'auditoria.ver',
   },
 ];

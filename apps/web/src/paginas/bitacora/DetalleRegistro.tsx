@@ -2,6 +2,7 @@ import { Boton } from '../../componentes/Boton.js';
 import { Dialogo } from '../../componentes/Dialogo.js';
 import { formatearFechaHora } from '../../lib/formato.js';
 import type { RegistroAuditoria } from '../../modulos/auditoria/api.js';
+import { cambiosDe, describirAccion, etiquetaEntidad } from '../../modulos/auditoria/lenguaje.js';
 
 interface PropiedadesDetalle {
   registro: RegistroAuditoria | null;
@@ -14,6 +15,7 @@ const comoTexto = (valor: unknown): string =>
 
 /** Todo lo que se sabe de un registro de la bitácora, con el antes y el después lado a lado. */
 export function DetalleRegistro({ registro, zonaHoraria, alCerrar }: PropiedadesDetalle) {
+  const cambios = registro ? cambiosDe(registro.antes, registro.despues) : [];
   return (
     <Dialogo abierto={registro !== null} alCerrar={alCerrar} titulo="Detalle del registro" ancho>
       {registro && (
@@ -27,21 +29,53 @@ export function DetalleRegistro({ registro, zonaHoraria, alCerrar }: Propiedades
                 ? `${registro.usuario.nombre} (${registro.usuario.login})`
                 : 'Sin usuario (acción del sistema o intento sin sesión)'}
             </dd>
-            <dt>Acción</dt>
+            <dt>Qué pasó</dt>
             <dd>
-              <code>{registro.accion}</code>
+              {describirAccion(registro.accion)}
+              {describirAccion(registro.accion) !== registro.accion && (
+                <>
+                  {' '}
+                  <code>({registro.accion})</code>
+                </>
+              )}
             </dd>
-            <dt>Entidad</dt>
+            <dt>Sobre qué</dt>
             <dd>
-              <code>{registro.entidad}</code>
+              {etiquetaEntidad(registro.entidad)}
+              {registro.entidadId ? ` · id ${registro.entidadId}` : ''}
             </dd>
-            <dt>Id de la entidad</dt>
-            <dd>{registro.entidadId ?? '—'}</dd>
             <dt>Dirección IP</dt>
             <dd>{registro.ip ?? '—'}</dd>
             <dt>Dispositivo</dt>
             <dd>{registro.agenteUsuario ?? '—'}</dd>
           </dl>
+          {cambios.length > 0 && (
+            <>
+              <h3>Qué cambió</h3>
+              <div className="tabla-contenedor tabla-contenedor--cambios">
+                <table className="tabla">
+                  <caption className="solo-lectores">Campos que cambiaron</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Dato</th>
+                      <th scope="col">Antes</th>
+                      <th scope="col">Después</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {cambios.map((cambio) => (
+                      <tr key={cambio.campo}>
+                        <th scope="row">{cambio.campo}</th>
+                        <td>{cambio.antes}</td>
+                        <td>{cambio.despues}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+          <p className="campo__ayuda">Datos técnicos del registro, tal como quedaron guardados:</p>
           <div className="comparacion">
             <section aria-labelledby="titulo-antes">
               <h3 id="titulo-antes">Antes</h3>

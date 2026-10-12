@@ -1,6 +1,5 @@
-import { useRef } from 'react';
-
 import { Boton } from '../../componentes/Boton.js';
+import { MenuAcciones, type AccionMenu } from '../../componentes/MenuAcciones.js';
 import { ETIQUETAS_ROL, formatearFechaHora } from '../../lib/formato.js';
 import type { UsuarioLista } from '../../modulos/usuarios/tipos.js';
 
@@ -23,7 +22,7 @@ function Etiquetas({ usuario, zonaHoraria }: { usuario: UsuarioLista; zonaHorari
       {usuario.activo ? (
         <span className="etiqueta etiqueta--exito">Activo</span>
       ) : (
-        <span className="etiqueta etiqueta--error">Inactivo</span>
+        <span className="etiqueta">Inactivo</span>
       )}
       {!usuario.tiene2fa && (
         <span className="etiqueta etiqueta--alerta">Sin verificación en dos pasos</span>
@@ -40,49 +39,25 @@ function Etiquetas({ usuario, zonaHoraria }: { usuario: UsuarioLista; zonaHorari
   );
 }
 
-/** Menú de acciones de una fila con el elemento nativo `<details>`: se maneja con teclado y no necesita JavaScript. */
-function MasAcciones({
-  usuario,
-  esElMismo,
-  alElegir,
-}: {
-  usuario: UsuarioLista;
-  esElMismo: boolean;
-  alElegir: PropiedadesTabla['alElegir'];
-}) {
-  const menu = useRef<HTMLDetailsElement>(null);
-  const elegir = (accion: AccionUsuario) => {
-    if (menu.current) menu.current.open = false;
+/** Acciones de acceso de una persona. Nadie puede desactivarse a sí mismo (el servidor también lo impide). */
+function accionesDe(
+  usuario: UsuarioLista,
+  esElMismo: boolean,
+  alElegir: PropiedadesTabla['alElegir'],
+): AccionMenu[] {
+  const elegir = (accion: AccionUsuario) => () => {
     alElegir(accion, usuario);
   };
-  return (
-    <details className="mas-acciones" ref={menu}>
-      <summary className="boton boton--secundario boton--chico">Más acciones</summary>
-      <div className="mas-acciones__lista">
-        {usuario.activo ? (
-          // Nadie puede desactivarse a sí mismo (el servidor también lo impide).
-          !esElMismo && (
-            <Boton variante="peligro" chico onClick={() => elegir('desactivar')}>
-              Desactivar
-            </Boton>
-          )
-        ) : (
-          <Boton variante="secundario" chico onClick={() => elegir('reactivar')}>
-            Reactivar
-          </Boton>
-        )}
-        <Boton variante="secundario" chico onClick={() => elegir('restablecer')}>
-          Restablecer contraseña
-        </Boton>
-        <Boton variante="secundario" chico onClick={() => elegir('reiniciar2fa')}>
-          Reiniciar verificación en dos pasos
-        </Boton>
-        <Boton variante="secundario" chico onClick={() => elegir('cerrarSesiones')}>
-          Cerrar sus sesiones
-        </Boton>
-      </div>
-    </details>
-  );
+  const acciones: AccionMenu[] = [
+    { etiqueta: 'Restablecer contraseña', alElegir: elegir('restablecer') },
+    { etiqueta: 'Reiniciar verificación en dos pasos', alElegir: elegir('reiniciar2fa') },
+    { etiqueta: 'Cerrar sus sesiones', alElegir: elegir('cerrarSesiones') },
+  ];
+  if (!usuario.activo) acciones.push({ etiqueta: 'Reactivar', alElegir: elegir('reactivar') });
+  else if (!esElMismo) {
+    acciones.push({ etiqueta: 'Desactivar', alElegir: elegir('desactivar'), peligro: true });
+  }
+  return acciones;
 }
 
 export function TablaUsuarios({
@@ -132,7 +107,10 @@ export function TablaUsuarios({
                     >
                       Editar
                     </Boton>
-                    <MasAcciones usuario={usuario} esElMismo={esElMismo} alElegir={alElegir} />
+                    <MenuAcciones
+                      etiqueta={`Más acciones de ${usuario.nombre}`}
+                      acciones={accionesDe(usuario, esElMismo, alElegir)}
+                    />
                   </div>
                 </td>
               </tr>

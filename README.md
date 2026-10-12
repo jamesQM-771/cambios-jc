@@ -36,8 +36,12 @@ Estilo neutro con acento índigo, en tema claro y oscuro (decisiones D75 a D80 e
 - **Tokens:** todo color, espacio y tamaño sale de `apps/web/src/estilos/tokens.css`. Los componentes usan clases propias de `componentes.css`; no hay Tailwind ni librerías de componentes.
 - **Tipografía:** Inter para texto y JetBrains Mono para cifras y códigos, servidas desde `apps/web/src/estilos/fuentes/` (licencia OFL incluida). No se pide nada a terceros.
 - **Iconos:** propios, en `apps/web/src/componentes/Icono.tsx`.
-- **Cifras:** las tasas se muestran con coma decimal (`5,19`) mediante `formatearTasa` en `apps/web/src/lib/formato.ts`. La API sigue enviando y recibiendo punto (`5.190000`), y los campos donde se escribe una tasa todavía esperan punto (`4.68`).
+- **Cifras:** las tasas se muestran con coma decimal (`5,19`) mediante `formatearTasa` en `apps/web/src/lib/formato.ts`. La API sigue enviando y recibiendo punto (`5.190000`).
 - **Estructura:** encabezado con la empresa y la persona, menú lateral con iconos (cajón en celular) y, para quien solo tiene "Inicio" (el digitador), una estructura mínima sin menú.
+- **Componentes compartidos** (`apps/web/src/componentes/`): `Notificaciones` (éxitos que se cierran solos), `MenuAcciones` (acciones de una fila, con teclado), `Pagina.tsx` (encabezado de página, barra de búsqueda y filtros, secciones de formulario, estado vacío y carga con forma) y `CamposEspeciales.tsx` (solo dígitos, teléfono con país y resumen de errores). Decisiones D82 a D95.
+- **Datos por partes:** el NIT, los teléfonos y la dirección se capturan por partes y se guardan como un solo texto (`lib/empresa.ts`, `lib/telefono.ts`). La API no cambió.
+- **Tasas a mano:** se pueden escribir con coma o con punto. Un valor ambiguo como `3.200` no se publica: el campo pide aclararlo.
+- **Actividad:** es la bitácora de auditoría con otro nombre en el menú y en lenguaje claro. Los registros, el permiso y la protección contra cambios son los mismos.
 
 ## Requisitos
 

@@ -6,9 +6,10 @@ import { Aviso } from '../../componentes/Aviso.js';
 import { Boton } from '../../componentes/Boton.js';
 import { Campo } from '../../componentes/Campo.js';
 import { CampoSelector } from '../../componentes/CampoSelector.js';
-import { Cargando } from '../../componentes/Cargando.js';
 import { Dialogo } from '../../componentes/Dialogo.js';
 import { DialogoConfirmacion } from '../../componentes/DialogoConfirmacion.js';
+import { useNotificar } from '../../componentes/Notificaciones.js';
+import { EstadoVacio, Esqueleto } from '../../componentes/Pagina.js';
 import { Paginacion } from '../../componentes/Paginacion.js';
 import { mensajeDe } from '../../lib/api.js';
 import { ETIQUETAS_ROL } from '../../lib/formato.js';
@@ -52,6 +53,7 @@ export function PaginaUsuarios() {
   const { usuario: yo, empresa } = useSesionActual();
   const zonaHoraria = empresa?.zonaHoraria ?? 'America/Bogota';
   const cliente = useQueryClient();
+  const notificar = useNotificar();
 
   const [busqueda, setBusqueda] = useState('');
   const [rol, setRol] = useState<Rol | ''>('');
@@ -74,7 +76,8 @@ export function PaginaUsuarios() {
 
   const cerrarDialogo = () => setDialogo(null);
   const alExito = (texto: string) => {
-    setMensaje({ tipo: 'exito', texto });
+    setMensaje(null);
+    notificar(texto);
     setDialogo(null);
     return cliente.invalidateQueries({ queryKey: CLAVE_USUARIOS });
   };
@@ -209,13 +212,26 @@ export function PaginaUsuarios() {
         )}
       </form>
 
-      {lista.isPending && <Cargando texto="Cargando usuarios…" />}
+      {lista.isPending && <Esqueleto texto="Cargando usuarios…" />}
       {lista.isError && <Aviso tipo="error">{mensajeDe(lista.error)}</Aviso>}
       {lista.data &&
         (lista.data.usuarios.length === 0 ? (
-          <p className="vacio">
-            {hayFiltros ? 'No hay usuarios con esos filtros.' : 'Todavía no hay usuarios.'}
-          </p>
+          <div className="tabla-contenedor">
+            {hayFiltros ? (
+              <EstadoVacio
+                icono="buscar"
+                titulo="No hay usuarios con esos filtros."
+                descripcion="Prueba con otro nombre, rol o estado."
+                accion={
+                  <Boton variante="secundario" chico onClick={limpiarFiltros}>
+                    Limpiar filtros
+                  </Boton>
+                }
+              />
+            ) : (
+              <EstadoVacio icono="usuarios" titulo="Todavía no hay usuarios." />
+            )}
+          </div>
         ) : (
           <>
             <TablaUsuarios

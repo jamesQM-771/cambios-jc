@@ -108,7 +108,7 @@ describe('menús por rol', () => {
       within(menu)
         .getAllByRole('link')
         .map((enlace) => enlace.textContent),
-    ).toEqual(['Inicio', 'Usuarios', 'Empresa', 'Configuración', 'Bitácora']);
+    ).toEqual(['Inicio', 'Usuarios', 'Empresa', 'Configuración', 'Actividad']);
     expect(within(menu).getByRole('link', { name: 'Inicio' })).toHaveAttribute(
       'aria-current',
       'page',
@@ -184,7 +184,7 @@ describe('permisos de las pantallas', () => {
     ['/usuarios', 'Usuarios'],
     ['/empresa', 'Empresa'],
     ['/configuracion', 'Configuración'],
-    ['/bitacora', 'Bitácora'],
+    ['/bitacora', 'Actividad'],
   ])('el administrador abre %s', async (ruta, titulo) => {
     simularApi({
       'GET /auth/yo': { cuerpo: sesionFalsa('administrador') },

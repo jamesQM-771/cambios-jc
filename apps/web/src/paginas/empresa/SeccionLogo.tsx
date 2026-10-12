@@ -4,6 +4,7 @@ import { useEffect, useState, type SyntheticEvent } from 'react';
 import { Aviso } from '../../componentes/Aviso.js';
 import { Boton } from '../../componentes/Boton.js';
 import { Campo } from '../../componentes/Campo.js';
+import { SeccionFormulario } from '../../componentes/Pagina.js';
 import { mensajeDe, urlApi } from '../../lib/api.js';
 import { CLAVE_SESION } from '../../modulos/auth/sesion.js';
 import { CLAVE_EMPRESA, subirLogo, type Empresa } from '../../modulos/empresa/api.js';
@@ -65,33 +66,45 @@ export function SeccionLogo({ empresa, alSubir }: { empresa: Empresa; alSubir: (
   };
 
   return (
-    <form className="formulario-ancho seccion" onSubmit={enviar} noValidate>
-      <h2>Logo</h2>
-      <div className="logo">
-        {empresa.logoUrl ? (
-          <img
-            className="logo__vista"
-            src={urlApi(empresa.logoUrl)}
-            alt="Logo actual de la empresa"
-          />
-        ) : (
-          <div className="logo__sin">Sin logo</div>
-        )}
-        {vista && <img className="logo__vista" src={vista} alt="Vista previa del logo nuevo" />}
-      </div>
-      {subir.isError && <Aviso tipo="error">{mensajeDe(subir.error)}</Aviso>}
-      <Campo
-        key={versionCampo}
-        etiqueta="Logo nuevo"
-        type="file"
-        accept="image/png,image/jpeg"
-        ayuda="Imagen PNG o JPG, de hasta 1 MB. Aparece en el sistema y en los recibos."
-        error={problema ?? undefined}
-        onChange={(evento) => alElegir(evento.target.files?.[0])}
-      />
-      <Boton type="submit" cargando={subir.isPending} disabled={!archivo}>
-        Subir logo
-      </Boton>
+    <form className="formulario-empresa" onSubmit={enviar} noValidate>
+      <SeccionFormulario
+        titulo="Logo"
+        descripcion="Aparece en el encabezado y en la pantalla de acceso. También irá en los recibos cuando existan."
+      >
+        <div className="logo">
+          <figure className="logo__marco">
+            {empresa.logoUrl ? (
+              <img
+                className="logo__vista"
+                src={urlApi(empresa.logoUrl)}
+                alt="Logo actual de la empresa"
+              />
+            ) : (
+              <div className="logo__sin">Sin logo</div>
+            )}
+            <figcaption>Actual</figcaption>
+          </figure>
+          {vista && (
+            <figure className="logo__marco">
+              <img className="logo__vista" src={vista} alt="Vista previa del logo nuevo" />
+              <figcaption>Nuevo, sin guardar</figcaption>
+            </figure>
+          )}
+        </div>
+        {subir.isError && <Aviso tipo="error">{mensajeDe(subir.error)}</Aviso>}
+        <Campo
+          key={versionCampo}
+          etiqueta="Logo nuevo"
+          type="file"
+          accept="image/png,image/jpeg"
+          ayuda="Imagen PNG o JPG, de hasta 1 MB. Mejor cuadrada y con fondo claro o transparente."
+          error={problema ?? undefined}
+          onChange={(evento) => alElegir(evento.target.files?.[0])}
+        />
+        <Boton type="submit" cargando={subir.isPending} disabled={!archivo}>
+          {empresa.logoUrl ? 'Reemplazar logo' : 'Subir logo'}
+        </Boton>
+      </SeccionFormulario>
     </form>
   );
 }

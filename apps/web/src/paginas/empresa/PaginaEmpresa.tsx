@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
 
 import { Aviso } from '../../componentes/Aviso.js';
-import { Cargando } from '../../componentes/Cargando.js';
+import { useNotificar } from '../../componentes/Notificaciones.js';
+import { EncabezadoPagina, Esqueleto } from '../../componentes/Pagina.js';
 import { mensajeDe } from '../../lib/api.js';
 import { useTitulo } from '../../lib/titulo.js';
 import { CLAVE_EMPRESA, pedirEmpresa } from '../../modulos/empresa/api.js';
@@ -13,16 +13,15 @@ import { SeccionLogo } from './SeccionLogo.js';
 export function PaginaEmpresa() {
   useTitulo('Empresa');
   const consulta = useQuery({ queryKey: CLAVE_EMPRESA, queryFn: pedirEmpresa });
-  const [aviso, setAviso] = useState<string | null>(null);
+  const notificar = useNotificar();
 
   return (
     <>
-      <div className="cabecera-pagina">
-        <h1>Empresa</h1>
-        <p>Los datos de la empresa se usan en el sistema y en los recibos.</p>
-      </div>
-      {aviso && <Aviso tipo="exito">{aviso}</Aviso>}
-      {consulta.isPending && <Cargando texto="Cargando los datos de la empresa…" />}
+      <EncabezadoPagina
+        titulo="Empresa"
+        descripcion="Los datos del negocio. Se usan en el sistema y, más adelante, en los recibos."
+      />
+      {consulta.isPending && <Esqueleto texto="Cargando los datos de la empresa…" filas={8} />}
       {consulta.isError && <Aviso tipo="error">{mensajeDe(consulta.error)}</Aviso>}
       {consulta.data && (
         <>
@@ -39,9 +38,16 @@ export function PaginaEmpresa() {
               consulta.data.textoPieRecibo,
             ])}
             empresa={consulta.data}
-            alGuardar={() => setAviso('Se guardaron los cambios.')}
+            alGuardar={() => {
+              notificar('Se guardaron los cambios.');
+            }}
           />
-          <SeccionLogo empresa={consulta.data} alSubir={() => setAviso('El logo se actualizó.')} />
+          <SeccionLogo
+            empresa={consulta.data}
+            alSubir={() => {
+              notificar('El logo se actualizó.');
+            }}
+          />
         </>
       )}
     </>

@@ -45,7 +45,9 @@ describe('datos de la empresa', () => {
     abrirEmpresa();
 
     expect(await screen.findByLabelText('Nombre')).toHaveValue('Casa de Cambio Ejemplo');
-    expect(screen.getByLabelText('NIT')).toHaveValue('900.000.000-0');
+    expect(screen.getByLabelText('NIT')).toHaveValue('900000000');
+    expect(screen.getByLabelText('Dígito de verificación')).toHaveValue('0');
+    expect(screen.getByText('Se muestra como 900.000.000-0.')).toBeInTheDocument();
     expect(screen.getByLabelText('Teléfono')).toHaveValue('');
     expect(screen.getByLabelText('WhatsApp')).toHaveValue('3000000000');
     expect(screen.getByLabelText('Moneda local')).toHaveValue('COP');
@@ -87,11 +89,11 @@ describe('datos de la empresa', () => {
 
     await usuario.clear(nit);
     await usuario.type(nit, '901.111.222-3');
-    await usuario.clear(screen.getByLabelText('Dirección'));
+    await usuario.clear(screen.getByLabelText('Vía'));
     await usuario.click(screen.getByRole('button', { name: 'Guardar cambios' }));
 
     await waitFor(() => expect(api.de('PATCH', '/empresa')).toHaveLength(1));
-    expect(api.de('PATCH', '/empresa')[0]?.cuerpo).toEqual({ nit: '901.111.222-3', direccion: '' });
+    expect(api.de('PATCH', '/empresa')[0]?.cuerpo).toEqual({ nit: '901111222-3', direccion: '' });
   });
 
   it('un cambio y su reverso vuelven a dejar el botón apagado', async () => {
@@ -208,7 +210,7 @@ describe('logo de la empresa', () => {
     );
     // El campo queda vacío y sin vista previa.
     expect(screen.queryByAltText('Vista previa del logo nuevo')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Subir logo' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Reemplazar logo' })).toBeDisabled();
   });
 
   it('si el servidor rechaza el archivo, muestra su mensaje', async () => {

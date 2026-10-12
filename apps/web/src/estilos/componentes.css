@@ -922,6 +922,8 @@ textarea.campo__entrada {
   box-shadow: var(--sombra-fuerte);
   width: min(480px, calc(100vw - 2 * var(--espacio-4)));
   max-height: calc(100dvh - 2 * var(--espacio-4));
+  /* Un formulario más alto que la ventana se desplaza dentro del diálogo, no se corta. */
+  overflow-y: auto;
 }
 
 .dialogo[open] {
@@ -1566,4 +1568,95 @@ textarea.campo__entrada {
     right: var(--espacio-3);
     bottom: var(--espacio-3);
   }
+}
+
+/* ---------- Diálogo de usuario: secciones ---------- */
+.dialogo__cuerpo h3 {
+  margin: var(--espacio-5) 0 var(--espacio-3);
+  padding-top: var(--espacio-4);
+  border-top: 1px solid var(--borde);
+}
+
+.dialogo__cuerpo h3:first-of-type {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.formulario-usuario__login {
+  display: block;
+  margin: calc(-1 * var(--espacio-2)) 0 0;
+}
+
+/* ---------- Empresa ---------- */
+.formulario-empresa {
+  max-width: 960px;
+}
+
+.formulario-empresa > .seccion-formulario:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.formulario-empresa__pie {
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--espacio-4) 0 var(--espacio-6);
+  border-top: 1px solid var(--borde);
+}
+
+/* El dígito de verificación es un campo corto al lado del NIT. */
+.campos-en-fila--nit {
+  grid-template-columns: minmax(0, 2fr) minmax(120px, 1fr);
+}
+
+.direccion-armada {
+  margin: 0 0 var(--espacio-2);
+  padding: var(--espacio-3) var(--espacio-4);
+  border-radius: var(--radio-chico);
+  background: var(--superficie-suave);
+  color: var(--texto-suave);
+  font-size: var(--texto-chico);
+  overflow-wrap: anywhere;
+}
+
+.direccion-armada strong {
+  color: var(--texto);
+}
+
+.nota-zona {
+  display: block;
+  margin-top: calc(-1 * var(--espacio-2));
+}
+
+.logo__marco {
+  display: grid;
+  justify-items: center;
+  gap: var(--espacio-1);
+  margin: 0;
+}
+
+.logo__marco figcaption {
+  color: var(--texto-suave);
+  font-size: var(--texto-mini);
+}
+
+/* ---------- Actividad: qué cambió ---------- */
+.tabla-contenedor--cambios {
+  margin-bottom: var(--espacio-4);
+  box-shadow: none;
+}
+
+.tabla tbody th[scope='row'] {
+  background: transparent;
+  color: var(--texto-suave);
+  font-size: var(--texto-chico);
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  border-top: 1px solid var(--borde);
+}
+
+.tabla-contenedor--cambios td {
+  overflow-wrap: anywhere;
 }

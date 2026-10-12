@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, type InputHTMLAttributes } from 'react';
+import { useEffect, useId, useRef, type InputHTMLAttributes, type Ref } from 'react';
 
 import { PAISES_TELEFONO, separarTelefono, unirTelefono } from '../lib/telefono.js';
 
@@ -13,6 +13,7 @@ interface PropiedadesCampoDigitos extends Omit<
   error?: string | undefined;
   valor: string;
   alCambiar: (valor: string) => void;
+  ref?: Ref<HTMLInputElement>;
 }
 
 /**
