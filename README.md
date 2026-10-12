@@ -103,36 +103,34 @@ npm run dev
 
 La API está lista cuando la terminal muestra `Server listening at http://127.0.0.1:3000`; antes de eso la web responde con un error de conexión.
 
-#### Si la API no arranca con `npm run dev`
+#### Para usar el sistema sin esperar: `npm run iniciar`
 
-En algunos equipos la API en modo desarrollo se queda sin escuchar en el puerto 3000. Mientras se investiga la causa, se puede usar la versión compilada, en dos terminales:
+Con `npm run dev` la API se transpila al vuelo y en un equipo lento tarda **entre 30 y 60 segundos** en responder (medido; ver D81). Mientras tanto la web ya abre, pero cualquier intento de entrar falla con "El servidor todavía no responde". No está caída: hay que esperar la línea `Server listening at http://127.0.0.1:3000`.
 
-```bash
-npm run build -w @cambios-jc/shared
-npm run build -w @cambios-jc/api
-npm run start -w @cambios-jc/api
-```
+Para navegar y probar el sistema (no para programar la API) es más rápido usar la versión compilada:
 
 ```bash
-npm run dev -w @cambios-jc/web
+npm run compilar   # una vez, y de nuevo cada vez que cambie el código de la API o de shared
+npm run iniciar    # API compilada + web; la API responde en unos 10 segundos
 ```
 
-Con este modo, un cambio en el código de la API no se refleja hasta volver a compilar. Si un puerto queda ocupado, cierra las terminales de arranques anteriores.
+Luego abre http://localhost:5173/acceso. Para detenerlo, `Ctrl+C` en esa terminal. Si un arranque anterior quedó abierto, ciérralo antes: dos copias pelean por los puertos 3000 y 5173.
 
 ## Comandos
 
-| Comando                            | Qué hace                                                      |
-| ---------------------------------- | ------------------------------------------------------------- |
-| `npm run dev`                      | API y web en modo desarrollo                                  |
-| `npm run db:migrate`               | Aplica migraciones (desde la tarea 0.4)                       |
-| `npm run db:seed`                  | Datos ficticios y administrador inicial (desde la tarea 0.4)  |
-| `npm run test`                     | Pruebas                                                       |
-| `npm run lint`                     | ESLint + formato con Prettier                                 |
-| `npm run typecheck`                | Verificación de tipos                                         |
-| `npm run check`                    | lint + typecheck + pruebas (obligatorio antes de cada commit) |
-| `npm run build`                    | Compila todos los paquetes (`shared` primero)                 |
-| `npm run start -w @cambios-jc/api` | Arranca la API ya compilada (tras `npm run build`)            |
-| `npm run format`                   | Aplica el formato de Prettier                                 |
+| Comando                            | Qué hace                                                                       |
+| ---------------------------------- | ------------------------------------------------------------------------------ |
+| `npm run iniciar`                  | API compilada + web, para usar y probar el sistema (antes: `npm run compilar`) |
+| `npm run dev`                      | API y web en modo desarrollo                                                   |
+| `npm run db:migrate`               | Aplica migraciones (desde la tarea 0.4)                                        |
+| `npm run db:seed`                  | Datos ficticios y administrador inicial (desde la tarea 0.4)                   |
+| `npm run test`                     | Pruebas                                                                        |
+| `npm run lint`                     | ESLint + formato con Prettier                                                  |
+| `npm run typecheck`                | Verificación de tipos                                                          |
+| `npm run check`                    | lint + typecheck + pruebas (obligatorio antes de cada commit)                  |
+| `npm run build`                    | Compila todos los paquetes (`shared` primero)                                  |
+| `npm run start -w @cambios-jc/api` | Arranca la API ya compilada (tras `npm run build`)                             |
+| `npm run format`                   | Aplica el formato de Prettier                                                  |
 
 ## Pruebas de la API con base de datos
 

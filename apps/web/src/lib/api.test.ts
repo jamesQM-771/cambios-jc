@@ -101,14 +101,44 @@ describe('errores', () => {
   });
 
   it('una respuesta que no es JSON da un mensaje genérico, no el texto del servidor', async () => {
-    const falso = () => Promise.resolve(new Response('<html>Bad gateway</html>', { status: 502 }));
+    const falso = () =>
+      Promise.resolve(new Response('<html>Error interno</html>', { status: 500 }));
     vi.stubGlobal('fetch', falso);
 
     const error = await api.get('/salud').catch((e: unknown) => e);
 
-    expect(error).toMatchObject({ estado: 502, codigo: 'ERROR_DESCONOCIDO' });
+    expect(error).toMatchObject({ estado: 500, codigo: 'ERROR_DESCONOCIDO' });
     expect(mensajeDe(error)).toBe('Ocurrió un error inesperado. Inténtalo de nuevo.');
-    expect(mensajeDe(error)).not.toContain('Bad gateway');
+    expect(mensajeDe(error)).not.toContain('Error interno');
+  });
+
+  it.each([502, 503, 504])(
+    'si el proxy responde %i (la API aún no arranca) lo dice claro en vez del mensaje genérico',
+    async (estado) => {
+      const falso = () =>
+        Promise.resolve(new Response('<html>Bad gateway</html>', { status: estado }));
+      vi.stubGlobal('fetch', falso);
+
+      const error = await api.post('/auth/login', {}).catch((e: unknown) => e);
+
+      expect(error).toMatchObject({ estado, codigo: 'SERVIDOR_NO_DISPONIBLE' });
+      expect(mensajeDe(error)).toMatch(/El servidor todavía no responde/);
+      expect(mensajeDe(error)).not.toContain('Bad gateway');
+    },
+  );
+
+  it('un 503 con el formato de la API conserva el mensaje de la API', async () => {
+    const cuerpo = {
+      error: { codigo: 'BASE_NO_DISPONIBLE', mensaje: 'La base de datos no responde.' },
+    };
+    vi.stubGlobal('fetch', () =>
+      Promise.resolve(new Response(JSON.stringify(cuerpo), { status: 503 })),
+    );
+
+    const error = await api.get('/salud').catch((e: unknown) => e);
+
+    expect(error).toMatchObject({ estado: 503, codigo: 'BASE_NO_DISPONIBLE' });
+    expect(mensajeDe(error)).toBe('La base de datos no responde.');
   });
 
   it('si no hay conexión responde con un error SIN_CONEXION en español', async () => {

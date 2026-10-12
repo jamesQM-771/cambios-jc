@@ -138,7 +138,9 @@ Mantén estos scripts en el `package.json` raíz y actualiza esta sección si ca
 ```bash
 npm install            # instala todo el monorepo
 # PostgreSQL 18 debe estar corriendo (servicio nativo en desarrollo; ver README)
-npm run dev            # api + web en modo desarrollo
+npm run dev            # api + web en modo desarrollo (la API tarda 30-60 s en responder; ver D81)
+npm run compilar       # compila shared y la API (hace falta tras cambiar su código)
+npm run iniciar        # API ya compilada + web: para usar y probar el sistema, lista en segundos
 npm run db:migrate     # aplica migraciones
 npm run db:seed        # datos de ejemplo ficticios + usuario administrador inicial
 npm run test           # pruebas

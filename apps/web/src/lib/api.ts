@@ -25,6 +25,10 @@ export class ErrorApi extends Error {
 }
 
 const MENSAJE_GENERICO = 'Ocurrió un error inesperado. Inténtalo de nuevo.';
+const MENSAJE_SIN_SERVIDOR =
+  'El servidor todavía no responde. Si lo acabas de arrancar, espera unos segundos e inténtalo de nuevo.';
+/** Respuestas del proxy (Vite o el servidor web) cuando la API está caída o aún arrancando. */
+const ESTADOS_SIN_SERVIDOR = new Set([502, 503, 504]);
 
 interface CuerpoError {
   error?: { codigo?: unknown; mensaje?: unknown; detalles?: unknown };
@@ -38,6 +42,9 @@ async function leerError(respuesta: Response): Promise<ErrorApi> {
     // La respuesta no era JSON (por ejemplo, un error del proxy): se usa el mensaje genérico.
   }
   const error = (cuerpo as CuerpoError | null)?.error;
+  if (error === undefined && ESTADOS_SIN_SERVIDOR.has(respuesta.status)) {
+    return new ErrorApi(respuesta.status, 'SERVIDOR_NO_DISPONIBLE', MENSAJE_SIN_SERVIDOR);
+  }
   return new ErrorApi(
     respuesta.status,
     typeof error?.codigo === 'string' ? error.codigo : 'ERROR_DESCONOCIDO',
