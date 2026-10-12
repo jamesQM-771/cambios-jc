@@ -16,7 +16,10 @@ export function BotonTema() {
       aria-label={`Cambiar al tema ${destino}`}
       title={`Cambiar al tema ${destino}`}
     >
-      <Icono nombre={tema === 'oscuro' ? 'sol' : 'luna'} grande />
+      {/* La clave cambia con el tema: el icono nuevo entra girando. */}
+      <span key={tema} className="boton-tema__icono">
+        <Icono nombre={tema === 'oscuro' ? 'sol' : 'luna'} grande />
+      </span>
     </Boton>
   );
 }

@@ -84,6 +84,12 @@ export function ProveedorNotificaciones({ children }: { children: ReactNode }) {
             >
               <Icono nombre="cerrar" />
             </button>
+            {/* Línea que se agota: muestra cuánto falta para que el aviso se cierre solo. */}
+            <span
+              className="notificacion__tiempo"
+              aria-hidden="true"
+              style={{ animationDuration: `${String(DURACION_NOTIFICACION_MS)}ms` }}
+            />
           </div>
         ))}
       </div>

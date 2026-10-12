@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router';
 
 import { useSesionActual } from '../modulos/auth/ContextoSesion.js';
+import { guardarMenuContraido, menuContraidoGuardado } from '../lib/menu-lateral.js';
 import { entradasVisibles, GRUPOS_MENU } from '../modulos/navegacion/menu.js';
 
 import { Encabezado } from './Encabezado.js';
@@ -16,11 +17,22 @@ import { ProveedorNotificaciones } from './Notificaciones.js';
 export function Estructura() {
   const { permisos } = useSesionActual();
   const [menuAbierto, setMenuAbierto] = useState(false);
+  // Contraído solo cuenta en pantallas anchas; en celular el menú es un cajón y siempre va completo.
+  const [menuContraido, setMenuContraido] = useState(menuContraidoGuardado);
   const entradas = entradasVisibles(permisos);
   const conMenu = entradas.length > 1;
 
+  const alternarContraido = () => {
+    const nuevo = !menuContraido;
+    setMenuContraido(nuevo);
+    guardarMenuContraido(nuevo);
+  };
+
   return (
-    <div className={conMenu ? 'estructura' : 'estructura estructura--minima'}>
+    <div
+      className={conMenu ? 'estructura' : 'estructura estructura--minima'}
+      data-menu={conMenu && menuContraido ? 'contraido' : undefined}
+    >
       <a className="saltar" href="#contenido">
         Saltar al contenido
       </a>
@@ -28,6 +40,8 @@ export function Estructura() {
         conMenu={conMenu}
         menuAbierto={menuAbierto}
         alAlternarMenu={() => setMenuAbierto((abierto) => !abierto)}
+        menuContraido={menuContraido}
+        alAlternarContraido={alternarContraido}
       />
       {conMenu && (
         <nav
@@ -51,10 +65,12 @@ export function Estructura() {
                         to={entrada.ruta}
                         end={entrada.ruta === '/'}
                         className="menu__enlace"
+                        // Contraído solo se ve el icono: el nombre aparece al pasar el cursor.
+                        title={menuContraido ? entrada.etiqueta : undefined}
                         onClick={() => setMenuAbierto(false)}
                       >
                         <Icono nombre={entrada.icono} />
-                        {entrada.etiqueta}
+                        <span className="menu__texto">{entrada.etiqueta}</span>
                       </NavLink>
                     </li>
                   ))}

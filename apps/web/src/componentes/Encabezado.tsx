@@ -17,6 +17,9 @@ interface PropiedadesEncabezado {
   conMenu: boolean;
   menuAbierto: boolean;
   alAlternarMenu: () => void;
+  /** En pantallas anchas el menú se puede contraer a solo iconos. */
+  menuContraido: boolean;
+  alAlternarContraido: () => void;
 }
 
 /** Iniciales para el avatar: primera letra del nombre y del primer apellido. */
@@ -27,7 +30,13 @@ function inicialesDe(nombre: string): string {
   return (primera + segunda).toUpperCase();
 }
 
-export function Encabezado({ conMenu, menuAbierto, alAlternarMenu }: PropiedadesEncabezado) {
+export function Encabezado({
+  conMenu,
+  menuAbierto,
+  alAlternarMenu,
+  menuContraido,
+  alAlternarContraido,
+}: PropiedadesEncabezado) {
   const { usuario, empresa } = useSesionActual();
   const cliente = useQueryClient();
   const navegar = useNavigate();
@@ -56,6 +65,19 @@ export function Encabezado({ conMenu, menuAbierto, alAlternarMenu }: Propiedades
             onClick={alAlternarMenu}
           >
             <Icono nombre="menu" grande />
+          </Boton>
+        )}
+        {conMenu && (
+          <Boton
+            variante="fantasma"
+            className="boton-contraer boton--icono"
+            aria-label={menuContraido ? 'Expandir el menú' : 'Contraer el menú'}
+            title={menuContraido ? 'Expandir el menú' : 'Contraer el menú'}
+            aria-expanded={!menuContraido}
+            aria-controls="menu-principal"
+            onClick={alAlternarContraido}
+          >
+            <Icono nombre="panel" grande />
           </Boton>
         )}
         <div className="encabezado__empresa">

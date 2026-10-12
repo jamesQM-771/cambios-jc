@@ -282,4 +282,39 @@ describe('salir y tema', () => {
     await usuario.click(screen.getByRole('link', { name: 'Usuarios' }));
     expect(screen.getByRole('button', { name: 'Menú' })).toHaveAttribute('aria-expanded', 'false');
   });
+
+  it('el menú lateral se contrae y se expande, y lo recuerda en la siguiente visita', async () => {
+    window.localStorage.removeItem('cambios-jc:menu-contraido');
+    simularApi({ 'GET /auth/yo': { cuerpo: sesionFalsa('administrador') } });
+    const { usuario, container, unmount } = renderizarApp('/');
+
+    const contraer = await screen.findByRole('button', { name: 'Contraer el menú' });
+    expect(contraer).toHaveAttribute('aria-expanded', 'true');
+    expect(container.querySelector('.estructura')).not.toHaveAttribute('data-menu');
+
+    await usuario.click(contraer);
+
+    expect(container.querySelector('.estructura')).toHaveAttribute('data-menu', 'contraido');
+    const expandir = screen.getByRole('button', { name: 'Expandir el menú' });
+    expect(expandir).toHaveAttribute('aria-expanded', 'false');
+    // Contraído, los enlaces conservan su nombre para el teclado y los lectores de pantalla.
+    expect(screen.getByRole('link', { name: 'Usuarios' })).toHaveAttribute('title', 'Usuarios');
+
+    unmount();
+    renderizarApp('/');
+    expect(await screen.findByRole('button', { name: 'Expandir el menú' })).toBeInTheDocument();
+
+    await usuario.click(screen.getByRole('button', { name: 'Expandir el menú' }));
+    expect(screen.getByRole('button', { name: 'Contraer el menú' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Usuarios' })).not.toHaveAttribute('title');
+    window.localStorage.removeItem('cambios-jc:menu-contraido');
+  });
+
+  it('quien no tiene menú lateral tampoco ve el botón para contraerlo', async () => {
+    simularApi({ 'GET /auth/yo': { cuerpo: sesionFalsa('digitador') } });
+    renderizarApp('/');
+
+    await screen.findByRole('button', { name: 'Salir' });
+    expect(screen.queryByRole('button', { name: /el menú/ })).not.toBeInTheDocument();
+  });
 });

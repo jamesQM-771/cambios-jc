@@ -1660,3 +1660,308 @@ textarea.campo__entrada {
 .tabla-contenedor--cambios td {
   overflow-wrap: anywhere;
 }
+
+/* ==========================================================================
+   Movimiento (D96). Todo responde a una acción de la persona, dura menos de
+   300 ms y anima solo `transform` y `opacity`, salvo el ancho del menú. Con
+   "reducir movimiento" activo en el sistema no se anima nada (base.css).
+   ========================================================================== */
+
+@keyframes entrar {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@keyframes desplegar {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.96);
+  }
+}
+
+@keyframes deslizar {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+}
+
+@keyframes bajar {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes agotar {
+  to {
+    transform: scaleX(0);
+  }
+}
+
+@keyframes girar-entrada {
+  from {
+    opacity: 0;
+    transform: rotate(-90deg) scale(0.6);
+  }
+}
+
+/* ---------- Menú lateral que se contrae ---------- */
+.estructura {
+  transition: grid-template-columns var(--transicion-diseno);
+}
+
+.boton-contraer .icono {
+  transition: transform var(--transicion-diseno);
+}
+
+.menu {
+  overflow-x: hidden;
+}
+
+/* El icono queda en el mismo sitio con el menú abierto o contraído: no salta al cambiar. */
+.menu__enlace {
+  position: relative;
+  padding: 0 15px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.menu__enlace .icono {
+  transition: transform var(--transicion);
+}
+
+.menu__enlace:hover .icono {
+  transform: scale(1.1);
+}
+
+.menu__enlace:active .icono {
+  transform: scale(0.94);
+}
+
+/* Marca de la pantalla actual: crece desde el centro al cambiar de sección. */
+.menu__enlace::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 10px;
+  bottom: 10px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--marca);
+  transform: scaleY(0);
+  transition: transform var(--transicion-entrada);
+}
+
+.menu__enlace[aria-current='page']::before {
+  transform: scaleY(1);
+}
+
+.menu__texto {
+  transition: opacity var(--transicion);
+}
+
+.menu__rotulo {
+  position: relative;
+  padding: 0 15px;
+  overflow: hidden;
+  white-space: nowrap;
+  transition: color var(--transicion);
+}
+
+/* Contraído, el rótulo del grupo se vuelve una raya que separa los grupos. */
+.menu__rotulo::after {
+  content: '';
+  position: absolute;
+  left: 15px;
+  right: 15px;
+  top: 50%;
+  height: 1px;
+  background: var(--borde-fuerte);
+  opacity: 0;
+  transition: opacity var(--transicion);
+}
+
+@media (min-width: 801px) {
+  .estructura[data-menu='contraido'] {
+    grid-template-columns: var(--ancho-menu-contraido) minmax(0, 1fr);
+  }
+
+  /* El texto sigue en la página para los lectores de pantalla; solo deja de verse. */
+  [data-menu='contraido'] .menu__texto {
+    opacity: 0;
+  }
+
+  [data-menu='contraido'] .menu__rotulo {
+    color: transparent;
+  }
+
+  [data-menu='contraido'] .menu__rotulo::after {
+    opacity: 1;
+  }
+
+  [data-menu='contraido'] .boton-contraer .icono {
+    transform: scaleX(-1);
+  }
+}
+
+@media (max-width: 800px) {
+  /* En celular el menú es un cajón: se abre con el botón "Menú", no se contrae. */
+  .boton-contraer {
+    display: none;
+  }
+}
+
+/* ---------- Entrada del contenido al cambiar de pantalla o de pestaña ---------- */
+.contenido > :not(.notificaciones),
+.subnav__contenido > * {
+  animation: entrar var(--transicion-entrada);
+}
+
+/* ---------- Botones ---------- */
+.boton:not(.boton--secundario, .boton--peligro, .boton--fantasma):hover:not(:disabled) {
+  box-shadow: var(--sombra-media);
+}
+
+.boton {
+  transition:
+    background var(--transicion),
+    border-color var(--transicion),
+    color var(--transicion),
+    box-shadow var(--transicion),
+    transform var(--transicion-rapida);
+}
+
+/* Mientras se envía, una rueda al lado del texto confirma que el clic llegó. */
+.boton[aria-busy='true']:not(.boton--icono)::before {
+  content: '';
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: girar 0.8s linear infinite;
+}
+
+.boton-tema__icono {
+  display: grid;
+  animation: girar-entrada var(--transicion-entrada);
+}
+
+/* ---------- Tarjetas de acceso del Inicio ---------- */
+.accesos li {
+  animation: entrar var(--transicion-entrada) backwards;
+}
+
+.accesos li:nth-child(2) {
+  animation-delay: 40ms;
+}
+
+.accesos li:nth-child(3) {
+  animation-delay: 80ms;
+}
+
+.accesos li:nth-child(4) {
+  animation-delay: 120ms;
+}
+
+.accesos li:nth-child(n + 5) {
+  animation-delay: 160ms;
+}
+
+.accesos a:active {
+  transform: translateY(0) scale(0.99);
+}
+
+.accesos__icono,
+.accesos__ir .icono {
+  transition: transform var(--transicion);
+}
+
+.accesos a:hover .accesos__icono {
+  transform: scale(1.06);
+}
+
+.accesos a:hover .accesos__ir .icono {
+  transform: translateX(3px);
+}
+
+/* ---------- Pestañas: la raya de la pestaña actual se despliega ---------- */
+.subnav__enlace {
+  position: relative;
+}
+
+.subnav__enlace[aria-current='page'] {
+  border-bottom-color: transparent;
+}
+
+.subnav__enlace::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -2px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--marca);
+  transform: scaleX(0);
+  transition: transform var(--transicion-entrada);
+}
+
+.subnav__enlace[aria-current='page']::after {
+  transform: scaleX(1);
+}
+
+/* ---------- Menú de acciones: se despliega desde su botón ---------- */
+.menu-acciones__lista {
+  transform-origin: top right;
+  animation: desplegar var(--transicion-entrada);
+}
+
+.menu-acciones > .boton[aria-expanded='true'] {
+  background: var(--superficie-suave);
+  color: var(--texto);
+}
+
+/* ---------- Avisos, errores y notificaciones ---------- */
+.aviso {
+  animation: entrar var(--transicion-entrada);
+}
+
+.campo__error {
+  animation: bajar var(--transicion-entrada);
+}
+
+.campo__casilla input {
+  transition: transform var(--transicion-rapida);
+}
+
+.campo__casilla input:active {
+  transform: scale(0.9);
+}
+
+.notificacion {
+  position: relative;
+  overflow: hidden;
+  animation: deslizar var(--transicion-entrada);
+}
+
+.notificacion__tiempo {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--marca);
+  transform-origin: left;
+  animation: agotar linear forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Sin movimiento la línea no se agota: mejor no mostrarla que dejarla fija. */
+  .notificacion__tiempo {
+    display: none;
+  }
+}
