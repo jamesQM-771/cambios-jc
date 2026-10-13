@@ -41,7 +41,7 @@ describe('lenguaje de la actividad', () => {
   });
 
   it('una acción desconocida se muestra con su código, sin romper nada', () => {
-    expect(describirAccion('remesa.registrar')).toBe('remesa.registrar');
+    expect(describirAccion('caja.reabrir_turno')).toBe('caja.reabrir_turno');
     expect(describirAccion('tasa.publicar')).toBe('publicó una tasa');
     expect(etiquetaEntidad('linea_negocio')).toBe('Líneas de negocio');
     expect(etiquetaEntidad('otra_cosa')).toBe('otra_cosa');

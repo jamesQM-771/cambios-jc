@@ -50,6 +50,7 @@ export const FRASES_ACCION: Record<string, string> = {
   'cuenta_dinero.desactivar': 'desactivó una cuenta de dinero',
   'cuenta_dinero.reactivar': 'reactivó una cuenta de dinero',
   'tasa.publicar': 'publicó una tasa',
+  'remesa.registrar': 'registró una remesa',
   'cliente.crear': 'registró un cliente',
   'cliente.editar': 'editó un cliente',
   'cliente.desactivar': 'desactivó un cliente',
@@ -74,6 +75,7 @@ export const ETIQUETAS_ENTIDAD: Record<string, string> = {
   linea_negocio: 'Líneas de negocio',
   cuenta_dinero: 'Cuentas de dinero',
   tasa: 'Tasas',
+  operacion: 'Remesas',
   cliente: 'Clientes',
   medio_pago: 'Medios de pago',
 };

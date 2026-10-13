@@ -91,23 +91,24 @@ enum TipoCuenta {
 /// Cuenta de dinero (fase 1, §5.9 de PROYECTO.md): catálogo, sin saldo todavía (el saldo sale de los
 /// movimientos, que no existen hasta la fase 2/3). bancoId y ultimos4Digitos solo aplican a tipo "banco".
 model CuentaDinero {
-  id                 String     @id @default(uuid(7)) @db.Uuid
+  id                 String      @id @default(uuid(7)) @db.Uuid
   nombre             String
   tipo               TipoCuenta
-  moneda             String     @db.Char(3)
-  bancoId            String?    @map("banco_id") @db.Uuid
-  banco              Banco?     @relation(fields: [bancoId], references: [id], onDelete: Restrict)
-  ultimos4Digitos    String?    @map("ultimos_4_digitos") @db.VarChar(4)
-  sucursalId         String     @map("sucursal_id") @db.Uuid
-  sucursal           Sucursal   @relation(fields: [sucursalId], references: [id], onDelete: Restrict)
+  moneda             String      @db.Char(3)
+  bancoId            String?     @map("banco_id") @db.Uuid
+  banco              Banco?      @relation(fields: [bancoId], references: [id], onDelete: Restrict)
+  ultimos4Digitos    String?     @map("ultimos_4_digitos") @db.VarChar(4)
+  sucursalId         String      @map("sucursal_id") @db.Uuid
+  sucursal           Sucursal    @relation(fields: [sucursalId], references: [id], onDelete: Restrict)
   /// Nombre de la persona titular, en texto libre (D65); se conecta con la tabla Contraparte en la fase 4.
   titular            String?
-  responsableId      String?    @map("responsable_id") @db.Uuid
-  responsable        Usuario?   @relation(fields: [responsableId], references: [id], onDelete: Restrict)
-  activa             Boolean    @default(true)
-  limiteDiario       Decimal?   @map("limite_diario") @db.Decimal(18, 3)
-  comisionPorDefecto Decimal?   @map("comision_por_defecto") @db.Decimal(18, 3)
-  creadoEn           DateTime   @default(now()) @map("creado_en") @db.Timestamptz(6)
+  responsableId      String?     @map("responsable_id") @db.Uuid
+  responsable        Usuario?    @relation(fields: [responsableId], references: [id], onDelete: Restrict)
+  activa             Boolean     @default(true)
+  limiteDiario       Decimal?    @map("limite_diario") @db.Decimal(18, 3)
+  comisionPorDefecto Decimal?    @map("comision_por_defecto") @db.Decimal(18, 3)
+  creadoEn           DateTime    @default(now()) @map("creado_en") @db.Timestamptz(6)
+  operacionesIngreso Operacion[]
 
   @@map("cuenta_dinero")
 }
@@ -132,18 +133,19 @@ enum ModoTasa {
 /// Línea de negocio (fase 1, §4.3 de PROYECTO.md): remesa (envío a otro país) o divisa_caja (compra/
 /// venta de una divisa en efectivo).
 model LineaNegocio {
-  id            String     @id @default(uuid(7)) @db.Uuid
-  nombre        String     @unique
+  id            String      @id @default(uuid(7)) @db.Uuid
+  nombre        String      @unique
   clase         ClaseLinea
-  monedaOrigen  String     @map("moneda_origen") @db.Char(3)
-  monedaDestino String     @map("moneda_destino") @db.Char(3)
-  activa        Boolean    @default(true)
-  modoTasa      ModoTasa   @default(directo) @map("modo_tasa")
+  monedaOrigen  String      @map("moneda_origen") @db.Char(3)
+  monedaDestino String      @map("moneda_destino") @db.Char(3)
+  activa        Boolean     @default(true)
+  modoTasa      ModoTasa    @default(directo) @map("modo_tasa")
   /// Margen vigente en modo "porcentaje" (D64); null si la línea es "directo" o aún no se configuró.
-  margenCompra  Decimal?   @map("margen_compra") @db.Decimal(18, 6)
-  margenVenta   Decimal?   @map("margen_venta") @db.Decimal(18, 6)
-  creadoEn      DateTime   @default(now()) @map("creado_en") @db.Timestamptz(6)
+  margenCompra  Decimal?    @map("margen_compra") @db.Decimal(18, 6)
+  margenVenta   Decimal?    @map("margen_venta") @db.Decimal(18, 6)
+  creadoEn      DateTime    @default(now()) @map("creado_en") @db.Timestamptz(6)
   tasas         Tasa[]
+  operaciones   Operacion[]
 
   @@map("linea_negocio")
 }
@@ -166,6 +168,7 @@ model Tasa {
   vigenteDesde   DateTime     @default(now()) @map("vigente_desde") @db.Timestamptz(6)
   /// Null mientras es la tasa vigente de su línea; se llena al publicar la siguiente.
   vigenteHasta   DateTime?    @map("vigente_hasta") @db.Timestamptz(6)
+  operaciones    Operacion[]
 
   @@map("tasa")
 }
@@ -186,30 +189,32 @@ model Denominacion {
 }
 
 model Usuario {
-  id                    String         @id @default(uuid(7)) @db.Uuid
+  id                    String            @id @default(uuid(7)) @db.Uuid
   nombre                String
-  login                 String         @unique
-  hashContrasena        String         @map("hash_contrasena")
+  login                 String            @unique
+  hashContrasena        String            @map("hash_contrasena")
   /// La contraseña es temporal (seed o restablecida): se debe cambiar en el próximo acceso.
-  debeCambiarContrasena Boolean        @default(true) @map("debe_cambiar_contrasena")
+  debeCambiarContrasena Boolean           @default(true) @map("debe_cambiar_contrasena")
   rol                   Rol
-  sucursalId            String?        @map("sucursal_id") @db.Uuid
-  sucursal              Sucursal?      @relation(fields: [sucursalId], references: [id], onDelete: Restrict)
-  activo                Boolean        @default(true)
+  sucursalId            String?           @map("sucursal_id") @db.Uuid
+  sucursal              Sucursal?         @relation(fields: [sucursalId], references: [id], onDelete: Restrict)
+  activo                Boolean           @default(true)
   /// Secreto TOTP cifrado con CLAVE_CIFRADO_2FA (tarea 0.7). Nunca en texto plano.
-  secreto2fa            String?        @map("secreto_2fa")
-  tiene2fa              Boolean        @default(false) @map("tiene_2fa")
+  secreto2fa            String?           @map("secreto_2fa")
+  tiene2fa              Boolean           @default(false) @map("tiene_2fa")
   /// Último paso de tiempo TOTP aceptado: un mismo código no se puede usar dos veces.
-  ultimoPaso2fa         Int?           @map("ultimo_paso_2fa")
-  intentosFallidos      Int            @default(0) @map("intentos_fallidos")
-  bloqueadoHasta        DateTime?      @map("bloqueado_hasta") @db.Timestamptz(6)
-  ultimoAcceso          DateTime?      @map("ultimo_acceso") @db.Timestamptz(6)
-  creadoEn              DateTime       @default(now()) @map("creado_en") @db.Timestamptz(6)
+  ultimoPaso2fa         Int?              @map("ultimo_paso_2fa")
+  intentosFallidos      Int               @default(0) @map("intentos_fallidos")
+  bloqueadoHasta        DateTime?         @map("bloqueado_hasta") @db.Timestamptz(6)
+  ultimoAcceso          DateTime?         @map("ultimo_acceso") @db.Timestamptz(6)
+  creadoEn              DateTime          @default(now()) @map("creado_en") @db.Timestamptz(6)
   sesiones              Sesion[]
   auditorias            Auditoria[]
   tasasPublicadas       Tasa[]
   cuentasResponsable    CuentaDinero[]
   clientesCreados       Cliente[]
+  operacionesCreadas    Operacion[]
+  eventosOperacion      EventoOperacion[]
 
   @@map("usuario")
 }
@@ -289,6 +294,7 @@ model Cliente {
   creadoPor       Usuario       @relation(fields: [creadoPorId], references: [id], onDelete: Restrict)
   creadoEn        DateTime      @default(now()) @map("creado_en") @db.Timestamptz(6)
   mediosPago      MedioPago[]
+  remesasEnviadas Operacion[]
 
   @@unique([tipoDocumento, numeroDocumento])
   @@index([nombre])
@@ -299,22 +305,123 @@ model Cliente {
 /// móvil. Es inmutable: una remesa ya registrada apunta a él y no puede cambiar de destino (D98).
 /// Para corregir un dato se crea otro medio y se desactiva el anterior.
 model MedioPago {
-  id                     String        @id @default(uuid(7)) @db.Uuid
-  clienteId              String        @map("cliente_id") @db.Uuid
-  cliente                Cliente       @relation(fields: [clienteId], references: [id], onDelete: Restrict)
+  id                     String          @id @default(uuid(7)) @db.Uuid
+  clienteId              String          @map("cliente_id") @db.Uuid
+  cliente                Cliente         @relation(fields: [clienteId], references: [id], onDelete: Restrict)
   tipo                   TipoMedioPago
-  bancoId                String        @map("banco_id") @db.Uuid
-  banco                  Banco         @relation(fields: [bancoId], references: [id], onDelete: Restrict)
+  bancoId                String          @map("banco_id") @db.Uuid
+  banco                  Banco           @relation(fields: [bancoId], references: [id], onDelete: Restrict)
   /// 20 dígitos, solo en cuenta_bancaria.
-  numeroCuenta           String?       @map("numero_cuenta") @db.VarChar(20)
+  numeroCuenta           String?         @map("numero_cuenta") @db.VarChar(20)
   /// Teléfono del pago móvil (formato venezolano de 11 dígitos), solo en pago_movil.
-  telefonoPagoMovil      String?       @map("telefono_pago_movil") @db.VarChar(11)
+  telefonoPagoMovil      String?         @map("telefono_pago_movil") @db.VarChar(11)
   titular                String
-  tipoDocumentoTitular   TipoDocumento @map("tipo_documento_titular")
-  numeroDocumentoTitular String        @map("numero_documento_titular") @db.VarChar(20)
-  activo                 Boolean       @default(true)
-  creadoEn               DateTime      @default(now()) @map("creado_en") @db.Timestamptz(6)
+  tipoDocumentoTitular   TipoDocumento   @map("tipo_documento_titular")
+  numeroDocumentoTitular String          @map("numero_documento_titular") @db.VarChar(20)
+  activo                 Boolean         @default(true)
+  creadoEn               DateTime        @default(now()) @map("creado_en") @db.Timestamptz(6)
+  transferencias         Transferencia[]
 
   @@index([clienteId])
   @@map("medio_pago")
+}
+
+enum TipoOperacion {
+  /// Remesa de venta COP → VES (§5.3 de PROYECTO.md). Las demás operaciones llegan en fases siguientes.
+  remesa_venta
+
+  @@map("tipo_operacion")
+}
+
+/// Máquina de estados de la remesa (§8 de PROYECTO.md). "por_aprobar" se agrega en la fase 10.
+enum EstadoOperacion {
+  registrada
+  pago_verificado
+  en_cola
+  tomada
+  completada
+  con_incidencia
+  devuelta
+  anulada
+
+  @@map("estado_operacion")
+}
+
+enum FormaPago {
+  efectivo
+  transferencia
+
+  @@map("forma_pago")
+}
+
+/// Operación del vendedor (fase 2). Congela la tasa y los montos al registrarse (§5.2): publicar otra
+/// tasa después no la cambia. La fecha la pone el servidor (CLAUDE.md §6).
+model Operacion {
+  id                String            @id @default(uuid(7)) @db.Uuid
+  /// Consecutivo por instalación, sin saltos ni repetidos (D100).
+  numeroComprobante Int               @unique @map("numero_comprobante")
+  tipo              TipoOperacion
+  estado            EstadoOperacion   @default(registrada)
+  lineaNegocioId    String            @map("linea_negocio_id") @db.Uuid
+  lineaNegocio      LineaNegocio      @relation(fields: [lineaNegocioId], references: [id], onDelete: Restrict)
+  /// La tasa publicada que estaba vigente al registrar.
+  tasaId            String            @map("tasa_id") @db.Uuid
+  tasa              Tasa              @relation(fields: [tasaId], references: [id], onDelete: Restrict)
+  remitenteId       String            @map("remitente_id") @db.Uuid
+  remitente         Cliente           @relation(fields: [remitenteId], references: [id], onDelete: Restrict)
+  formaPago         FormaPago         @map("forma_pago")
+  /// Cuenta por donde entró el dinero del cliente.
+  cuentaIngresoId   String            @map("cuenta_ingreso_id") @db.Uuid
+  cuentaIngreso     CuentaDinero      @relation(fields: [cuentaIngresoId], references: [id], onDelete: Restrict)
+  montoPesos        Decimal           @map("monto_pesos") @db.Decimal(18, 2)
+  montoBolivares    Decimal           @map("monto_bolivares") @db.Decimal(18, 3)
+  tasaCalculada     Decimal           @map("tasa_calculada") @db.Decimal(18, 6)
+  tasaUsada         Decimal           @map("tasa_usada") @db.Decimal(18, 6)
+  motivoTasa        String?           @map("motivo_tasa")
+  /// Un reintento con la misma clave devuelve la operación ya creada, no una nueva (CLAUDE.md §6).
+  claveIdempotencia String            @unique @map("clave_idempotencia") @db.VarChar(64)
+  creadoPorId       String            @map("creado_por_id") @db.Uuid
+  creadoPor         Usuario           @relation(fields: [creadoPorId], references: [id], onDelete: Restrict)
+  creadoEn          DateTime          @default(now()) @map("creado_en") @db.Timestamptz(6)
+  transferencia     Transferencia?
+  eventos           EventoOperacion[]
+
+  @@index([estado, creadoEn])
+  @@map("operacion")
+}
+
+/// A dónde se paga una remesa. El digitador solo ve esto (y el monto en bolívares), nunca la operación.
+model Transferencia {
+  id          String    @id @default(uuid(7)) @db.Uuid
+  operacionId String    @unique @map("operacion_id") @db.Uuid
+  operacion   Operacion @relation(fields: [operacionId], references: [id], onDelete: Restrict)
+  medioPagoId String    @map("medio_pago_id") @db.Uuid
+  medioPago   MedioPago @relation(fields: [medioPagoId], references: [id], onDelete: Restrict)
+
+  @@map("transferencia")
+}
+
+/// Historial de estados de una operación; de solo inserción en la práctica (nadie lo edita).
+model EventoOperacion {
+  id             String           @id @default(uuid(7)) @db.Uuid
+  operacionId    String           @map("operacion_id") @db.Uuid
+  operacion      Operacion        @relation(fields: [operacionId], references: [id], onDelete: Restrict)
+  estadoAnterior EstadoOperacion? @map("estado_anterior")
+  estadoNuevo    EstadoOperacion  @map("estado_nuevo")
+  motivo         String?
+  usuarioId      String           @map("usuario_id") @db.Uuid
+  usuario        Usuario          @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+  creadoEn       DateTime         @default(now()) @map("creado_en") @db.Timestamptz(6)
+
+  @@index([operacionId, creadoEn])
+  @@map("evento_operacion")
+}
+
+/// Contadores sin saltos (D100). Se incrementan con UPDATE dentro de la misma transacción que usa el
+/// número: si la operación se deshace, el número también, y dos peticiones nunca obtienen el mismo.
+model Contador {
+  clave String @id
+  valor Int
+
+  @@map("contador")
 }
