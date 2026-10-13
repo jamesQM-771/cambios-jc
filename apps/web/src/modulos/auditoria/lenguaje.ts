@@ -50,6 +50,13 @@ export const FRASES_ACCION: Record<string, string> = {
   'cuenta_dinero.desactivar': 'desactivó una cuenta de dinero',
   'cuenta_dinero.reactivar': 'reactivó una cuenta de dinero',
   'tasa.publicar': 'publicó una tasa',
+  'cliente.crear': 'registró un cliente',
+  'cliente.editar': 'editó un cliente',
+  'cliente.desactivar': 'desactivó un cliente',
+  'cliente.reactivar': 'reactivó un cliente',
+  'medio_pago.crear': 'agregó un medio de pago a un cliente',
+  'medio_pago.desactivar': 'desactivó un medio de pago',
+  'medio_pago.reactivar': 'reactivó un medio de pago',
   'seed.crear': 'creó los datos iniciales del sistema',
   'usuario.restablecer_acceso_emergencia':
     'restableció el acceso de un administrador desde el servidor',
@@ -67,6 +74,8 @@ export const ETIQUETAS_ENTIDAD: Record<string, string> = {
   linea_negocio: 'Líneas de negocio',
   cuenta_dinero: 'Cuentas de dinero',
   tasa: 'Tasas',
+  cliente: 'Clientes',
+  medio_pago: 'Medios de pago',
 };
 
 /** Nombre legible de los campos que aparecen en el antes y el después. */

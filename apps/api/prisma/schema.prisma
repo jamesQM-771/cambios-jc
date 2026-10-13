@@ -41,10 +41,10 @@ model Empresa {
 }
 
 model Sucursal {
-  id       String    @id @default(uuid(7)) @db.Uuid
-  nombre   String    @unique
+  id       String         @id @default(uuid(7)) @db.Uuid
+  nombre   String         @unique
   ciudad   String
-  activa   Boolean   @default(true)
+  activa   Boolean        @default(true)
   usuarios Usuario[]
   cajas    Caja[]
   cuentas  CuentaDinero[]
@@ -68,13 +68,14 @@ model Caja {
 /// Catálogo de bancos (fase 1). El código son los 4 primeros dígitos de una cuenta venezolana (§5.1
 /// de PROYECTO.md); sirve para identificar el banco de una cuenta y, más adelante, de un beneficiario.
 model Banco {
-  id       String   @id @default(uuid(7)) @db.Uuid
-  codigo   String   @unique @db.VarChar(4)
-  nombre   String
-  pais     String   @default("VE") @db.Char(2)
-  activo   Boolean  @default(true)
-  creadoEn DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
-  cuentas  CuentaDinero[]
+  id         String         @id @default(uuid(7)) @db.Uuid
+  codigo     String         @unique @db.VarChar(4)
+  nombre     String
+  pais       String         @default("VE") @db.Char(2)
+  activo     Boolean        @default(true)
+  creadoEn   DateTime       @default(now()) @map("creado_en") @db.Timestamptz(6)
+  cuentas    CuentaDinero[]
+  mediosPago MedioPago[]
 
   @@map("banco")
 }
@@ -90,23 +91,23 @@ enum TipoCuenta {
 /// Cuenta de dinero (fase 1, §5.9 de PROYECTO.md): catálogo, sin saldo todavía (el saldo sale de los
 /// movimientos, que no existen hasta la fase 2/3). bancoId y ultimos4Digitos solo aplican a tipo "banco".
 model CuentaDinero {
-  id                 String       @id @default(uuid(7)) @db.Uuid
+  id                 String     @id @default(uuid(7)) @db.Uuid
   nombre             String
   tipo               TipoCuenta
-  moneda             String       @db.Char(3)
-  bancoId            String?      @map("banco_id") @db.Uuid
-  banco              Banco?       @relation(fields: [bancoId], references: [id], onDelete: Restrict)
-  ultimos4Digitos    String?      @map("ultimos_4_digitos") @db.VarChar(4)
-  sucursalId         String       @map("sucursal_id") @db.Uuid
-  sucursal           Sucursal     @relation(fields: [sucursalId], references: [id], onDelete: Restrict)
+  moneda             String     @db.Char(3)
+  bancoId            String?    @map("banco_id") @db.Uuid
+  banco              Banco?     @relation(fields: [bancoId], references: [id], onDelete: Restrict)
+  ultimos4Digitos    String?    @map("ultimos_4_digitos") @db.VarChar(4)
+  sucursalId         String     @map("sucursal_id") @db.Uuid
+  sucursal           Sucursal   @relation(fields: [sucursalId], references: [id], onDelete: Restrict)
   /// Nombre de la persona titular, en texto libre (D65); se conecta con la tabla Contraparte en la fase 4.
   titular            String?
-  responsableId      String?      @map("responsable_id") @db.Uuid
-  responsable        Usuario?     @relation(fields: [responsableId], references: [id], onDelete: Restrict)
-  activa             Boolean      @default(true)
-  limiteDiario       Decimal?     @map("limite_diario") @db.Decimal(18, 3)
-  comisionPorDefecto Decimal?     @map("comision_por_defecto") @db.Decimal(18, 3)
-  creadoEn           DateTime     @default(now()) @map("creado_en") @db.Timestamptz(6)
+  responsableId      String?    @map("responsable_id") @db.Uuid
+  responsable        Usuario?   @relation(fields: [responsableId], references: [id], onDelete: Restrict)
+  activa             Boolean    @default(true)
+  limiteDiario       Decimal?   @map("limite_diario") @db.Decimal(18, 3)
+  comisionPorDefecto Decimal?   @map("comision_por_defecto") @db.Decimal(18, 3)
+  creadoEn           DateTime   @default(now()) @map("creado_en") @db.Timestamptz(6)
 
   @@map("cuenta_dinero")
 }
@@ -185,29 +186,30 @@ model Denominacion {
 }
 
 model Usuario {
-  id                    String      @id @default(uuid(7)) @db.Uuid
+  id                    String         @id @default(uuid(7)) @db.Uuid
   nombre                String
-  login                 String      @unique
-  hashContrasena        String      @map("hash_contrasena")
+  login                 String         @unique
+  hashContrasena        String         @map("hash_contrasena")
   /// La contraseña es temporal (seed o restablecida): se debe cambiar en el próximo acceso.
-  debeCambiarContrasena Boolean     @default(true) @map("debe_cambiar_contrasena")
+  debeCambiarContrasena Boolean        @default(true) @map("debe_cambiar_contrasena")
   rol                   Rol
-  sucursalId            String?     @map("sucursal_id") @db.Uuid
-  sucursal              Sucursal?   @relation(fields: [sucursalId], references: [id], onDelete: Restrict)
-  activo                Boolean     @default(true)
+  sucursalId            String?        @map("sucursal_id") @db.Uuid
+  sucursal              Sucursal?      @relation(fields: [sucursalId], references: [id], onDelete: Restrict)
+  activo                Boolean        @default(true)
   /// Secreto TOTP cifrado con CLAVE_CIFRADO_2FA (tarea 0.7). Nunca en texto plano.
-  secreto2fa            String?     @map("secreto_2fa")
-  tiene2fa              Boolean     @default(false) @map("tiene_2fa")
+  secreto2fa            String?        @map("secreto_2fa")
+  tiene2fa              Boolean        @default(false) @map("tiene_2fa")
   /// Último paso de tiempo TOTP aceptado: un mismo código no se puede usar dos veces.
-  ultimoPaso2fa         Int?        @map("ultimo_paso_2fa")
-  intentosFallidos      Int         @default(0) @map("intentos_fallidos")
-  bloqueadoHasta        DateTime?   @map("bloqueado_hasta") @db.Timestamptz(6)
-  ultimoAcceso          DateTime?   @map("ultimo_acceso") @db.Timestamptz(6)
-  creadoEn              DateTime    @default(now()) @map("creado_en") @db.Timestamptz(6)
+  ultimoPaso2fa         Int?           @map("ultimo_paso_2fa")
+  intentosFallidos      Int            @default(0) @map("intentos_fallidos")
+  bloqueadoHasta        DateTime?      @map("bloqueado_hasta") @db.Timestamptz(6)
+  ultimoAcceso          DateTime?      @map("ultimo_acceso") @db.Timestamptz(6)
+  creadoEn              DateTime       @default(now()) @map("creado_en") @db.Timestamptz(6)
   sesiones              Sesion[]
   auditorias            Auditoria[]
   tasasPublicadas       Tasa[]
   cuentasResponsable    CuentaDinero[]
+  clientesCreados       Cliente[]
 
   @@map("usuario")
 }
@@ -250,4 +252,69 @@ model Auditoria {
   @@index([usuarioId])
   @@index([entidad, entidadId])
   @@map("auditoria")
+}
+
+enum TipoDocumento {
+  V
+  E
+  J
+  G
+  P
+  CC
+  CE
+  PPT
+  PAS
+  NIT
+
+  @@map("tipo_documento")
+}
+
+enum TipoMedioPago {
+  cuenta_bancaria
+  pago_movil
+
+  @@map("tipo_medio_pago")
+}
+
+/// Persona que paga en el local (remitente) o recibe en destino (beneficiario); una puede ser ambas
+/// (fase 2, §5.1 de PROYECTO.md). Único por tipo + número de documento. Nunca se borra (D97).
+model Cliente {
+  id              String        @id @default(uuid(7)) @db.Uuid
+  tipoDocumento   TipoDocumento @map("tipo_documento")
+  numeroDocumento String        @map("numero_documento") @db.VarChar(20)
+  nombre          String
+  telefono        String?       @db.VarChar(20)
+  activo          Boolean       @default(true)
+  creadoPorId     String        @map("creado_por_id") @db.Uuid
+  creadoPor       Usuario       @relation(fields: [creadoPorId], references: [id], onDelete: Restrict)
+  creadoEn        DateTime      @default(now()) @map("creado_en") @db.Timestamptz(6)
+  mediosPago      MedioPago[]
+
+  @@unique([tipoDocumento, numeroDocumento])
+  @@index([nombre])
+  @@map("cliente")
+}
+
+/// Dónde recibe el beneficiario: cuenta bancaria (20 dígitos; los 4 primeros son el banco) o pago
+/// móvil. Es inmutable: una remesa ya registrada apunta a él y no puede cambiar de destino (D98).
+/// Para corregir un dato se crea otro medio y se desactiva el anterior.
+model MedioPago {
+  id                     String        @id @default(uuid(7)) @db.Uuid
+  clienteId              String        @map("cliente_id") @db.Uuid
+  cliente                Cliente       @relation(fields: [clienteId], references: [id], onDelete: Restrict)
+  tipo                   TipoMedioPago
+  bancoId                String        @map("banco_id") @db.Uuid
+  banco                  Banco         @relation(fields: [bancoId], references: [id], onDelete: Restrict)
+  /// 20 dígitos, solo en cuenta_bancaria.
+  numeroCuenta           String?       @map("numero_cuenta") @db.VarChar(20)
+  /// Teléfono del pago móvil (formato venezolano de 11 dígitos), solo en pago_movil.
+  telefonoPagoMovil      String?       @map("telefono_pago_movil") @db.VarChar(11)
+  titular                String
+  tipoDocumentoTitular   TipoDocumento @map("tipo_documento_titular")
+  numeroDocumentoTitular String        @map("numero_documento_titular") @db.VarChar(20)
+  activo                 Boolean       @default(true)
+  creadoEn               DateTime      @default(now()) @map("creado_en") @db.Timestamptz(6)
+
+  @@index([clienteId])
+  @@map("medio_pago")
 }
