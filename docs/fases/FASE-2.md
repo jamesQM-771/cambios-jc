@@ -36,7 +36,7 @@ Cada una termina con pruebas, `npm run check` en verde y commit.
 | 2.1 | Clientes y medios de pago | Hecha |
 | 2.2 | Registrar remesa (operación, transferencia, número de comprobante, idempotencia) | Hecha |
 | 2.3 | Estados: verificar pago, publicar en cola, anular | Hecha |
-| 2.4 | Cola del digitador: tomar con bloqueo, liberar, completar, incidencia | Pendiente |
+| 2.4 | Cola del digitador: tomar con bloqueo, liberar, completar, incidencia | Hecha |
 | 2.5 | Corrección de incidencias por el vendedor | Pendiente |
 | 2.6 | Tiempo real con Socket.IO (con consulta periódica de respaldo) | Pendiente |
 | 2.7 | Recibo en ticket | Pendiente |

@@ -20,6 +20,7 @@ export const PERMISOS = [
   'remesa.registrar',
   'remesa.verificar_pago',
   'remesa.anular',
+  'remesa.liberar',
   'remesa.tomar_completar',
   // Tasas
   'tasa.publicar',

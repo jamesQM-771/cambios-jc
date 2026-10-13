@@ -91,24 +91,25 @@ enum TipoCuenta {
 /// Cuenta de dinero (fase 1, §5.9 de PROYECTO.md): catálogo, sin saldo todavía (el saldo sale de los
 /// movimientos, que no existen hasta la fase 2/3). bancoId y ultimos4Digitos solo aplican a tipo "banco".
 model CuentaDinero {
-  id                 String      @id @default(uuid(7)) @db.Uuid
-  nombre             String
-  tipo               TipoCuenta
-  moneda             String      @db.Char(3)
-  bancoId            String?     @map("banco_id") @db.Uuid
-  banco              Banco?      @relation(fields: [bancoId], references: [id], onDelete: Restrict)
-  ultimos4Digitos    String?     @map("ultimos_4_digitos") @db.VarChar(4)
-  sucursalId         String      @map("sucursal_id") @db.Uuid
-  sucursal           Sucursal    @relation(fields: [sucursalId], references: [id], onDelete: Restrict)
+  id                   String          @id @default(uuid(7)) @db.Uuid
+  nombre               String
+  tipo                 TipoCuenta
+  moneda               String          @db.Char(3)
+  bancoId              String?         @map("banco_id") @db.Uuid
+  banco                Banco?          @relation(fields: [bancoId], references: [id], onDelete: Restrict)
+  ultimos4Digitos      String?         @map("ultimos_4_digitos") @db.VarChar(4)
+  sucursalId           String          @map("sucursal_id") @db.Uuid
+  sucursal             Sucursal        @relation(fields: [sucursalId], references: [id], onDelete: Restrict)
   /// Nombre de la persona titular, en texto libre (D65); se conecta con la tabla Contraparte en la fase 4.
-  titular            String?
-  responsableId      String?     @map("responsable_id") @db.Uuid
-  responsable        Usuario?    @relation(fields: [responsableId], references: [id], onDelete: Restrict)
-  activa             Boolean     @default(true)
-  limiteDiario       Decimal?    @map("limite_diario") @db.Decimal(18, 3)
-  comisionPorDefecto Decimal?    @map("comision_por_defecto") @db.Decimal(18, 3)
-  creadoEn           DateTime    @default(now()) @map("creado_en") @db.Timestamptz(6)
-  operacionesIngreso Operacion[]
+  titular              String?
+  responsableId        String?         @map("responsable_id") @db.Uuid
+  responsable          Usuario?        @relation(fields: [responsableId], references: [id], onDelete: Restrict)
+  activa               Boolean         @default(true)
+  limiteDiario         Decimal?        @map("limite_diario") @db.Decimal(18, 3)
+  comisionPorDefecto   Decimal?        @map("comision_por_defecto") @db.Decimal(18, 3)
+  creadoEn             DateTime        @default(now()) @map("creado_en") @db.Timestamptz(6)
+  operacionesIngreso   Operacion[]
+  transferenciasOrigen Transferencia[]
 
   @@map("cuenta_dinero")
 }
@@ -215,6 +216,7 @@ model Usuario {
   clientesCreados       Cliente[]
   operacionesCreadas    Operacion[]
   eventosOperacion      EventoOperacion[]
+  transferenciasTomadas Transferencia[]   @relation("OperadorTransferencia")
 
   @@map("usuario")
 }
@@ -398,6 +400,21 @@ model Transferencia {
   medioPagoId String    @map("medio_pago_id") @db.Uuid
   medioPago   MedioPago @relation(fields: [medioPagoId], references: [id], onDelete: Restrict)
 
+  /// Digitador que la tiene tomada (null mientras está en cola). El bloqueo es el estado "tomada".
+  operadorId         String?       @map("operador_id") @db.Uuid
+  operador           Usuario?      @relation("OperadorTransferencia", fields: [operadorId], references: [id], onDelete: Restrict)
+  tomadaEn           DateTime?     @map("tomada_en") @db.Timestamptz(6)
+  /// Cuenta desde la que se pagó (en la moneda destino) y lo que el digitador cargó al completar.
+  cuentaOrigenId     String?       @map("cuenta_origen_id") @db.Uuid
+  cuentaOrigen       CuentaDinero? @relation(fields: [cuentaOrigenId], references: [id], onDelete: Restrict)
+  /// Número de operación del banco. Una misma referencia no se usa dos veces en la misma cuenta.
+  referenciaBancaria String?       @map("referencia_bancaria") @db.VarChar(40)
+  costoBancario      Decimal?      @map("costo_bancario") @db.Decimal(18, 3)
+  /// Captura del comprobante, relativa a la carpeta de subidas (la genera el servidor).
+  comprobanteClave   String?       @map("comprobante_clave")
+  completadaEn       DateTime?     @map("completada_en") @db.Timestamptz(6)
+
+  @@unique([cuentaOrigenId, referenciaBancaria])
   @@map("transferencia")
 }
 

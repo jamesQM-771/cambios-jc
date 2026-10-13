@@ -105,6 +105,16 @@ export const esquemaRemesaPublica = z.object({
   tasaCalculada: z.string(),
   tasaUsada: z.string(),
   motivoTasa: z.string().nullable(),
+  /** Lo que pasó con el pago al beneficiario: quién lo tomó y qué cargó al completarlo. */
+  pago: z.object({
+    operador: z.object({ id: z.string(), nombre: z.string() }).nullable(),
+    tomadaEn: z.date().nullable(),
+    cuentaOrigen: z.object({ id: z.string(), nombre: z.string() }).nullable(),
+    referenciaBancaria: z.string().nullable(),
+    costoBancario: z.string().nullable(),
+    tieneComprobante: z.boolean(),
+    completadaEn: z.date().nullable(),
+  }),
   creadoPor: z.object({ id: z.string(), nombre: z.string() }),
   creadoEn: z.date(),
 });

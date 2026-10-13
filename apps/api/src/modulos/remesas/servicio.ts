@@ -11,6 +11,7 @@ import { Prisma, type EstadoOperacion } from '../../generated/prisma/client.js';
 import { errores } from '../../lib/errores.js';
 import type { PrismaClient } from '../../lib/prisma.js';
 import { registrarAuditoria } from '../../lib/registrar-auditoria.js';
+import type { Almacenamiento, ComprobanteAbierto } from '../../lib/almacenamiento.js';
 import type { ContextoPeticion } from '../auth/servicio.js';
 
 import type { DatosRegistrarRemesa, EventoRemesa, RemesaPublica } from './esquemas.js';
@@ -28,6 +29,13 @@ const SELECCION = {
   remitente: PERSONA,
   transferencia: {
     select: {
+      operador: { select: { id: true, nombre: true } },
+      tomadaEn: true,
+      cuentaOrigen: { select: { id: true, nombre: true } },
+      referenciaBancaria: true,
+      costoBancario: true,
+      comprobanteClave: true,
+      completadaEn: true,
       medioPago: {
         select: {
           id: true,
@@ -73,8 +81,9 @@ export interface ResultadoRegistro {
 export type ServicioRemesas = ReturnType<typeof crearServicioRemesas>;
 
 function aPublica(fila: FilaRemesa): RemesaPublica {
-  const medio = fila.transferencia?.medioPago;
-  if (!medio) throw new Error(`La remesa ${fila.id} no tiene medio de pago.`);
+  const transferencia = fila.transferencia;
+  const medio = transferencia?.medioPago;
+  if (!transferencia || !medio) throw new Error(`La remesa ${fila.id} no tiene medio de pago.`);
   return {
     id: fila.id,
     numeroComprobante: fila.numeroComprobante,
@@ -99,12 +108,27 @@ function aPublica(fila: FilaRemesa): RemesaPublica {
     tasaCalculada: fila.tasaCalculada.toFixed(DECIMALES_TASA),
     tasaUsada: fila.tasaUsada.toFixed(DECIMALES_TASA),
     motivoTasa: fila.motivoTasa,
+    pago: {
+      operador: transferencia.operador,
+      tomadaEn: transferencia.tomadaEn,
+      cuentaOrigen: transferencia.cuentaOrigen,
+      referenciaBancaria: transferencia.referenciaBancaria,
+      costoBancario: transferencia.costoBancario?.toFixed(3) ?? null,
+      tieneComprobante: transferencia.comprobanteClave !== null,
+      completadaEn: transferencia.completadaEn,
+    },
     creadoPor: fila.creadoPor,
     creadoEn: fila.creadoEn,
   };
 }
 
-export function crearServicioRemesas({ prisma }: { prisma: PrismaClient }) {
+export function crearServicioRemesas({
+  prisma,
+  almacenamiento,
+}: {
+  prisma: PrismaClient;
+  almacenamiento: Almacenamiento;
+}) {
   async function cargar(id: string): Promise<RemesaPublica> {
     const fila = await prisma.operacion.findUnique({ where: { id }, select: SELECCION });
     if (!fila) throw errores.noEncontrado('La remesa no existe.');
@@ -151,6 +175,43 @@ export function crearServicioRemesas({ prisma }: { prisma: PrismaClient }) {
         contexto,
       });
       return cargar(id);
+    },
+
+    /**
+     * El administrador libera una remesa que un digitador dejó tomada sin terminar (decisión 5):
+     * vuelve a la cola y deja de tener operador.
+     */
+    async liberar(id: string, actor: Actor, contexto: ContextoPeticion): Promise<RemesaPublica> {
+      await moverEstado(prisma, {
+        id,
+        desde: ['tomada'],
+        pasos: [{ estado: 'en_cola', motivo: 'Liberada por el administrador.' }],
+        accion: 'remesa.liberar',
+        mensajeSiNo: 'Solo se libera una remesa que un digitador tiene tomada.',
+        actor,
+        contexto,
+        dentro: async (tx) => {
+          await tx.transferencia.update({
+            where: { operacionId: id },
+            data: { operadorId: null, tomadaEn: null },
+          });
+        },
+      });
+      return cargar(id);
+    },
+
+    /** Captura del comprobante que cargó el digitador, para que el vendedor la revise. */
+    async abrirComprobante(id: string): Promise<ComprobanteAbierto> {
+      const transferencia = await prisma.transferencia.findUnique({
+        where: { operacionId: id },
+        select: { comprobanteClave: true },
+      });
+      if (!transferencia) throw errores.noEncontrado('La remesa no existe.');
+      const abierto = transferencia.comprobanteClave
+        ? await almacenamiento.abrirComprobante(transferencia.comprobanteClave)
+        : null;
+      if (!abierto) throw errores.noEncontrado('Esta remesa no tiene comprobante.');
+      return abierto;
     },
 
     /** Solo mientras nadie la ha tomado para pagarla (decisión 4). Siempre con motivo. */
@@ -334,8 +395,10 @@ export function crearServicioRemesas({ prisma }: { prisma: PrismaClient }) {
   };
 }
 
-interface CambioDeEstado {
+export interface CambioDeEstado {
   id: string;
+  /** Trabajo extra que debe confirmarse o deshacerse junto con el cambio (misma transacción). */
+  dentro?: ((tx: Prisma.TransactionClient) => Promise<void>) | undefined;
   desde: readonly EstadoOperacion[];
   pasos: readonly { estado: EstadoOperacion; motivo: string | null }[];
   accion: string;
@@ -349,7 +412,7 @@ interface CambioDeEstado {
  * estados de origen, así dos personas que actúan a la vez no pisan el cambio de la otra. Deja un
  * evento por cada paso y la acción en la bitácora, todo en la misma transacción.
  */
-async function moverEstado(prisma: PrismaClient, cambio: CambioDeEstado): Promise<void> {
+export async function moverEstado(prisma: PrismaClient, cambio: CambioDeEstado): Promise<void> {
   const ultimo = cambio.pasos.at(-1);
   if (!ultimo) throw new Error('Un cambio de estado necesita al menos un paso.');
   await prisma.$transaction(async (tx) => {
@@ -363,6 +426,7 @@ async function moverEstado(prisma: PrismaClient, cambio: CambioDeEstado): Promis
       data: { estado: ultimo.estado },
     });
     if (actualizadas.count === 0) throw errores.estadoInvalido(cambio.mensajeSiNo);
+    await cambio.dentro?.(tx);
 
     let anterior: EstadoOperacion = actual.estado;
     for (const paso of cambio.pasos) {

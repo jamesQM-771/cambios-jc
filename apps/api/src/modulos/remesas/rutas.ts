@@ -1,5 +1,6 @@
 import { tienePermiso } from '@cambios-jc/shared';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
+import { z } from 'zod';
 
 import { errores } from '../../lib/errores.js';
 import type { ProveedorZod } from '../../plugins/validacion-zod.js';
@@ -102,6 +103,30 @@ export function rutasRemesas(app: FastifyInstance, servicio: ServicioRemesas): v
         contextoDe(request),
       ),
     }),
+  );
+
+  rutas.post(
+    '/remesas/:id/liberar',
+    {
+      config: { permiso: 'remesa.liberar' },
+      schema: { params: esquemaId, response: { 200: respuestaRemesa } },
+    },
+    async (request) => ({
+      remesa: await servicio.liberar(request.params.id, actorDe(request), contextoDe(request)),
+    }),
+  );
+
+  rutas.get(
+    '/remesas/:id/comprobante',
+    { config: PERMISO, schema: { params: esquemaId, response: { 200: z.unknown() } } },
+    async (request, respuesta) => {
+      const comprobante = await servicio.abrirComprobante(request.params.id);
+      return respuesta
+        .header('content-type', comprobante.mime)
+        .header('content-length', comprobante.tamano)
+        .header('cache-control', 'private, no-store')
+        .send(comprobante.flujo);
+    },
   );
 
   rutas.get(
