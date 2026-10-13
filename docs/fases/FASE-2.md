@@ -42,7 +42,7 @@ Cada una termina con pruebas, `npm run check` en verde y commit.
 | 2.7 | Recibo en ticket (API, texto digital y componente imprimible; el botón va en las pantallas, 2.9) | Hecha |
 | 2.8 | Seguimiento público por código (API; la página pública va en 2.9) | Hecha |
 | 2.9 | Pantallas del vendedor, del digitador y seguimiento público | Hecha |
-| 2.10 | Pruebas de extremo a extremo y cierre | Pendiente |
+| 2.10 | Pruebas de extremo a extremo y cierre | Hecha |
 
 ## Garantías que se prueban antes que cualquier pantalla
 
@@ -51,3 +51,34 @@ Cada una termina con pruebas, `npm run check` en verde y commit.
 - Un reintento con la misma clave de idempotencia no crea una remesa duplicada.
 - La tasa usada queda congelada aunque después se publique otra.
 - El número de comprobante no tiene saltos ni repetidos.
+
+## Cierre de la fase
+
+**Qué se hizo.** Clientes y medios de pago; registro de la remesa con tasa congelada, número de
+comprobante sin saltos e idempotencia; verificación de pago y anulación; cola del digitador con
+bloqueo, captura de comprobante e incidencias; corrección por el vendedor; avisos en vivo con
+Socket.IO; recibo en ticket con reimpresión como COPIA; seguimiento público por código; y las
+pantallas de remesas, clientes, cola y seguimiento. Decisiones D97 a D115.
+
+**Cómo probarlo a mano** (`npm run compilar` y luego `npm run iniciar`):
+
+1. Como administrador, en Configuración, deja una línea de remesas con una tasa publicada, una caja
+   en COP y una cuenta en VES.
+2. Como vendedor (créalo en Usuarios): Clientes → registra un remitente y un beneficiario con una
+   cuenta de 20 dígitos. Remesas → Nueva remesa → regístrala y emite el recibo.
+3. Como digitador (en el teléfono): entra directo a la cola, toma la transferencia, copia los datos,
+   elige la cuenta, sube una captura y completa.
+4. El vendedor ve el aviso en vivo; abre la remesa y revisa la captura. Con el código del recibo,
+   abre `/seguimiento/CODIGO` sin iniciar sesión.
+
+**Pruebas automáticas:** `npm run check` (unitarias e integración) y `npm run e2e` (navegador real).
+
+**Pendiente de tu parte:**
+
+- Probar las pantallas en un celular real y con la impresora térmica (ancho de papel 58 u 80 mm).
+- Confirmar el ancho de papel de la impresora: hoy es una elección del equipo (D110).
+- Decidir qué hacer con una remesa con incidencia que no se puede corregir (devolución del dinero,
+  fase 3: caja y devoluciones).
+
+**Fuera de esta fase, a propósito:** turnos y arqueo (fase 3), liquidez (9), doble control y rango
+de tasa (10), WhatsApp automático (12) y lectura del comprobante (12b).

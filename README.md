@@ -23,11 +23,11 @@ El proyecto se entrega en 14 fases agrupadas en 4 versiones (detalle en `docs/PR
 | 0. Base          | Completa                                                                                                                  |
 | 1. Configuración | Completa en la rama `fase-1-configuracion`: bancos, sucursales, cajas, denominaciones, líneas de negocio, tasas y cuentas |
 | Rediseño         | Interfaz nueva en la rama `rediseno-interfaz` (fuera de las fases numeradas; no cambia backend, rutas ni permisos)        |
-| 2. Remesas       | No iniciada                                                                                                               |
+| 2. Remesas       | Completa en la rama `fase-2-remesas`: clientes, remesas, cola del digitador, recibo, seguimiento público y avisos en vivo |
 
 Cada fase vive en su propia rama (`fase-0-base`, `fase-1-configuracion`…) y se fusiona a `main` al cerrarla.
 
-Lo que existe hoy son los cimientos: acceso, usuarios, empresa, bitácora y configuración. La parte de ventas empieza en la fase 2 (remesas) y la contable en la fase 3 (caja); el menú crece con cada fase.
+Lo que existe hoy: acceso, usuarios, empresa, bitácora, configuración y, desde la fase 2, la operación de remesas (vendedor, digitador y seguimiento del cliente). Lo contable empieza en la fase 3 (caja); el menú crece con cada fase.
 
 ## Interfaz
 
@@ -130,12 +130,23 @@ Luego abre http://localhost:5173/acceso. Para detenerlo, `Ctrl+C` en esa termina
 | `npm run db:migrate`               | Aplica migraciones (desde la tarea 0.4)                                        |
 | `npm run db:seed`                  | Datos ficticios y administrador inicial (desde la tarea 0.4)                   |
 | `npm run test`                     | Pruebas                                                                        |
+| `npm run e2e`                      | Recorrido de una remesa en un navegador real (compila antes; ver abajo)        |
 | `npm run lint`                     | ESLint + formato con Prettier                                                  |
 | `npm run typecheck`                | Verificación de tipos                                                          |
 | `npm run check`                    | lint + typecheck + pruebas (obligatorio antes de cada commit)                  |
 | `npm run build`                    | Compila todos los paquetes (`shared` primero)                                  |
 | `npm run start -w @cambios-jc/api` | Arranca la API ya compilada (tras `npm run build`)                             |
 | `npm run format`                   | Aplica el formato de Prettier                                                  |
+
+## Pruebas de extremo a extremo
+
+`npm run e2e` abre un navegador real (Chromium) y recorre una remesa completa: el vendedor la
+registra y emite el recibo, el digitador la paga desde un teléfono, el vendedor recibe el aviso en
+vivo y el cliente la consulta con su código. Usa la API compilada y la base `*_pruebas`, nunca la de
+desarrollo. No forma parte de `npm run check` porque necesita compilar y un navegador.
+
+La primera vez: `npm run navegadores -w @cambios-jc/e2e` (descarga Chromium, unos 120 MB). Si falla,
+`e2e/test-results/` guarda el rastro de cada paso (`npx playwright show-trace`).
 
 ## Pruebas de la API con base de datos
 

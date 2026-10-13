@@ -1,4 +1,3 @@
-import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 import { defineConfig, devices } from '@playwright/test';
@@ -41,6 +40,3 @@ export default defineConfig({
     stderr: 'pipe',
   },
 });
-
-// Evita que el linter marque el import sin uso si cambia la configuración de arriba.
-void execFileSync;

@@ -25,3 +25,8 @@ Thumbs.db
 !.vscode/extensions.json
 .idea/
 coverage/
+
+# Pruebas de extremo a extremo (se generan en cada corrida)
+e2e/.datos.json
+e2e/test-results/
+e2e/playwright-report/

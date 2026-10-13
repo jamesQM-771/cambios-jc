@@ -41,6 +41,12 @@ try {
     data: { estado: 'anulada' },
   });
 
+  // Solo una línea de remesas activa: la del recorrido (otras pruebas dejan líneas en esta base).
+  await prisma.lineaNegocio.updateMany({
+    where: { clase: 'remesa', activa: true },
+    data: { activa: false },
+  });
+
   const [administrador, vendedor, digitador] = await Promise.all([
     crearUsuarioDePrueba(prisma, { rol: 'administrador' }),
     crearUsuarioDePrueba(prisma, { rol: 'vendedor' }),

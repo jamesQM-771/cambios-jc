@@ -144,6 +144,7 @@ npm run iniciar        # API ya compilada + web: para usar y probar el sistema, 
 npm run db:migrate     # aplica migraciones
 npm run db:seed        # datos de ejemplo ficticios + usuario administrador inicial
 npm run test           # pruebas
+npm run e2e            # recorrido de una remesa en navegador real (compila antes; fuera de check)
 npm run lint
 npm run typecheck
 npm run check          # lint + typecheck + test
