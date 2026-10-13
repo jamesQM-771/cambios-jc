@@ -500,3 +500,177 @@ describe('consultar remesas', () => {
     expect(respuesta.statusCode).toBe(404);
   });
 });
+
+async function registrarPorTransferencia(e: Escenario, api: FastifyInstance) {
+  return remesaDe(
+    await llamar(api, 'POST', '/remesas', {
+      token: e.vendedor.token,
+      cuerpo: cuerpoBase(e, { formaPago: 'transferencia', cuentaIngresoId: e.bancoCuentaId }),
+    }),
+  );
+}
+
+describe('verificar el pago', () => {
+  it('pasa de registrada a en cola y deja los dos pasos en el historial', async () => {
+    const e = await escenario();
+    const api = nuevaApp();
+    const remesa = await registrarPorTransferencia(e, api);
+
+    const respuesta = await llamar(api, 'POST', `/remesas/${remesa.id}/verificar-pago`, {
+      token: e.vendedor.token,
+    });
+
+    expect(respuesta.statusCode).toBe(200);
+    expect(remesaDe(respuesta).estado).toBe('en_cola');
+    const historial = await llamar(api, 'GET', `/remesas/${remesa.id}/historial`, {
+      token: e.vendedor.token,
+    });
+    const cuerpo: { historial: { estadoNuevo: string; usuario: { id: string } }[] } =
+      historial.json();
+    const pasos = cuerpo.historial;
+    expect(pasos.map((p) => p.estadoNuevo)).toEqual(['registrada', 'pago_verificado', 'en_cola']);
+    expect(pasos.at(-1)?.usuario.id).toBe(e.vendedor.id);
+  });
+
+  it('no se puede verificar dos veces ni una remesa en efectivo', async () => {
+    const e = await escenario();
+    const api = nuevaApp();
+    const remesa = await registrarPorTransferencia(e, api);
+    await llamar(api, 'POST', `/remesas/${remesa.id}/verificar-pago`, { token: e.vendedor.token });
+    const enEfectivo = remesaDe(
+      await llamar(api, 'POST', '/remesas', { token: e.vendedor.token, cuerpo: cuerpoBase(e) }),
+    );
+
+    const segunda = await llamar(api, 'POST', `/remesas/${remesa.id}/verificar-pago`, {
+      token: e.vendedor.token,
+    });
+    const efectivo = await llamar(api, 'POST', `/remesas/${enEfectivo.id}/verificar-pago`, {
+      token: e.vendedor.token,
+    });
+
+    expect(segunda.statusCode).toBe(409);
+    expect(efectivo.statusCode).toBe(409);
+    expect(cuerpoError(segunda).codigo).toBe('ESTADO_INVALIDO');
+  });
+
+  it('dos verificaciones simultáneas: una gana y la otra recibe el error', async () => {
+    const e = await escenario();
+    const api = nuevaApp();
+    const remesa = await registrarPorTransferencia(e, api);
+
+    const [a, b] = await Promise.all([
+      llamar(api, 'POST', `/remesas/${remesa.id}/verificar-pago`, { token: e.vendedor.token }),
+      llamar(api, 'POST', `/remesas/${remesa.id}/verificar-pago`, { token: e.vendedor.token }),
+    ]);
+
+    expect([a.statusCode, b.statusCode].sort()).toEqual([200, 409]);
+    const eventos = await prisma.eventoOperacion.count({
+      where: { operacionId: remesa.id, estadoNuevo: 'en_cola' },
+    });
+    expect(eventos).toBe(1);
+  });
+
+  it('una remesa que no existe responde 404 y el digitador 403', async () => {
+    const e = await escenario();
+    const digitador = await crearUsuarioDePrueba(prisma, { rol: 'digitador' });
+    const tokenDigitador = await abrirSesion(prisma, digitador.id);
+    const api = nuevaApp();
+
+    const noExiste = await llamar(api, 'POST', `/remesas/${randomUUID()}/verificar-pago`, {
+      token: e.vendedor.token,
+    });
+    const sinPermiso = await llamar(api, 'POST', `/remesas/${randomUUID()}/verificar-pago`, {
+      token: tokenDigitador,
+    });
+
+    expect(noExiste.statusCode).toBe(404);
+    expect(sinPermiso.statusCode).toBe(403);
+  });
+});
+
+describe('anular una remesa', () => {
+  it('el administrador la anula con motivo, y queda en el historial y la bitácora', async () => {
+    const e = await escenario();
+    const api = nuevaApp();
+    const remesa = await registrarPorTransferencia(e, api);
+
+    const respuesta = await llamar(api, 'POST', `/remesas/${remesa.id}/anular`, {
+      token: e.admin.token,
+      cuerpo: { motivo: 'El cliente se arrepintió' },
+    });
+
+    expect(respuesta.statusCode).toBe(200);
+    expect(remesaDe(respuesta).estado).toBe('anulada');
+    const evento = await prisma.eventoOperacion.findFirst({
+      where: { operacionId: remesa.id, estadoNuevo: 'anulada' },
+    });
+    expect(evento).toMatchObject({
+      estadoAnterior: 'registrada',
+      motivo: 'El cliente se arrepintió',
+      usuarioId: e.admin.id,
+    });
+    expect(
+      await prisma.auditoria.count({ where: { accion: 'remesa.anular', entidadId: remesa.id } }),
+    ).toBe(1);
+  });
+
+  it('también se anula una que ya está en cola', async () => {
+    const e = await escenario();
+    const api = nuevaApp();
+    const enCola = remesaDe(
+      await llamar(api, 'POST', '/remesas', { token: e.vendedor.token, cuerpo: cuerpoBase(e) }),
+    );
+
+    const respuesta = await llamar(api, 'POST', `/remesas/${enCola.id}/anular`, {
+      token: e.admin.token,
+      cuerpo: { motivo: 'Error al digitar el monto' },
+    });
+
+    expect(remesaDe(respuesta).estado).toBe('anulada');
+  });
+
+  it('no se anula una remesa ya tomada, completada o anulada', async () => {
+    const e = await escenario();
+    const api = nuevaApp();
+    const remesa = await registrarPorTransferencia(e, api);
+
+    for (const estado of ['tomada', 'completada'] as const) {
+      await prisma.operacion.update({ where: { id: remesa.id }, data: { estado } });
+      const respuesta = await llamar(api, 'POST', `/remesas/${remesa.id}/anular`, {
+        token: e.admin.token,
+        cuerpo: { motivo: 'Ya no la quiero' },
+      });
+      expect(respuesta.statusCode, estado).toBe(409);
+    }
+    await prisma.operacion.update({ where: { id: remesa.id }, data: { estado: 'registrada' } });
+    await llamar(api, 'POST', `/remesas/${remesa.id}/anular`, {
+      token: e.admin.token,
+      cuerpo: { motivo: 'Primera anulación' },
+    });
+    const repetida = await llamar(api, 'POST', `/remesas/${remesa.id}/anular`, {
+      token: e.admin.token,
+      cuerpo: { motivo: 'Segunda anulación' },
+    });
+    expect(repetida.statusCode).toBe(409);
+  });
+
+  it('exige motivo, y el vendedor no puede anular', async () => {
+    const e = await escenario();
+    const api = nuevaApp();
+    const remesa = await registrarPorTransferencia(e, api);
+
+    const sinMotivo = await llamar(api, 'POST', `/remesas/${remesa.id}/anular`, {
+      token: e.admin.token,
+      cuerpo: { motivo: ' ' },
+    });
+    const vendedor = await llamar(api, 'POST', `/remesas/${remesa.id}/anular`, {
+      token: e.vendedor.token,
+      cuerpo: { motivo: 'Me equivoqué' },
+    });
+    const despues = await llamar(api, 'GET', `/remesas/${remesa.id}`, { token: e.vendedor.token });
+
+    expect(sinMotivo.statusCode).toBe(400);
+    expect(vendedor.statusCode).toBe(403);
+    expect(remesaDe(despues).estado).toBe('registrada');
+  });
+});

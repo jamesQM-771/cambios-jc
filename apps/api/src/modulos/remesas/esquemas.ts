@@ -54,6 +54,22 @@ export const esquemaRegistrarRemesa = z
 
 export type DatosRegistrarRemesa = z.infer<typeof esquemaRegistrarRemesa>;
 
+export const esquemaAnularRemesa = z.object({
+  motivo: z.string().trim().min(3, 'Explica por qué se anula.').max(300),
+});
+
+export const esquemaHistorialRemesa = z.object({
+  estadoAnterior: z.enum(ESTADOS_OPERACION).nullable(),
+  estadoNuevo: z.enum(ESTADOS_OPERACION),
+  motivo: z.string().nullable(),
+  usuario: z.object({ id: z.string(), nombre: z.string() }),
+  creadoEn: z.date(),
+});
+
+export type EventoRemesa = z.infer<typeof esquemaHistorialRemesa>;
+
+export const respuestaHistorialRemesa = z.object({ historial: z.array(esquemaHistorialRemesa) });
+
 export const esquemaListarRemesas = z.object({
   estado: z.enum(ESTADOS_OPERACION).optional(),
 });

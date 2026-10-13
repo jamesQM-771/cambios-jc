@@ -51,6 +51,8 @@ export const FRASES_ACCION: Record<string, string> = {
   'cuenta_dinero.reactivar': 'reactivó una cuenta de dinero',
   'tasa.publicar': 'publicó una tasa',
   'remesa.registrar': 'registró una remesa',
+  'remesa.verificar_pago': 'verificó el pago de una remesa',
+  'remesa.anular': 'anuló una remesa',
   'cliente.crear': 'registró un cliente',
   'cliente.editar': 'editó un cliente',
   'cliente.desactivar': 'desactivó un cliente',

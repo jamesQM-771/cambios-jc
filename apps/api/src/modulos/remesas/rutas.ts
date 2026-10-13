@@ -6,9 +6,11 @@ import type { ProveedorZod } from '../../plugins/validacion-zod.js';
 import type { ContextoPeticion } from '../auth/servicio.js';
 
 import {
+  esquemaAnularRemesa,
   esquemaId,
   esquemaListarRemesas,
   esquemaRegistrarRemesa,
+  respuestaHistorialRemesa,
   respuestaListaRemesas,
   respuestaRemesa,
 } from './esquemas.js';
@@ -20,6 +22,11 @@ const contextoDe = (request: FastifyRequest): ContextoPeticion => ({
 });
 
 const PERMISO = { permiso: 'remesa.registrar' } as const;
+
+const actorDe = (request: FastifyRequest): { id: string } => {
+  if (!request.usuario) throw errores.noAutenticado();
+  return { id: request.usuario.id };
+};
 
 export function rutasRemesas(app: FastifyInstance, servicio: ServicioRemesas): void {
   const rutas = app.withTypeProvider<ProveedorZod>();
@@ -54,6 +61,47 @@ export function rutasRemesas(app: FastifyInstance, servicio: ServicioRemesas): v
       schema: { querystring: esquemaListarRemesas, response: { 200: respuestaListaRemesas } },
     },
     async (request) => ({ remesas: await servicio.listar(request.query) }),
+  );
+
+  rutas.get(
+    '/remesas/:id/historial',
+    { config: PERMISO, schema: { params: esquemaId, response: { 200: respuestaHistorialRemesa } } },
+    async (request) => ({ historial: await servicio.historial(request.params.id) }),
+  );
+
+  rutas.post(
+    '/remesas/:id/verificar-pago',
+    {
+      config: { permiso: 'remesa.verificar_pago' },
+      schema: { params: esquemaId, response: { 200: respuestaRemesa } },
+    },
+    async (request) => ({
+      remesa: await servicio.verificarPago(
+        request.params.id,
+        actorDe(request),
+        contextoDe(request),
+      ),
+    }),
+  );
+
+  rutas.post(
+    '/remesas/:id/anular',
+    {
+      config: { permiso: 'remesa.anular' },
+      schema: {
+        params: esquemaId,
+        body: esquemaAnularRemesa,
+        response: { 200: respuestaRemesa },
+      },
+    },
+    async (request) => ({
+      remesa: await servicio.anular(
+        request.params.id,
+        request.body.motivo,
+        actorDe(request),
+        contextoDe(request),
+      ),
+    }),
   );
 
   rutas.get(

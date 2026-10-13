@@ -7,13 +7,13 @@ import {
   multiplicar,
 } from '@cambios-jc/shared';
 
-import { Prisma } from '../../generated/prisma/client.js';
+import { Prisma, type EstadoOperacion } from '../../generated/prisma/client.js';
 import { errores } from '../../lib/errores.js';
 import type { PrismaClient } from '../../lib/prisma.js';
 import { registrarAuditoria } from '../../lib/registrar-auditoria.js';
 import type { ContextoPeticion } from '../auth/servicio.js';
 
-import type { DatosRegistrarRemesa, RemesaPublica } from './esquemas.js';
+import type { DatosRegistrarRemesa, EventoRemesa, RemesaPublica } from './esquemas.js';
 
 const PERSONA = {
   select: { id: true, tipoDocumento: true, numeroDocumento: true, nombre: true },
@@ -113,6 +113,65 @@ export function crearServicioRemesas({ prisma }: { prisma: PrismaClient }) {
 
   return {
     obtener: cargar,
+
+    async historial(id: string): Promise<EventoRemesa[]> {
+      await cargar(id);
+      return prisma.eventoOperacion.findMany({
+        where: { operacionId: id },
+        orderBy: { creadoEn: 'asc' },
+        select: {
+          estadoAnterior: true,
+          estadoNuevo: true,
+          motivo: true,
+          usuario: { select: { id: true, nombre: true } },
+          creadoEn: true,
+        },
+      });
+    },
+
+    /**
+     * El vendedor confirma que el dinero del cliente llegó (transferencia). La remesa pasa a
+     * "pago verificado" y de inmediato el sistema la publica en la cola del digitador (§8).
+     */
+    async verificarPago(
+      id: string,
+      actor: Actor,
+      contexto: ContextoPeticion,
+    ): Promise<RemesaPublica> {
+      await moverEstado(prisma, {
+        id,
+        desde: ['registrada'],
+        pasos: [
+          { estado: 'pago_verificado', motivo: 'Pago verificado por el vendedor.' },
+          { estado: 'en_cola', motivo: null },
+        ],
+        accion: 'remesa.verificar_pago',
+        mensajeSiNo: 'Solo se verifica el pago de una remesa registrada que aún no pasó a la cola.',
+        actor,
+        contexto,
+      });
+      return cargar(id);
+    },
+
+    /** Solo mientras nadie la ha tomado para pagarla (decisión 4). Siempre con motivo. */
+    async anular(
+      id: string,
+      motivo: string,
+      actor: Actor,
+      contexto: ContextoPeticion,
+    ): Promise<RemesaPublica> {
+      await moverEstado(prisma, {
+        id,
+        desde: ['registrada', 'pago_verificado', 'en_cola'],
+        pasos: [{ estado: 'anulada', motivo }],
+        accion: 'remesa.anular',
+        mensajeSiNo:
+          'Ya no se puede anular: el digitador la tomó o ya terminó. Si hay un problema, se maneja como incidencia o devolución.',
+        actor,
+        contexto,
+      });
+      return cargar(id);
+    },
 
     async listar(filtro: { estado?: FilaRemesa['estado'] | undefined }): Promise<RemesaPublica[]> {
       const filas = await prisma.operacion.findMany({
@@ -273,6 +332,62 @@ export function crearServicioRemesas({ prisma }: { prisma: PrismaClient }) {
       }
     },
   };
+}
+
+interface CambioDeEstado {
+  id: string;
+  desde: readonly EstadoOperacion[];
+  pasos: readonly { estado: EstadoOperacion; motivo: string | null }[];
+  accion: string;
+  mensajeSiNo: string;
+  actor: Actor;
+  contexto: ContextoPeticion;
+}
+
+/**
+ * Cambia el estado de una remesa de forma atómica: la actualización exige que siga en uno de los
+ * estados de origen, así dos personas que actúan a la vez no pisan el cambio de la otra. Deja un
+ * evento por cada paso y la acción en la bitácora, todo en la misma transacción.
+ */
+async function moverEstado(prisma: PrismaClient, cambio: CambioDeEstado): Promise<void> {
+  const ultimo = cambio.pasos.at(-1);
+  if (!ultimo) throw new Error('Un cambio de estado necesita al menos un paso.');
+  await prisma.$transaction(async (tx) => {
+    const actual = await tx.operacion.findUnique({
+      where: { id: cambio.id },
+      select: { estado: true },
+    });
+    if (!actual) throw errores.noEncontrado('La remesa no existe.');
+    const actualizadas = await tx.operacion.updateMany({
+      where: { id: cambio.id, estado: { in: [...cambio.desde] } },
+      data: { estado: ultimo.estado },
+    });
+    if (actualizadas.count === 0) throw errores.estadoInvalido(cambio.mensajeSiNo);
+
+    let anterior: EstadoOperacion = actual.estado;
+    for (const paso of cambio.pasos) {
+      await tx.eventoOperacion.create({
+        data: {
+          operacionId: cambio.id,
+          estadoAnterior: anterior,
+          estadoNuevo: paso.estado,
+          motivo: paso.motivo,
+          usuarioId: cambio.actor.id,
+        },
+      });
+      anterior = paso.estado;
+    }
+    await registrarAuditoria(tx, {
+      usuarioId: cambio.actor.id,
+      accion: cambio.accion,
+      entidad: 'operacion',
+      entidadId: cambio.id,
+      ip: cambio.contexto.ip,
+      agenteUsuario: cambio.contexto.agenteUsuario,
+      antes: { estado: actual.estado },
+      despues: { estado: ultimo.estado, motivo: ultimo.motivo },
+    });
+  });
 }
 
 function resultadoRepetido(
