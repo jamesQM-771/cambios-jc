@@ -674,3 +674,55 @@ describe('anular una remesa', () => {
     expect(remesaDe(despues).estado).toBe('registrada');
   });
 });
+
+describe('opciones del formulario', () => {
+  it('el vendedor recibe las líneas de remesas con su tasa vigente y las cuentas donde entra el dinero', async () => {
+    const e = await escenario('4.250000');
+
+    const respuesta = await llamar(nuevaApp(), 'GET', '/remesas/opciones', {
+      token: e.vendedor.token,
+    });
+
+    expect(respuesta.statusCode).toBe(200);
+    const { lineas, cuentasIngreso } = respuesta.json<{
+      lineas: {
+        id: string;
+        monedaOrigen: string;
+        monedaDestino: string;
+        tasaVenta: string | null;
+      }[];
+      cuentasIngreso: { id: string; tipo: string; moneda: string }[];
+    }>();
+    expect(lineas.find((l) => l.id === e.lineaId)).toMatchObject({
+      monedaOrigen: 'COP',
+      monedaDestino: 'VES',
+      tasaVenta: '4.250000',
+    });
+    expect(cuentasIngreso.map((c) => c.id)).toEqual(
+      expect.arrayContaining([e.cajaId, e.bancoCuentaId]),
+    );
+  });
+
+  it('una línea sin tasa vigente llega con tasaVenta nula, y una desactivada no llega', async () => {
+    const e = await escenario();
+    const api = nuevaApp();
+    await prisma.tasa.update({ where: { id: e.tasaId }, data: { vigenteHasta: new Date() } });
+
+    const sinTasa = await llamar(api, 'GET', '/remesas/opciones', { token: e.vendedor.token });
+    await prisma.lineaNegocio.update({ where: { id: e.lineaId }, data: { activa: false } });
+    const desactivada = await llamar(api, 'GET', '/remesas/opciones', { token: e.vendedor.token });
+
+    type Opciones = { lineas: { id: string; tasaVenta: string | null }[] };
+    expect(sinTasa.json<Opciones>().lineas.find((l) => l.id === e.lineaId)?.tasaVenta).toBeNull();
+    expect(desactivada.json<Opciones>().lineas.map((l) => l.id)).not.toContain(e.lineaId);
+  });
+
+  it('sin sesión responde 401 y el digitador 403', async () => {
+    const digitador = await crearUsuarioDePrueba(prisma, { rol: 'digitador' });
+    const token = await abrirSesion(prisma, digitador.id);
+    const api = nuevaApp();
+
+    expect((await llamar(api, 'GET', '/remesas/opciones')).statusCode).toBe(401);
+    expect((await llamar(api, 'GET', '/remesas/opciones', { token })).statusCode).toBe(403);
+  });
+});

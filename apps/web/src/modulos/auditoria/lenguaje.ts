@@ -53,6 +53,7 @@ export const FRASES_ACCION: Record<string, string> = {
   'remesa.registrar': 'registró una remesa',
   'remesa.verificar_pago': 'verificó el pago de una remesa',
   'remesa.anular': 'anuló una remesa',
+  'remesa.imprimir_recibo': 'imprimió el recibo de una remesa',
   'remesa.corregir': 'corrigió los datos de pago de una remesa con incidencia',
   'remesa.tomar': 'tomó una remesa para pagarla',
   'remesa.devolver_a_cola': 'devolvió una remesa a la cola',

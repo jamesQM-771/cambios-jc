@@ -1,4 +1,4 @@
-import { Link } from 'react-router';
+import { Link, Navigate } from 'react-router';
 
 import { Aviso } from '../componentes/Aviso.js';
 import { Icono } from '../componentes/Icono.js';
@@ -11,6 +11,9 @@ export function PaginaInicio() {
   useTitulo();
   const { usuario, permisos, empresa } = useSesionActual();
   const accesos = entradasVisibles(permisos).filter((entrada) => entrada.ruta !== '/');
+
+  // Quien solo tiene una pantalla (el digitador) entra directo a ella, sin pasos de más.
+  if (accesos.length === 1 && accesos[0]) return <Navigate to={accesos[0].ruta} replace />;
 
   return (
     <>

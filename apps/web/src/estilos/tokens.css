@@ -54,6 +54,10 @@
   --foco: #4f46e5;
   --velo: rgb(15 23 42 / 0.5);
 
+  /* El ticket se imprime en blanco y negro, igual en claro y en oscuro. */
+  --papel: #ffffff;
+  --tinta: #000000;
+
   /* Panel de marca de la pantalla de acceso: igual en claro y en oscuro. */
   --panel-fondo: #1e1b4b;
   --panel-texto: #eef0ff;

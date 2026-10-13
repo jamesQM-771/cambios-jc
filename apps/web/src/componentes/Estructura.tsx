@@ -5,6 +5,7 @@ import { useSesionActual } from '../modulos/auth/ContextoSesion.js';
 import { guardarMenuContraido, menuContraidoGuardado } from '../lib/menu-lateral.js';
 import { entradasVisibles, GRUPOS_MENU } from '../modulos/navegacion/menu.js';
 
+import { AvisosEnVivo } from './AvisosEnVivo.js';
 import { Encabezado } from './Encabezado.js';
 import { Icono } from './Icono.js';
 import { ProveedorNotificaciones } from './Notificaciones.js';
@@ -20,7 +21,10 @@ export function Estructura() {
   // Contraído solo cuenta en pantallas anchas; en celular el menú es un cajón y siempre va completo.
   const [menuContraido, setMenuContraido] = useState(menuContraidoGuardado);
   const entradas = entradasVisibles(permisos);
-  const conMenu = entradas.length > 1;
+  // El menú solo sirve si hay a dónde ir además de Inicio (el digitador va directo a su cola).
+  const conMenu = entradas.filter((entrada) => entrada.ruta !== '/').length > 1;
+  const conAvisos =
+    permisos.includes('remesa.registrar') || permisos.includes('remesa.tomar_completar');
 
   const alternarContraido = () => {
     const nuevo = !menuContraido;
@@ -91,6 +95,7 @@ export function Estructura() {
       )}
       <main id="contenido" className="contenido" tabIndex={-1}>
         <ProveedorNotificaciones>
+          {conAvisos && <AvisosEnVivo />}
           <Outlet />
         </ProveedorNotificaciones>
       </main>

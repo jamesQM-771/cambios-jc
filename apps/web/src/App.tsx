@@ -18,9 +18,13 @@ import { PaginaConfigurar2fa } from './paginas/acceso/PaginaConfigurar2fa.js';
 import { PaginaLogin } from './paginas/acceso/PaginaLogin.js';
 import { PaginaVerificar2fa } from './paginas/acceso/PaginaVerificar2fa.js';
 import { PaginaBitacora } from './paginas/bitacora/PaginaBitacora.js';
+import { PaginaClientes } from './paginas/clientes/PaginaClientes.js';
+import { PaginaCola } from './paginas/cola/PaginaCola.js';
 import { PaginaEmpresa } from './paginas/empresa/PaginaEmpresa.js';
 import { PaginaInicio } from './paginas/PaginaInicio.js';
 import { PaginaNoEncontrada } from './paginas/PaginaNoEncontrada.js';
+import { PaginaRemesas } from './paginas/remesas/PaginaRemesas.js';
+import { PaginaSeguimiento } from './paginas/seguimiento/PaginaSeguimiento.js';
 import { PaginaUsuarios } from './paginas/usuarios/PaginaUsuarios.js';
 
 /** Rutas de la aplicación. El enrutador y los proveedores se montan en `main.tsx` (o en las pruebas). */
@@ -56,9 +60,37 @@ export function App() {
         <Route path="*" element={<PaginaLogin />} />
       </Route>
 
+      {/* Pública: el cliente final consulta su envío con el código del recibo, sin iniciar sesión. */}
+      <Route path="/seguimiento" element={<PaginaSeguimiento />} />
+      <Route path="/seguimiento/:codigo" element={<PaginaSeguimiento />} />
+
       <Route element={<RutaProtegida />}>
         <Route element={<Estructura />}>
           <Route index element={<PaginaInicio />} />
+          <Route
+            path="remesas"
+            element={
+              <RutaConPermiso permiso="remesa.registrar">
+                <PaginaRemesas />
+              </RutaConPermiso>
+            }
+          />
+          <Route
+            path="clientes"
+            element={
+              <RutaConPermiso permiso="cliente.registrar">
+                <PaginaClientes />
+              </RutaConPermiso>
+            }
+          />
+          <Route
+            path="cola"
+            element={
+              <RutaConPermiso permiso="remesa.tomar_completar">
+                <PaginaCola />
+              </RutaConPermiso>
+            }
+          />
           <Route
             path="usuarios"
             element={

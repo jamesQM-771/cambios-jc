@@ -8,6 +8,7 @@ import {
 } from '@cambios-jc/shared';
 
 import { Prisma, type EstadoOperacion } from '../../generated/prisma/client.js';
+import { generarCodigoSeguimiento } from '../../lib/codigo-seguimiento.js';
 import { errores } from '../../lib/errores.js';
 import type { PrismaClient } from '../../lib/prisma.js';
 import { registrarAuditoria } from '../../lib/registrar-auditoria.js';
@@ -15,7 +16,12 @@ import type { Almacenamiento, ComprobanteAbierto } from '../../lib/almacenamient
 import { notificadorNulo, type Notificador } from '../../lib/tiempo-real.js';
 import type { ContextoPeticion } from '../auth/servicio.js';
 
-import type { DatosRegistrarRemesa, EventoRemesa, RemesaPublica } from './esquemas.js';
+import type {
+  DatosRegistrarRemesa,
+  EventoRemesa,
+  OpcionesRemesa,
+  RemesaPublica,
+} from './esquemas.js';
 
 const PERSONA = {
   select: { id: true, tipoDocumento: true, numeroDocumento: true, nombre: true },
@@ -24,6 +30,7 @@ const PERSONA = {
 const SELECCION = {
   id: true,
   numeroComprobante: true,
+  codigoSeguimiento: true,
   estado: true,
   formaPago: true,
   lineaNegocio: { select: { id: true, nombre: true } },
@@ -88,6 +95,7 @@ function aPublica(fila: FilaRemesa): RemesaPublica {
   return {
     id: fila.id,
     numeroComprobante: fila.numeroComprobante,
+    codigoSeguimiento: fila.codigoSeguimiento,
     estado: fila.estado,
     formaPago: fila.formaPago,
     lineaNegocio: fila.lineaNegocio,
@@ -150,6 +158,34 @@ export function crearServicioRemesas({
 
   return {
     obtener: cargar,
+
+    async opciones(): Promise<OpcionesRemesa> {
+      const [lineas, cuentas] = await Promise.all([
+        prisma.lineaNegocio.findMany({
+          where: { clase: 'remesa', activa: true },
+          orderBy: { nombre: 'asc' },
+          select: {
+            id: true,
+            nombre: true,
+            monedaOrigen: true,
+            monedaDestino: true,
+            tasas: { where: { vigenteHasta: null }, take: 1, select: { tasaVenta: true } },
+          },
+        }),
+        prisma.cuentaDinero.findMany({
+          where: { activa: true },
+          orderBy: { nombre: 'asc' },
+          select: { id: true, nombre: true, tipo: true, moneda: true },
+        }),
+      ]);
+      return {
+        lineas: lineas.map(({ tasas, ...linea }) => ({
+          ...linea,
+          tasaVenta: tasas[0]?.tasaVenta.toFixed(DECIMALES_TASA) ?? null,
+        })),
+        cuentasIngreso: cuentas,
+      };
+    },
 
     async historial(id: string): Promise<EventoRemesa[]> {
       await cargar(id);
@@ -402,6 +438,7 @@ export function crearServicioRemesas({
               tasaUsada: tasaUsada.toFixed(DECIMALES_TASA),
               motivoTasa: datos.tasaManual?.motivo ?? null,
               claveIdempotencia: datos.claveIdempotencia,
+              codigoSeguimiento: generarCodigoSeguimiento(),
               creadoPorId: actor.id,
               transferencia: { create: { medioPagoId: medio.id } },
             },

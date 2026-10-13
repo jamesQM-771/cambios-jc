@@ -216,6 +216,7 @@ model Usuario {
   clientesCreados       Cliente[]
   operacionesCreadas    Operacion[]
   eventosOperacion      EventoOperacion[]
+  impresionesRecibo     ImpresionRecibo[]
   transferenciasTomadas Transferencia[]   @relation("OperadorTransferencia")
 
   @@map("usuario")
@@ -382,11 +383,14 @@ model Operacion {
   motivoTasa        String?           @map("motivo_tasa")
   /// Un reintento con la misma clave devuelve la operación ya creada, no una nueva (CLAUDE.md §6).
   claveIdempotencia String            @unique @map("clave_idempotencia") @db.VarChar(64)
+  /// Código para que el cliente consulte su envío sin iniciar sesión (D111). No se puede adivinar.
+  codigoSeguimiento String            @unique @map("codigo_seguimiento") @db.VarChar(16)
   creadoPorId       String            @map("creado_por_id") @db.Uuid
   creadoPor         Usuario           @relation(fields: [creadoPorId], references: [id], onDelete: Restrict)
   creadoEn          DateTime          @default(now()) @map("creado_en") @db.Timestamptz(6)
   transferencia     Transferencia?
   eventos           EventoOperacion[]
+  impresiones       ImpresionRecibo[]
 
   @@index([estado, creadoEn])
   @@map("operacion")
@@ -441,4 +445,19 @@ model Contador {
   valor Int
 
   @@map("contador")
+}
+
+/// Cada vez que se imprime el recibo de una remesa. La primera es el original; las siguientes son
+/// COPIA (§5.3 de PROYECTO.md). Solo se inserta: sirve para saber quién reimprimió y cuándo.
+model ImpresionRecibo {
+  id          String    @id @default(uuid(7)) @db.Uuid
+  operacionId String    @map("operacion_id") @db.Uuid
+  operacion   Operacion @relation(fields: [operacionId], references: [id], onDelete: Restrict)
+  usuarioId   String    @map("usuario_id") @db.Uuid
+  usuario     Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+  esCopia     Boolean   @map("es_copia")
+  creadoEn    DateTime  @default(now()) @map("creado_en") @db.Timestamptz(6)
+
+  @@index([operacionId, creadoEn])
+  @@map("impresion_recibo")
 }

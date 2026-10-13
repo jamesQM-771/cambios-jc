@@ -449,3 +449,33 @@ describe('medios de pago', () => {
     expect(deOtroCliente.statusCode).toBe(404);
   });
 });
+
+describe('bancos disponibles', () => {
+  it('el vendedor ve los bancos activos para agregar datos de pago, sin tener acceso a Configuración', async () => {
+    const { token } = await sesion('vendedor');
+    const banco = await bancoActivo();
+    const api = nuevaApp();
+    await prisma.banco.upsert({
+      where: { codigo: '9555' },
+      update: { activo: false },
+      create: { codigo: '9555', nombre: 'Banco apagado', activo: false },
+    });
+
+    const respuesta = await llamar(api, 'GET', '/clientes/bancos', { token });
+
+    expect(respuesta.statusCode).toBe(200);
+    const { bancos } = respuesta.json<{ bancos: { id: string; codigo: string }[] }>();
+    expect(bancos.map((b) => b.id)).toContain(banco.id);
+    expect(bancos.map((b) => b.codigo)).not.toContain('9555');
+    // Y la lista de Configuración sigue cerrada para él.
+    expect((await llamar(api, 'GET', '/bancos', { token })).statusCode).toBe(403);
+  });
+
+  it('el digitador no la ve', async () => {
+    const { token } = await sesion('digitador');
+
+    const respuesta = await llamar(nuevaApp(), 'GET', '/clientes/bancos', { token });
+
+    expect(respuesta.statusCode).toBe(403);
+  });
+});

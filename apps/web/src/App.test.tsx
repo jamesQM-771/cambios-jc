@@ -108,40 +108,64 @@ describe('menús por rol', () => {
       within(menu)
         .getAllByRole('link')
         .map((enlace) => enlace.textContent),
-    ).toEqual(['Inicio', 'Usuarios', 'Empresa', 'Configuración', 'Actividad']);
+    ).toEqual([
+      'Inicio',
+      'Remesas',
+      'Clientes',
+      'Usuarios',
+      'Empresa',
+      'Configuración',
+      'Actividad',
+    ]);
     expect(within(menu).getByRole('link', { name: 'Inicio' })).toHaveAttribute(
       'aria-current',
       'page',
     );
   });
 
-  it.each(['vendedor', 'digitador'] as const)(
-    'el %s no ve menú lateral: estructura mínima con solo la bienvenida',
-    async (rol) => {
-      simularApi({ 'GET /auth/yo': { cuerpo: sesionFalsa(rol) } });
+  it('el vendedor ve su menú de operación, sin administración', async () => {
+    simularApi({
+      'GET /auth/yo': { cuerpo: sesionFalsa('vendedor') },
+    });
 
-      renderizarApp('/');
+    renderizarApp('/');
 
-      expect(
-        await screen.findByRole('heading', { name: `Hola, Persona ${rol}` }),
-      ).toBeInTheDocument();
-      expect(screen.queryByRole('navigation', { name: 'Menú principal' })).not.toBeInTheDocument();
-      expect(screen.getByText(/Por ahora no tienes pantallas disponibles/)).toBeInTheDocument();
-    },
-  );
+    const menu = await screen.findByRole('navigation', { name: 'Menú principal' });
+    expect(
+      within(menu)
+        .getAllByRole('link')
+        .map((enlace) => enlace.textContent),
+    ).toEqual(['Inicio', 'Remesas', 'Clientes']);
+  });
+
+  it('el digitador no ve menú: entra directo a su cola, en estructura mínima', async () => {
+    simularApi({
+      'GET /auth/yo': { cuerpo: sesionFalsa('digitador') },
+      'GET /cola': { cuerpo: { remesas: [], cuentasOrigen: [], ultimaCuentaOrigenId: null } },
+    });
+
+    renderizarApp('/');
+
+    expect(await screen.findByRole('heading', { name: 'Cola de pagos' })).toBeInTheDocument();
+    expect(screen.queryByRole('navigation', { name: 'Menú principal' })).not.toBeInTheDocument();
+  });
 
   it('los tres roles ven menús distintos entre sí', async () => {
     const vistos: Record<string, number> = {};
     for (const rol of ROLES_CON_SESION) {
-      simularApi({ 'GET /auth/yo': { cuerpo: sesionFalsa(rol) } });
+      simularApi({
+        'GET /auth/yo': { cuerpo: sesionFalsa(rol) },
+        'GET /cola': { cuerpo: { remesas: [], cuentasOrigen: [], ultimaCuentaOrigenId: null } },
+      });
       const { unmount } = renderizarApp('/');
-      await screen.findByRole('heading', { name: /Hola/ });
+      await screen.findByRole('banner');
+      await screen.findByRole('main');
       const menu = screen.queryByRole('navigation', { name: 'Menú principal' });
       vistos[rol] = menu ? within(menu).getAllByRole('link').length : 0;
       unmount();
     }
 
-    expect(vistos).toEqual({ administrador: 5, vendedor: 0, digitador: 0 });
+    expect(vistos).toEqual({ administrador: 7, vendedor: 3, digitador: 0 });
   });
 
   it('el encabezado muestra la empresa, el nombre y el rol de la persona', async () => {

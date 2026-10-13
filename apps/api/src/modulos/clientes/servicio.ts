@@ -95,6 +95,15 @@ export function crearServicioClientes({ prisma }: { prisma: PrismaClient }) {
 
     obtener: cargarConMedios,
 
+    /** Bancos activos: quien registra clientes no puede abrir la configuración de bancos. */
+    bancosDisponibles() {
+      return prisma.banco.findMany({
+        where: { activo: true },
+        orderBy: { codigo: 'asc' },
+        select: { id: true, codigo: true, nombre: true },
+      });
+    },
+
     async crear(
       datos: DatosNuevoCliente,
       actor: Actor,

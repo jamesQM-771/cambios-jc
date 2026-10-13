@@ -1965,3 +1965,389 @@ textarea.campo__entrada {
     display: none;
   }
 }
+
+/* ---------- Recibo en ticket (térmica de 58 u 80 mm) ---------- */
+.recibo {
+  margin-inline: auto;
+  padding: var(--espacio-3);
+  background: var(--papel);
+  color: var(--tinta);
+  font-family: var(--fuente-mono);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+/* Ancho útil del papel menos el margen de la impresora. */
+.recibo--58 {
+  width: 48mm;
+}
+
+.recibo--80 {
+  width: 72mm;
+}
+
+.recibo p,
+.recibo h2 {
+  margin: 0;
+}
+
+.recibo__copia {
+  margin-bottom: var(--espacio-2);
+  padding: 2px 0;
+  border: 2px solid var(--tinta);
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.3em;
+  text-align: center;
+}
+
+.recibo__cabecera {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding-bottom: var(--espacio-2);
+  border-bottom: 1px dashed var(--tinta);
+  text-align: center;
+}
+
+.recibo__logo {
+  max-width: 60%;
+  max-height: 18mm;
+  object-fit: contain;
+}
+
+.recibo__empresa {
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--tinta);
+}
+
+.recibo__datos {
+  display: grid;
+  gap: 4px;
+  margin: var(--espacio-2) 0 0;
+}
+
+.recibo__fila dt {
+  font-weight: 600;
+}
+
+.recibo__fila dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.recibo__pie {
+  margin-top: var(--espacio-2);
+  padding-top: var(--espacio-2);
+  border-top: 1px dashed var(--tinta);
+  text-align: center;
+}
+
+/* Al imprimir solo sale el ticket: se oculta todo lo demás de la pantalla. */
+@media print {
+  @page {
+    margin: 0;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  .recibo,
+  .recibo * {
+    visibility: visible;
+  }
+
+  .recibo {
+    position: absolute;
+    top: 0;
+    left: 0;
+    margin: 0;
+  }
+}
+
+/* ---------- Clientes y remesas ---------- */
+.lista-medios {
+  display: grid;
+  gap: var(--espacio-2);
+  margin: 0 0 var(--espacio-3);
+  padding: 0;
+  list-style: none;
+}
+
+.lista-medios li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-3);
+  padding: var(--espacio-3);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-chico);
+}
+
+.lista-medios li > div {
+  display: grid;
+  min-width: 0;
+}
+
+.lista-medios small {
+  color: var(--texto-suave);
+}
+
+.lista-medios__inactivo {
+  opacity: 0.6;
+}
+
+.cliente-elegido {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-3);
+  padding: var(--espacio-3);
+  border: 1px solid var(--borde-fuerte);
+  border-radius: var(--radio-chico);
+  background: var(--superficie-suave);
+}
+
+.cliente-elegido > div {
+  display: grid;
+}
+
+.resultados-cliente {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-chico);
+  overflow: hidden;
+}
+
+.resultados-cliente button {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--espacio-3);
+  width: 100%;
+  min-height: 44px;
+  padding: var(--espacio-2) var(--espacio-3);
+  border: 0;
+  border-bottom: 1px solid var(--borde);
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--transicion);
+}
+
+.resultados-cliente li:last-child button {
+  border-bottom: 0;
+}
+
+.resultados-cliente button:hover,
+.resultados-cliente button:focus-visible {
+  background: var(--superficie-suave);
+}
+
+.medios-pago {
+  display: grid;
+  gap: var(--espacio-2);
+  margin: var(--espacio-3) 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.medios-pago__opcion {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--espacio-3);
+  padding: var(--espacio-3);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-chico);
+  cursor: pointer;
+}
+
+.medios-pago__opcion input {
+  margin-top: 4px;
+  accent-color: var(--marca);
+}
+
+.tasa-aplicada {
+  margin-bottom: var(--espacio-3);
+  color: var(--texto-suave);
+}
+
+.vista-previa {
+  margin: 0 0 var(--espacio-3);
+  padding: var(--espacio-3) var(--espacio-4);
+  border-radius: var(--radio-chico);
+  background: var(--marca-suave);
+  color: var(--marca);
+}
+
+.vista-previa strong {
+  font-size: var(--texto-grande);
+}
+
+.detalle-remesa__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-3);
+  margin-bottom: var(--espacio-3);
+}
+
+.detalle-remesa__cabecera h3 {
+  margin: 0;
+}
+
+.comprobante {
+  margin: var(--espacio-3) 0;
+}
+
+.comprobante img {
+  display: block;
+  max-height: 360px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-chico);
+}
+
+.comprobante figcaption {
+  margin-top: var(--espacio-1);
+  color: var(--texto-suave);
+  font-size: var(--texto-mini);
+}
+
+.historial {
+  display: grid;
+  gap: var(--espacio-3);
+  margin: 0 0 var(--espacio-4);
+  padding-left: var(--espacio-4);
+  border-left: 2px solid var(--borde);
+  list-style: none;
+}
+
+.historial li {
+  display: grid;
+}
+
+.historial span,
+.historial small {
+  color: var(--texto-suave);
+  font-size: var(--texto-chico);
+}
+
+.recibo-vista {
+  display: flex;
+  justify-content: center;
+  margin-bottom: var(--espacio-4);
+  padding: var(--espacio-4);
+  border: 1px dashed var(--borde-fuerte);
+  border-radius: var(--radio);
+  background: var(--superficie-suave);
+}
+
+/* ---------- Cola del digitador (móvil primero) ---------- */
+.transferencias {
+  display: grid;
+  gap: var(--espacio-4);
+  margin: 0 0 var(--espacio-5);
+  padding: 0;
+  list-style: none;
+}
+
+.transferencia {
+  display: grid;
+  gap: var(--espacio-3);
+  padding: var(--espacio-4);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  background: var(--superficie);
+  box-shadow: var(--sombra);
+}
+
+.transferencia--mia {
+  border-color: var(--marca);
+}
+
+.transferencia__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--espacio-2);
+}
+
+.transferencia__monto {
+  font-size: 1.5rem;
+  letter-spacing: -0.02em;
+}
+
+.transferencia__espera,
+.transferencia__banco {
+  margin: 0;
+  color: var(--texto-suave);
+}
+
+.transferencia__datos {
+  display: grid;
+  gap: var(--espacio-3);
+  margin: 0;
+}
+
+.transferencia__datos > div {
+  display: grid;
+  gap: 2px;
+}
+
+.transferencia__datos dt {
+  color: var(--texto-suave);
+  font-size: var(--texto-chico);
+}
+
+.transferencia__datos dd {
+  margin: 0;
+  font-size: var(--texto-grande);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.transferencia__cierre {
+  display: grid;
+  gap: var(--espacio-2);
+  padding-top: var(--espacio-3);
+  border-top: 1px solid var(--borde);
+}
+
+.transferencia__cierre .campo {
+  margin-bottom: var(--espacio-2);
+}
+
+/* ---------- Seguimiento público ---------- */
+.seguimiento {
+  display: grid;
+  place-items: start center;
+  min-height: 100dvh;
+  padding: var(--espacio-6) var(--espacio-4);
+}
+
+.seguimiento__tarjeta {
+  width: min(480px, 100%);
+}
+
+.seguimiento__empresa {
+  margin: 0 0 var(--espacio-3);
+  color: var(--texto-suave);
+  font-weight: 600;
+}
+
+.seguimiento__estado {
+  font-size: var(--texto-grande);
+}
+
+.seguimiento__mensaje {
+  font-size: var(--texto-grande);
+}

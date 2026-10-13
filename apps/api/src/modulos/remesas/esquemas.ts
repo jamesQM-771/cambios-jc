@@ -90,6 +90,8 @@ const esquemaPersona = z.object({
 export const esquemaRemesaPublica = z.object({
   id: z.string(),
   numeroComprobante: z.number().int(),
+  /** Con este código el cliente consulta su envío sin sesión (§5.15). */
+  codigoSeguimiento: z.string(),
   estado: z.enum(ESTADOS_OPERACION),
   formaPago: z.enum(FORMAS_PAGO),
   lineaNegocio: z.object({ id: z.string(), nombre: z.string() }),
@@ -128,4 +130,31 @@ export const esquemaRemesaPublica = z.object({
 export type RemesaPublica = z.infer<typeof esquemaRemesaPublica>;
 
 export const respuestaRemesa = z.object({ remesa: esquemaRemesaPublica });
+
+/**
+ * Lo que necesita el formulario de una remesa y quien vende no puede pedir en Configuración (que
+ * exige `empresa.configurar`): líneas de remesas con su tasa vigente y cuentas donde entra el dinero.
+ */
+export const esquemaOpcionesRemesa = z.object({
+  lineas: z.array(
+    z.object({
+      id: z.string(),
+      nombre: z.string(),
+      monedaOrigen: z.string(),
+      monedaDestino: z.string(),
+      /** Tasa de venta vigente; `null` si todavía no se publicó una. */
+      tasaVenta: z.string().nullable(),
+    }),
+  ),
+  cuentasIngreso: z.array(
+    z.object({
+      id: z.string(),
+      nombre: z.string(),
+      tipo: z.enum(['caja', 'banco', 'billetera']),
+      moneda: z.string(),
+    }),
+  ),
+});
+
+export type OpcionesRemesa = z.infer<typeof esquemaOpcionesRemesa>;
 export const respuestaListaRemesas = z.object({ remesas: z.array(esquemaRemesaPublica) });

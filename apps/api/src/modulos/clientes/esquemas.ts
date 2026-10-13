@@ -135,6 +135,10 @@ export type ClientePublico = z.infer<typeof esquemaClientePublico>;
 export type ClienteConMedios = z.infer<typeof esquemaClienteConMedios>;
 export type MedioPagoPublico = z.infer<typeof esquemaMedioPagoPublico>;
 
+export const respuestaBancosDisponibles = z.object({
+  bancos: z.array(z.object({ id: z.string(), codigo: z.string(), nombre: z.string() })),
+});
+
 export const respuestaCliente = z.object({ cliente: esquemaClienteConMedios });
 export const respuestaListaClientes = z.object({ clientes: z.array(esquemaClientePublico) });
 export const respuestaMedioPago = z.object({ medioPago: esquemaMedioPagoPublico });

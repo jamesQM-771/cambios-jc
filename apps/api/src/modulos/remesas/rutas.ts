@@ -13,6 +13,7 @@ import {
   esquemaListarRemesas,
   esquemaRegistrarRemesa,
   respuestaHistorialRemesa,
+  esquemaOpcionesRemesa,
   respuestaListaRemesas,
   respuestaRemesa,
 } from './esquemas.js';
@@ -63,6 +64,12 @@ export function rutasRemesas(app: FastifyInstance, servicio: ServicioRemesas): v
       schema: { querystring: esquemaListarRemesas, response: { 200: respuestaListaRemesas } },
     },
     async (request) => ({ remesas: await servicio.listar(request.query) }),
+  );
+
+  rutas.get(
+    '/remesas/opciones',
+    { config: PERMISO, schema: { response: { 200: esquemaOpcionesRemesa } } },
+    async () => servicio.opciones(),
   );
 
   rutas.get(

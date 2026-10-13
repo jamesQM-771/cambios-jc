@@ -1,0 +1,11 @@
+{
+  "name": "@cambios-jc/e2e",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "navegadores": "playwright install chromium",
+    "test": "playwright test",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  }
+}

@@ -39,9 +39,9 @@ Cada una termina con pruebas, `npm run check` en verde y commit.
 | 2.4 | Cola del digitador: tomar con bloqueo, liberar, completar, incidencia | Hecha |
 | 2.5 | Corrección de incidencias por el vendedor | Hecha |
 | 2.6 | Tiempo real con Socket.IO (con consulta periódica de respaldo: en las pantallas, 2.9) | Hecha |
-| 2.7 | Recibo en ticket | Pendiente |
-| 2.8 | Seguimiento público por código | Pendiente |
-| 2.9 | Pantallas del vendedor y del digitador | Pendiente |
+| 2.7 | Recibo en ticket (API, texto digital y componente imprimible; el botón va en las pantallas, 2.9) | Hecha |
+| 2.8 | Seguimiento público por código (API; la página pública va en 2.9) | Hecha |
+| 2.9 | Pantallas del vendedor, del digitador y seguimiento público | Hecha |
 | 2.10 | Pruebas de extremo a extremo y cierre | Pendiente |
 
 ## Garantías que se prueban antes que cualquier pantalla

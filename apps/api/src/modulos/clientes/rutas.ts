@@ -11,6 +11,7 @@ import {
   esquemaId,
   esquemaIdMedio,
   esquemaListarClientes,
+  respuestaBancosDisponibles,
   respuestaCliente,
   respuestaListaClientes,
   respuestaMedioPago,
@@ -53,6 +54,12 @@ export function rutasClientes(app: FastifyInstance, servicio: ServicioClientes):
       const cliente = await servicio.crear(request.body, actorDe(request), contextoDe(request));
       return respuesta.status(201).send({ cliente });
     },
+  );
+
+  rutas.get(
+    '/clientes/bancos',
+    { config: PERMISO, schema: { response: { 200: respuestaBancosDisponibles } } },
+    async () => ({ bancos: await servicio.bancosDisponibles() }),
   );
 
   rutas.get(

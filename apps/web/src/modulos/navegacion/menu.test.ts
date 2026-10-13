@@ -8,8 +8,11 @@ const etiquetasDe = (rol: (typeof ROLES)[number]) =>
 
 describe('menú según permisos', () => {
   it('el administrador ve todo', () => {
+    // El administrador no paga remesas (eso es del digitador), así que no ve la cola.
     expect(etiquetasDe('administrador')).toEqual([
       'Inicio',
+      'Remesas',
+      'Clientes',
       'Usuarios',
       'Empresa',
       'Configuración',
@@ -17,9 +20,9 @@ describe('menú según permisos', () => {
     ]);
   });
 
-  it('el vendedor y el digitador solo ven Inicio por ahora', () => {
-    expect(etiquetasDe('vendedor')).toEqual(['Inicio']);
-    expect(etiquetasDe('digitador')).toEqual(['Inicio']);
+  it('el vendedor vende y atiende clientes; el digitador solo paga', () => {
+    expect(etiquetasDe('vendedor')).toEqual(['Inicio', 'Remesas', 'Clientes']);
+    expect(etiquetasDe('digitador')).toEqual(['Inicio', 'Cola de pagos']);
   });
 
   it('sin permisos solo queda Inicio', () => {

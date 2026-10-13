@@ -3,6 +3,12 @@ import '@testing-library/jest-dom/vitest';
 import { cleanup, configure } from '@testing-library/react';
 import { afterEach, vi } from 'vitest';
 
+// El tiempo real nunca abre una conexión de verdad en las pruebas (usa un socket simulado).
+vi.mock('socket.io-client', async () => {
+  const { crearSocketFalso } = await import('./socket-falso.js');
+  return { io: crearSocketFalso };
+});
+
 // Margen para cuando el equipo está cargado (todo el monorepo corre en paralelo).
 configure({ asyncUtilTimeout: 8000 });
 

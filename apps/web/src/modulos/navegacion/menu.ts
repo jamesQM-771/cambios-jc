@@ -2,8 +2,8 @@ import type { Permiso } from '@cambios-jc/shared';
 
 import type { NombreIcono } from '../../componentes/Icono.js';
 
-/** Grupos del menú, en el orden en que se muestran. Las fases siguientes añaden "Operación". */
-export const GRUPOS_MENU = ['General', 'Administración', 'Seguridad'] as const;
+/** Grupos del menú, en el orden en que se muestran. */
+export const GRUPOS_MENU = ['General', 'Operación', 'Administración', 'Seguridad'] as const;
 export type GrupoMenu = (typeof GRUPOS_MENU)[number];
 
 export interface EntradaMenu {
@@ -27,6 +27,30 @@ export const ENTRADAS_MENU: readonly EntradaMenu[] = [
     descripcion: 'Resumen y accesos',
     icono: 'inicio',
     grupo: 'General',
+  },
+  {
+    ruta: '/remesas',
+    grupo: 'Operación',
+    icono: 'flecha',
+    etiqueta: 'Remesas',
+    descripcion: 'Registrar envíos, verificar pagos y seguir cada remesa',
+    permiso: 'remesa.registrar',
+  },
+  {
+    ruta: '/clientes',
+    grupo: 'Operación',
+    icono: 'usuarios',
+    etiqueta: 'Clientes',
+    descripcion: 'Quienes envían y reciben dinero, con sus cuentas',
+    permiso: 'cliente.registrar',
+  },
+  {
+    ruta: '/cola',
+    grupo: 'Operación',
+    icono: 'cola',
+    etiqueta: 'Cola de pagos',
+    descripcion: 'Transferencias por pagar: tomarlas, pagarlas y subir la captura',
+    permiso: 'remesa.tomar_completar',
   },
   {
     ruta: '/usuarios',
