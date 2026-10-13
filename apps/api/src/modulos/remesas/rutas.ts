@@ -8,6 +8,7 @@ import type { ContextoPeticion } from '../auth/servicio.js';
 
 import {
   esquemaAnularRemesa,
+  esquemaCorregirRemesa,
   esquemaId,
   esquemaListarRemesas,
   esquemaRegistrarRemesa,
@@ -99,6 +100,26 @@ export function rutasRemesas(app: FastifyInstance, servicio: ServicioRemesas): v
       remesa: await servicio.anular(
         request.params.id,
         request.body.motivo,
+        actorDe(request),
+        contextoDe(request),
+      ),
+    }),
+  );
+
+  rutas.post(
+    '/remesas/:id/corregir',
+    {
+      config: PERMISO,
+      schema: {
+        params: esquemaId,
+        body: esquemaCorregirRemesa,
+        response: { 200: respuestaRemesa },
+      },
+    },
+    async (request) => ({
+      remesa: await servicio.corregirPago(
+        request.params.id,
+        request.body,
         actorDe(request),
         contextoDe(request),
       ),

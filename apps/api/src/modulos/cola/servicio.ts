@@ -1,5 +1,6 @@
 import { Prisma } from '../../generated/prisma/client.js';
 import type { Almacenamiento } from '../../lib/almacenamiento.js';
+import { notificadorNulo, type Notificador } from '../../lib/tiempo-real.js';
 import { errores } from '../../lib/errores.js';
 import type { ImagenDetectada } from '../../lib/imagen.js';
 import type { PrismaClient } from '../../lib/prisma.js';
@@ -67,10 +68,21 @@ function aItem(fila: FilaCola, usuarioId: string): ItemCola {
 export function crearServicioCola({
   prisma,
   almacenamiento,
+  notificador = notificadorNulo,
 }: {
   prisma: PrismaClient;
   almacenamiento: Almacenamiento;
+  notificador?: Notificador;
 }) {
+  /** Avisa del cambio ya confirmado; un fallo al avisar nunca debe deshacer ni fallar la operación. */
+  function avisar(id: string, estado: ResultadoCola['estado']): void {
+    try {
+      notificador.remesaCambio({ id, estado });
+    } catch {
+      // La pantalla igual consulta por su cuenta.
+    }
+  }
+
   async function cargarItem(id: string, usuarioId: string): Promise<ItemCola> {
     const fila = await prisma.operacion.findUnique({ where: { id }, select: SELECCION });
     if (!fila) throw errores.noEncontrado('La transferencia no existe.');
@@ -143,6 +155,7 @@ export function crearServicioCola({
           });
         },
       });
+      avisar(id, 'tomada');
       return cargarItem(id, actor.id);
     },
 
@@ -168,6 +181,7 @@ export function crearServicioCola({
           });
         },
       });
+      avisar(id, 'en_cola');
       return { id, estado: 'en_cola' };
     },
 
@@ -188,6 +202,7 @@ export function crearServicioCola({
         contexto,
         dentro: (tx) => exigirQueSeaMia(actor)(tx, id),
       });
+      avisar(id, 'con_incidencia');
       return { id, estado: 'con_incidencia' };
     },
 
@@ -258,6 +273,7 @@ export function crearServicioCola({
         }
         throw error;
       }
+      avisar(id, 'completada');
       return { id, estado: 'completada' };
     },
   };

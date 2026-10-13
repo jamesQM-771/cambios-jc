@@ -29,6 +29,8 @@ export default defineConfig(({ mode }) => {
         '/api': {
           target: `http://127.0.0.1:${String(puertoApi)}`,
           rewrite: (ruta: string) => ruta.replace(/^\/api/, ''),
+          // El tiempo real (Socket.IO) viaja por el mismo prefijo /api y la misma cookie.
+          ws: true,
         },
       },
     },

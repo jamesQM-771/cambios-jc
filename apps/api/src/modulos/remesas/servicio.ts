@@ -12,6 +12,7 @@ import { errores } from '../../lib/errores.js';
 import type { PrismaClient } from '../../lib/prisma.js';
 import { registrarAuditoria } from '../../lib/registrar-auditoria.js';
 import type { Almacenamiento, ComprobanteAbierto } from '../../lib/almacenamiento.js';
+import { notificadorNulo, type Notificador } from '../../lib/tiempo-real.js';
 import type { ContextoPeticion } from '../auth/servicio.js';
 
 import type { DatosRegistrarRemesa, EventoRemesa, RemesaPublica } from './esquemas.js';
@@ -125,10 +126,22 @@ function aPublica(fila: FilaRemesa): RemesaPublica {
 export function crearServicioRemesas({
   prisma,
   almacenamiento,
+  notificador = notificadorNulo,
 }: {
   prisma: PrismaClient;
   almacenamiento: Almacenamiento;
+  notificador?: Notificador;
 }) {
+  /** Avisa del cambio ya confirmado. Un fallo al avisar nunca debe deshacer ni fallar la operación. */
+  function avisar(remesa: RemesaPublica): RemesaPublica {
+    try {
+      notificador.remesaCambio({ id: remesa.id, estado: remesa.estado });
+    } catch {
+      // La pantalla igual consulta por su cuenta.
+    }
+    return remesa;
+  }
+
   async function cargar(id: string): Promise<RemesaPublica> {
     const fila = await prisma.operacion.findUnique({ where: { id }, select: SELECCION });
     if (!fila) throw errores.noEncontrado('La remesa no existe.');
@@ -174,7 +187,59 @@ export function crearServicioRemesas({
         actor,
         contexto,
       });
-      return cargar(id);
+      return avisar(await cargar(id));
+    },
+
+    /**
+     * Tras una incidencia, el vendedor corrige a dónde se paga y la remesa vuelve a la cola (§8).
+     * Solo cambia el medio de pago: los montos y la tasa no se tocan (el digitador tampoco los
+     * cambia). "Corregida" queda como evento del historial, no como estado.
+     */
+    async corregirPago(
+      id: string,
+      datos: { medioPagoId: string; nota?: string | undefined },
+      actor: Actor,
+      contexto: ContextoPeticion,
+    ): Promise<RemesaPublica> {
+      const medio = await prisma.medioPago.findUnique({
+        where: { id: datos.medioPagoId },
+        include: { cliente: true },
+      });
+      if (!medio?.activo || !medio.cliente.activo) {
+        throw errores.estadoInvalido(
+          'Los datos de pago no existen o están desactivados: agrega unos nuevos al cliente.',
+        );
+      }
+      const anterior = await prisma.transferencia.findUnique({
+        where: { operacionId: id },
+        select: { medioPagoId: true },
+      });
+      if (!anterior) throw errores.noEncontrado('La remesa no existe.');
+      await moverEstado(prisma, {
+        id,
+        desde: ['con_incidencia'],
+        pasos: [
+          {
+            estado: 'en_cola',
+            motivo: datos.nota
+              ? `Datos de pago corregidos: ${datos.nota}`
+              : 'Datos de pago corregidos.',
+          },
+        ],
+        accion: 'remesa.corregir',
+        mensajeSiNo: 'Solo se corrige una remesa que quedó con incidencia.',
+        detalle: { medioPagoAnteriorId: anterior.medioPagoId, medioPagoNuevoId: medio.id },
+        actor,
+        contexto,
+        dentro: async (tx) => {
+          // Vuelve a la cola de todos: quien la tenía tomada ya no es su operador.
+          await tx.transferencia.update({
+            where: { operacionId: id },
+            data: { medioPagoId: medio.id, operadorId: null, tomadaEn: null },
+          });
+        },
+      });
+      return avisar(await cargar(id));
     },
 
     /**
@@ -197,7 +262,7 @@ export function crearServicioRemesas({
           });
         },
       });
-      return cargar(id);
+      return avisar(await cargar(id));
     },
 
     /** Captura del comprobante que cargó el digitador, para que el vendedor la revise. */
@@ -231,7 +296,7 @@ export function crearServicioRemesas({
         actor,
         contexto,
       });
-      return cargar(id);
+      return avisar(await cargar(id));
     },
 
     async listar(filtro: { estado?: FilaRemesa['estado'] | undefined }): Promise<RemesaPublica[]> {
@@ -379,7 +444,7 @@ export function crearServicioRemesas({
         });
 
       try {
-        return { remesa: await cargar(await crear()), repetida: false };
+        return { remesa: avisar(await cargar(await crear())), repetida: false };
       } catch (error) {
         // Dos peticiones con la misma clave a la vez: gana una y la otra devuelve esa misma remesa.
         if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
@@ -397,6 +462,8 @@ export function crearServicioRemesas({
 
 export interface CambioDeEstado {
   id: string;
+  /** Datos extra para la bitácora (sin documentos ni cuentas completos). */
+  detalle?: Record<string, unknown> | undefined;
   /** Trabajo extra que debe confirmarse o deshacerse junto con el cambio (misma transacción). */
   dentro?: ((tx: Prisma.TransactionClient) => Promise<void>) | undefined;
   desde: readonly EstadoOperacion[];
@@ -449,7 +516,7 @@ export async function moverEstado(prisma: PrismaClient, cambio: CambioDeEstado):
       ip: cambio.contexto.ip,
       agenteUsuario: cambio.contexto.agenteUsuario,
       antes: { estado: actual.estado },
-      despues: { estado: ultimo.estado, motivo: ultimo.motivo },
+      despues: { estado: ultimo.estado, motivo: ultimo.motivo, ...cambio.detalle },
     });
   });
 }

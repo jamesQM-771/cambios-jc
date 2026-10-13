@@ -68,6 +68,10 @@ interface Escenario {
   cuentaCopId: string;
   nombreRemitente: string;
   documentoRemitente: string;
+  beneficiarioId: string;
+  bancoId: string;
+  /** Un medio de pago nuevo del mismo beneficiario, con otra cuenta. */
+  nuevoMedioPago: () => Promise<string>;
   crearRemesa: (api: FastifyInstance) => Promise<{ id: string; montoBolivares: string }>;
 }
 
@@ -150,6 +154,22 @@ async function escenario(): Promise<Escenario> {
     cuentaCopId: caja.id,
     nombreRemitente,
     documentoRemitente,
+    beneficiarioId: beneficiario.id,
+    bancoId: banco.id,
+    async nuevoMedioPago() {
+      const nuevo = await prisma.medioPago.create({
+        data: {
+          clienteId: beneficiario.id,
+          tipo: 'cuenta_bancaria',
+          bancoId: banco.id,
+          numeroCuenta: `9125${sufijo}${'1'.repeat(8)}`,
+          titular: 'Titular Corregido',
+          tipoDocumentoTitular: 'V',
+          numeroDocumentoTitular: '87654321',
+        },
+      });
+      return nuevo.id;
+    },
     async crearRemesa(api) {
       const respuesta = await llamar(api, 'POST', '/remesas', {
         token: vendedor.token,
@@ -626,5 +646,139 @@ describe('liberar una remesa tomada (administrador)', () => {
     expect(transferencia?.operadorId).toBeNull();
     const cola = colaDe(await llamar(api, 'GET', '/cola', { token: e.otroDigitador.token }));
     expect(cola.remesas.map((r) => r.id)).toContain(remesa.id);
+  });
+});
+
+describe('corregir una remesa con incidencia', () => {
+  async function conIncidencia(e: Escenario, api: FastifyInstance) {
+    const remesa = await e.crearRemesa(api);
+    await llamar(api, 'POST', `/cola/${remesa.id}/tomar`, { token: e.digitador.token });
+    await llamar(api, 'POST', `/cola/${remesa.id}/incidencia`, {
+      token: e.digitador.token,
+      cuerpo: { motivo: 'La cuenta está cerrada' },
+    });
+    return remesa;
+  }
+
+  it('el vendedor cambia a dónde se paga y vuelve a la cola de todos', async () => {
+    const e = await escenario();
+    const api = nuevaApp();
+    const remesa = await conIncidencia(e, api);
+    const medioPagoId = await e.nuevoMedioPago();
+
+    const respuesta = await llamar(api, 'POST', `/remesas/${remesa.id}/corregir`, {
+      token: e.vendedor.token,
+      cuerpo: { medioPagoId, nota: 'El cliente dio otra cuenta' },
+    });
+
+    expect(respuesta.statusCode).toBe(200);
+    const corregida = respuesta.json<{
+      remesa: {
+        estado: string;
+        montoBolivares: string;
+        beneficiario: { medioPagoId: string };
+        pago: { operador: unknown };
+      };
+    }>().remesa;
+    expect(corregida).toMatchObject({
+      estado: 'en_cola',
+      montoBolivares: remesa.montoBolivares,
+      beneficiario: { medioPagoId },
+      pago: { operador: null },
+    });
+    // Otro digitador la ve en la cola y, al tomarla, paga a la cuenta corregida.
+    const tomada = await llamar(api, 'POST', `/cola/${remesa.id}/tomar`, {
+      token: e.otroDigitador.token,
+    });
+    expect(tomada.json<{ remesa: { pago: { titular: string } } }>().remesa.pago.titular).toBe(
+      'Titular Corregido',
+    );
+  });
+
+  it('deja el motivo de la incidencia y la corrección en el historial', async () => {
+    const e = await escenario();
+    const api = nuevaApp();
+    const remesa = await conIncidencia(e, api);
+    await llamar(api, 'POST', `/remesas/${remesa.id}/corregir`, {
+      token: e.vendedor.token,
+      cuerpo: { medioPagoId: await e.nuevoMedioPago(), nota: 'Cuenta nueva' },
+    });
+
+    const historial = await llamar(api, 'GET', `/remesas/${remesa.id}/historial`, {
+      token: e.vendedor.token,
+    });
+
+    const pasos = historial.json<{
+      historial: { estadoNuevo: string; motivo: string | null }[];
+    }>().historial;
+    expect(pasos.map((p) => p.estadoNuevo)).toEqual([
+      'registrada',
+      'pago_verificado',
+      'en_cola',
+      'tomada',
+      'con_incidencia',
+      'en_cola',
+    ]);
+    expect(pasos[4]?.motivo).toBe('La cuenta está cerrada');
+    expect(pasos[5]?.motivo).toBe('Datos de pago corregidos: Cuenta nueva');
+    const registro = await prisma.auditoria.findFirst({
+      where: { accion: 'remesa.corregir', entidadId: remesa.id },
+    });
+    expect(JSON.stringify(registro?.despues)).toContain('medioPagoNuevoId');
+  });
+
+  it('solo se corrige una remesa con incidencia', async () => {
+    const e = await escenario();
+    const api = nuevaApp();
+    const enCola = await e.crearRemesa(api);
+    const tomada = await e.crearRemesa(api);
+    await llamar(api, 'POST', `/cola/${tomada.id}/tomar`, { token: e.digitador.token });
+
+    for (const { id } of [enCola, tomada]) {
+      const respuesta = await llamar(api, 'POST', `/remesas/${id}/corregir`, {
+        token: e.vendedor.token,
+        cuerpo: { medioPagoId: await e.nuevoMedioPago() },
+      });
+      expect(respuesta.statusCode).toBe(409);
+      expect(cuerpoError(respuesta).codigo).toBe('ESTADO_INVALIDO');
+    }
+  });
+
+  it('rechaza datos de pago desactivados o que no existen', async () => {
+    const e = await escenario();
+    const api = nuevaApp();
+    const remesa = await conIncidencia(e, api);
+    const medioPagoId = await e.nuevoMedioPago();
+    await prisma.medioPago.update({ where: { id: medioPagoId }, data: { activo: false } });
+
+    const desactivado = await llamar(api, 'POST', `/remesas/${remesa.id}/corregir`, {
+      token: e.vendedor.token,
+      cuerpo: { medioPagoId },
+    });
+    const inexistente = await llamar(api, 'POST', `/remesas/${remesa.id}/corregir`, {
+      token: e.vendedor.token,
+      cuerpo: { medioPagoId: randomUUID() },
+    });
+
+    expect(desactivado.statusCode).toBe(409);
+    expect(inexistente.statusCode).toBe(409);
+    const operacion = await prisma.operacion.findUnique({ where: { id: remesa.id } });
+    expect(operacion?.estado).toBe('con_incidencia');
+  });
+
+  it('el digitador no puede corregir y sin sesión responde 401', async () => {
+    const e = await escenario();
+    const api = nuevaApp();
+    const remesa = await conIncidencia(e, api);
+    const cuerpo = { medioPagoId: await e.nuevoMedioPago() };
+
+    const digitador = await llamar(api, 'POST', `/remesas/${remesa.id}/corregir`, {
+      token: e.digitador.token,
+      cuerpo,
+    });
+    const sinSesion = await llamar(api, 'POST', `/remesas/${remesa.id}/corregir`, { cuerpo });
+
+    expect(digitador.statusCode).toBe(403);
+    expect(sinSesion.statusCode).toBe(401);
   });
 });

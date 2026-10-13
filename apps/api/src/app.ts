@@ -1,6 +1,7 @@
 import Fastify, { type FastifyInstance } from 'fastify';
 
 import { crearAlmacenamiento } from './lib/almacenamiento.js';
+import { crearTiempoReal } from './lib/tiempo-real.js';
 import type { Config } from './lib/config.js';
 import { opcionesLogger } from './lib/enmascarar-logs.js';
 import type { PrismaClient } from './lib/prisma.js';
@@ -74,6 +75,14 @@ export function construirApp({
   );
   instalarAuditoria(app, prisma);
 
+  // Tiempo real (D109): avisos de cambios de remesas por Socket.IO, con la misma cookie de sesión.
+  const tiempoReal = crearTiempoReal({
+    servidor: app.server,
+    origenWeb: config.ORIGEN_WEB,
+    nombreCookieSesion: NOMBRE_COOKIE_SESION,
+    resolverSesion: (token) => servicioAuth.resolverSesion(token),
+  });
+
   // Las rutas de negocio se declaran dentro de un plugin: Fastify lo carga DESPUÉS de los plugins de
   // seguridad. El límite de peticiones se engancha con onRoute y solo alcanza a las rutas declaradas
   // una vez cargado; una ruta declarada aquí, fuera de un plugin, quedaría sin límite.
@@ -95,8 +104,9 @@ export function construirApp({
     rutasDenominaciones(rutas, crearServicioDenominaciones({ prisma }));
     rutasLineasNegocio(rutas, crearServicioLineasNegocio({ prisma }));
     const almacenamiento = crearAlmacenamiento(config.CARPETA_SUBIDAS);
-    rutasRemesas(rutas, crearServicioRemesas({ prisma, almacenamiento }));
-    rutasCola(rutas, crearServicioCola({ prisma, almacenamiento }));
+    const { notificador } = tiempoReal;
+    rutasRemesas(rutas, crearServicioRemesas({ prisma, almacenamiento, notificador }));
+    rutasCola(rutas, crearServicioCola({ prisma, almacenamiento, notificador }));
     rutasTasas(rutas, crearServicioTasas({ prisma }));
     rutasClientes(rutas, crearServicioClientes({ prisma }));
     rutasCuentasDinero(rutas, crearServicioCuentasDinero({ prisma }));
@@ -104,6 +114,7 @@ export function construirApp({
   });
 
   app.addHook('onClose', async () => {
+    await tiempoReal.cerrar();
     await prisma.$disconnect();
   });
 
