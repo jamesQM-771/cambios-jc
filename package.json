@@ -14,6 +14,7 @@
     "dev": "concurrently -n api,web -c blue,green \"npm run dev -w @cambios-jc/api\" \"npm run dev -w @cambios-jc/web\"",
     "compilar": "npm run build -w @cambios-jc/shared && npm run build -w @cambios-jc/api",
     "iniciar": "concurrently -n api,web -c blue,green \"npm run start -w @cambios-jc/api\" \"npm run dev -w @cambios-jc/web\"",
+    "iniciar:red": "concurrently -n api,web -c blue,green \"npm run start -w @cambios-jc/api\" \"npm run dev:red -w @cambios-jc/web\"",
     "db:migrate": "npm run db:migrate -w @cambios-jc/api",
     "db:seed": "npm run db:seed -w @cambios-jc/api",
     "test": "vitest run",

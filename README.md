@@ -121,6 +121,21 @@ npm run iniciar    # API compilada + web; la API responde en unos 10 segundos
 
 Luego abre http://localhost:5173/acceso. Para detenerlo, `Ctrl+C` en esa terminal. Si un arranque anterior quedó abierto, ciérralo antes: dos copias pelean por los puertos 3000 y 5173.
 
+#### Para abrirlo desde un celular en la misma red: `npm run iniciar:red`
+
+`npm run iniciar` solo escucha en tu equipo (`localhost`), a propósito: el sistema maneja dinero y no
+debe quedar a la vista de toda la red sin que lo decidas. Para probar la cola del digitador desde un
+teléfono conectado a la misma wifi:
+
+```bash
+npm run iniciar:red
+```
+
+Vite muestra entonces una línea `Network: http://192.168.x.x:5173/`. Esa es la dirección que abres en
+el teléfono. La API no se expone: la web habla con ella por dentro de tu equipo (`/api`), así que el
+teléfono solo necesita la dirección de la web. Si Windows pregunta por el Firewall, permite Node.js en
+**redes privadas**. Cuando termines, detén con `Ctrl+C` y vuelve a `npm run iniciar`.
+
 ## Comandos
 
 | Comando                            | Qué hace                                                                       |

@@ -141,6 +141,7 @@ npm install            # instala todo el monorepo
 npm run dev            # api + web en modo desarrollo (la API tarda 30-60 s en responder; ver D81)
 npm run compilar       # compila shared y la API (hace falta tras cambiar su código)
 npm run iniciar        # API ya compilada + web: para usar y probar el sistema, lista en segundos
+npm run iniciar:red    # igual, pero la web también se abre a la red local (celular en la misma wifi)
 npm run db:migrate     # aplica migraciones
 npm run db:seed        # datos de ejemplo ficticios + usuario administrador inicial
 npm run test           # pruebas
