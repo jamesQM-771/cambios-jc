@@ -49,6 +49,8 @@ model Sucursal {
   cajas    Caja[]
   cuentas  CuentaDinero[]
 
+  jornadas Jornada[]
+
   @@map("sucursal")
 }
 
@@ -60,6 +62,9 @@ model Caja {
   sucursal   Sucursal @relation(fields: [sucursalId], references: [id], onDelete: Restrict)
   activa     Boolean  @default(true)
   creadoEn   DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
+
+  cuentas CuentaDinero[]
+  turnos  Turno[]
 
   @@unique([sucursalId, nombre])
   @@map("caja")
@@ -110,6 +115,10 @@ model CuentaDinero {
   creadoEn             DateTime        @default(now()) @map("creado_en") @db.Timestamptz(6)
   operacionesIngreso   Operacion[]
   transferenciasOrigen Transferencia[]
+
+  /// Puesto al que pertenece una cuenta de tipo "caja". Sin caja es la bóveda de la sucursal (D116).
+  cajaId String? @map("caja_id") @db.Uuid
+  caja   Caja?   @relation(fields: [cajaId], references: [id], onDelete: Restrict)
 
   @@map("cuenta_dinero")
 }
@@ -186,6 +195,8 @@ model Denominacion {
   activa   Boolean  @default(true)
   creadoEn DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
 
+  conteos ConteoTurno[]
+
   @@map("denominacion")
 }
 
@@ -218,6 +229,8 @@ model Usuario {
   eventosOperacion      EventoOperacion[]
   impresionesRecibo     ImpresionRecibo[]
   transferenciasTomadas Transferencia[]   @relation("OperadorTransferencia")
+
+  turnos Turno[]
 
   @@map("usuario")
 }
@@ -460,4 +473,100 @@ model ImpresionRecibo {
 
   @@index([operacionId, creadoEn])
   @@map("impresion_recibo")
+}
+
+enum EstadoJornada {
+  abierta
+  cerrada
+
+  @@map("estado_jornada")
+}
+
+enum EstadoTurno {
+  abierto
+  cerrado
+
+  @@map("estado_turno")
+}
+
+enum MomentoConteo {
+  apertura
+  cierre
+
+  @@map("momento_conteo")
+}
+
+/// Un día de operación de una sucursal (§5.16 de PROYECTO.md). Se crea sola al abrir el primer turno
+/// del día, con la fecha en la zona horaria de la empresa (D118).
+model Jornada {
+  id         String        @id @default(uuid(7)) @db.Uuid
+  sucursalId String        @map("sucursal_id") @db.Uuid
+  sucursal   Sucursal      @relation(fields: [sucursalId], references: [id], onDelete: Restrict)
+  fecha      DateTime      @db.Date
+  estado     EstadoJornada @default(abierta)
+  cerradaEn  DateTime?     @map("cerrada_en") @db.Timestamptz(6)
+  creadoEn   DateTime      @default(now()) @map("creado_en") @db.Timestamptz(6)
+  turnos     Turno[]
+
+  @@unique([sucursalId, fecha])
+  @@map("jornada")
+}
+
+/// Periodo en que una persona opera una caja: se abre con conteo y se cierra con arqueo (§5.16).
+model Turno {
+  id           String        @id @default(uuid(7)) @db.Uuid
+  cajaId       String        @map("caja_id") @db.Uuid
+  caja         Caja          @relation(fields: [cajaId], references: [id], onDelete: Restrict)
+  usuarioId    String        @map("usuario_id") @db.Uuid
+  usuario      Usuario       @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+  jornadaId    String        @map("jornada_id") @db.Uuid
+  jornada      Jornada       @relation(fields: [jornadaId], references: [id], onDelete: Restrict)
+  estado       EstadoTurno   @default(abierto)
+  abiertoEn    DateTime      @default(now()) @map("abierto_en") @db.Timestamptz(6)
+  cerradoEn    DateTime?     @map("cerrado_en") @db.Timestamptz(6)
+  /// Candados de "un turno abierto por caja y por persona" (D117): valen mientras el turno está
+  /// abierto y pasan a null al cerrarlo. Un índice único no se repite, pero los null sí.
+  cajaEnUso    String?       @unique @map("caja_en_uso") @db.Uuid
+  usuarioEnUso String?       @unique @map("usuario_en_uso") @db.Uuid
+  conteos      ConteoTurno[]
+  saldos       SaldoTurno[]
+
+  @@index([jornadaId])
+  @@index([cajaId, abiertoEn])
+  @@map("turno")
+}
+
+/// Cuántos billetes o monedas de cada denominación se contaron al abrir o cerrar un turno.
+model ConteoTurno {
+  id             String        @id @default(uuid(7)) @db.Uuid
+  turnoId        String        @map("turno_id") @db.Uuid
+  turno          Turno         @relation(fields: [turnoId], references: [id], onDelete: Restrict)
+  momento        MomentoConteo
+  moneda         String        @db.Char(3)
+  denominacionId String        @map("denominacion_id") @db.Uuid
+  denominacion   Denominacion  @relation(fields: [denominacionId], references: [id], onDelete: Restrict)
+  /// Valor de la denominación al momento de contar (si luego se edita, el conteo no cambia).
+  valor          Decimal       @db.Decimal(18, 3)
+  cantidad       Int
+
+  @@index([turnoId, momento])
+  @@map("conteo_turno")
+}
+
+/// Total contado de una moneda al abrir o cerrar un turno, contra lo que se esperaba (§7.6).
+/// Al abrir, lo esperado es el último conteo de cierre de esa caja; al cerrar, apertura + movimientos.
+model SaldoTurno {
+  id          String        @id @default(uuid(7)) @db.Uuid
+  turnoId     String        @map("turno_id") @db.Uuid
+  turno       Turno         @relation(fields: [turnoId], references: [id], onDelete: Restrict)
+  momento     MomentoConteo
+  moneda      String        @db.Char(3)
+  /// Null cuando no hay nada contra qué comparar (primer turno de la caja).
+  esperado    Decimal?      @db.Decimal(18, 3)
+  contado     Decimal       @db.Decimal(18, 3)
+  diferencia  Decimal?      @db.Decimal(18, 3)
+  explicacion String?
+
+  @@unique([turnoId, momento, moneda])
+  @@map("saldo_turno")
 }

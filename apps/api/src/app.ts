@@ -28,6 +28,8 @@ import { rutasRecibos } from './modulos/recibos/rutas.js';
 import { crearServicioRecibos } from './modulos/recibos/servicio.js';
 import { rutasRemesas } from './modulos/remesas/rutas.js';
 import { crearServicioRemesas } from './modulos/remesas/servicio.js';
+import { rutasTurnos } from './modulos/turnos/rutas.js';
+import { crearServicioTurnos } from './modulos/turnos/servicio.js';
 import { rutasTasas } from './modulos/tasas/rutas.js';
 import { crearServicioTasas } from './modulos/tasas/servicio.js';
 import { crearServicioAuth } from './modulos/auth/servicio.js';
@@ -115,6 +117,7 @@ export function construirApp({
     rutasSeguimiento(rutas, crearServicioSeguimiento({ prisma }));
     rutasTasas(rutas, crearServicioTasas({ prisma }));
     rutasClientes(rutas, crearServicioClientes({ prisma }));
+    rutasTurnos(rutas, crearServicioTurnos({ prisma }));
     rutasCuentasDinero(rutas, crearServicioCuentasDinero({ prisma }));
     listo();
   });

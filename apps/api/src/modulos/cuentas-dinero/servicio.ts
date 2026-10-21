@@ -18,6 +18,8 @@ const SELECCION_PUBLICA = {
   ultimos4Digitos: true,
   sucursalId: true,
   sucursal: { select: { nombre: true } },
+  cajaId: true,
+  caja: { select: { nombre: true } },
   titular: true,
   responsableId: true,
   responsable: { select: { nombre: true } },
@@ -41,6 +43,8 @@ function aPublica(fila: FilaCuenta): CuentaDineroPublica {
     ultimos4Digitos: fila.ultimos4Digitos,
     sucursalId: fila.sucursalId,
     sucursalNombre: fila.sucursal.nombre,
+    cajaId: fila.cajaId,
+    cajaNombre: fila.caja?.nombre ?? null,
     titular: fila.titular,
     responsableId: fila.responsableId,
     responsableNombre: fila.responsable?.nombre ?? null,
@@ -75,6 +79,8 @@ export type DatosNuevaCuentaDinero =
     }
   | {
       tipo: 'caja' | 'billetera';
+      /** Solo para tipo caja: el puesto al que pertenece; sin él es la bóveda. */
+      cajaId?: string | null;
       nombre: string;
       moneda: Moneda;
       sucursalId: string;
@@ -87,6 +93,7 @@ export type DatosNuevaCuentaDinero =
 export interface CambiosCuentaDinero {
   nombre?: string | undefined;
   ultimos4Digitos?: string | undefined;
+  cajaId?: string | null | undefined;
   titular?: string | null | undefined;
   responsableId?: string | null | undefined;
   limiteDiario?: string | null | undefined;
@@ -122,6 +129,35 @@ export function crearServicioCuentasDinero({ prisma }: { prisma: PrismaClient })
   async function exigirSucursalActiva(sucursalId: string): Promise<void> {
     const sucursal = await prisma.sucursal.findFirst({ where: { id: sucursalId, activa: true } });
     if (!sucursal) throw errorValidacion('sucursalId', 'La sucursal no existe o está inactiva.');
+  }
+
+  /**
+   * Una cuenta de efectivo pertenece a un puesto de su misma sucursal, y un puesto tiene una sola
+   * cuenta activa por moneda (así el conteo del turno es inequívoco). Sin puesto es la bóveda.
+   */
+  async function exigirCajaValida(
+    cajaId: string,
+    sucursalId: string,
+    moneda: string,
+    cuentaActualId?: string,
+  ): Promise<void> {
+    const caja = await prisma.caja.findFirst({ where: { id: cajaId, activa: true } });
+    if (!caja) throw errorValidacion('cajaId', 'La caja no existe o está inactiva.');
+    if (caja.sucursalId !== sucursalId) {
+      throw errorValidacion('cajaId', 'La caja es de otra sucursal.');
+    }
+    const repetida = await prisma.cuentaDinero.findFirst({
+      where: {
+        cajaId,
+        moneda,
+        activa: true,
+        tipo: 'caja',
+        ...(cuentaActualId ? { id: { not: cuentaActualId } } : {}),
+      },
+    });
+    if (repetida) {
+      throw errorValidacion('cajaId', `Esa caja ya tiene una cuenta de efectivo en ${moneda}.`);
+    }
   }
 
   async function exigirBancoActivo(bancoId: string): Promise<void> {
@@ -166,6 +202,9 @@ export function crearServicioCuentasDinero({ prisma }: { prisma: PrismaClient })
       await exigirSucursalActiva(datos.sucursalId);
       if (datos.tipo === 'banco') await exigirBancoActivo(datos.bancoId);
       if (datos.responsableId) await exigirUsuarioExiste(datos.responsableId);
+      if (datos.tipo === 'caja' && datos.cajaId) {
+        await exigirCajaValida(datos.cajaId, datos.sucursalId, datos.moneda);
+      }
 
       const data: Prisma.CuentaDineroUncheckedCreateInput = {
         nombre: datos.nombre,
@@ -185,6 +224,7 @@ export function crearServicioCuentasDinero({ prisma }: { prisma: PrismaClient })
         ...(datos.tipo === 'banco'
           ? { bancoId: datos.bancoId, ultimos4Digitos: datos.ultimos4Digitos }
           : {}),
+        ...(datos.tipo === 'caja' ? { cajaId: datos.cajaId ?? null } : {}),
       };
 
       const creada = aPublica(
@@ -215,8 +255,32 @@ export function crearServicioCuentasDinero({ prisma }: { prisma: PrismaClient })
         );
       }
       if (cambios.responsableId) await exigirUsuarioExiste(cambios.responsableId);
+      if (cambios.cajaId !== undefined) {
+        if (filaAntes.tipo !== 'caja') {
+          throw errorValidacion('cajaId', 'Solo una cuenta de tipo "caja" pertenece a una caja.');
+        }
+        if (cambios.cajaId !== null) {
+          await exigirCajaValida(cambios.cajaId, filaAntes.sucursalId, filaAntes.moneda, id);
+        }
+        // Mover el efectivo de un puesto a otro con un turno abierto falsearía su arqueo.
+        const abierto = await prisma.turno.findFirst({
+          where: {
+            estado: 'abierto',
+            cajaId: {
+              in: [filaAntes.cajaId, cambios.cajaId].filter((c): c is string => c !== null),
+            },
+          },
+        });
+        if (abierto) {
+          throw errorValidacion(
+            'cajaId',
+            'Hay un turno abierto en esa caja: ciérralo antes de mover la cuenta.',
+          );
+        }
+      }
 
       const data: Prisma.CuentaDineroUncheckedUpdateInput = {
+        ...(cambios.cajaId !== undefined ? { cajaId: cambios.cajaId } : {}),
         ...(cambios.nombre !== undefined ? { nombre: cambios.nombre } : {}),
         ...(cambios.ultimos4Digitos !== undefined
           ? { ultimos4Digitos: cambios.ultimos4Digitos }

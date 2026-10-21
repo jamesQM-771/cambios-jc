@@ -50,7 +50,10 @@ export const esquemaCrearCuentaDinero = z.discriminatedUnion('tipo', [
       ...camposComunes,
     })
     .strict(),
-  z.object({ tipo: z.literal('caja'), ...camposComunes }).strict(),
+  // `cajaId` es el puesto al que pertenece el efectivo; sin él es la bóveda de la sucursal (D116).
+  z
+    .object({ tipo: z.literal('caja'), cajaId: z.uuid().nullable().optional(), ...camposComunes })
+    .strict(),
   z.object({ tipo: z.literal('billetera'), ...camposComunes }).strict(),
 ]);
 
@@ -60,6 +63,7 @@ export const esquemaEditarCuentaDinero = z
   .object({
     nombre: esquemaNombre.optional(),
     ultimos4Digitos: esquemaUltimos4.optional(),
+    cajaId: z.uuid().nullable().optional(),
     titular: esquemaTitular,
     responsableId: z.uuid().nullable().optional(),
     limiteDiario: esquemaMontoOpcional,
@@ -87,6 +91,8 @@ export const esquemaCuentaDineroPublica = z.object({
   ultimos4Digitos: z.string().nullable(),
   sucursalId: z.string(),
   sucursalNombre: z.string(),
+  cajaId: z.string().nullable(),
+  cajaNombre: z.string().nullable(),
   titular: z.string().nullable(),
   responsableId: z.string().nullable(),
   responsableNombre: z.string().nullable(),
