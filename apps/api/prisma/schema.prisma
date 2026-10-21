@@ -120,6 +120,8 @@ model CuentaDinero {
   cajaId String? @map("caja_id") @db.Uuid
   caja   Caja?   @relation(fields: [cajaId], references: [id], onDelete: Restrict)
 
+  movimientos MovimientoCuenta[]
+
   @@map("cuenta_dinero")
 }
 
@@ -231,6 +233,8 @@ model Usuario {
   transferenciasTomadas Transferencia[]   @relation("OperadorTransferencia")
 
   turnos Turno[]
+
+  movimientosCuenta MovimientoCuenta[]
 
   @@map("usuario")
 }
@@ -405,6 +409,8 @@ model Operacion {
   eventos           EventoOperacion[]
   impresiones       ImpresionRecibo[]
 
+  movimientos MovimientoCuenta[]
+
   @@index([estado, creadoEn])
   @@map("operacion")
 }
@@ -531,6 +537,8 @@ model Turno {
   conteos      ConteoTurno[]
   saldos       SaldoTurno[]
 
+  movimientos MovimientoCuenta[]
+
   @@index([jornadaId])
   @@index([cajaId, abiertoEn])
   @@map("turno")
@@ -569,4 +577,54 @@ model SaldoTurno {
 
   @@unique([turnoId, momento, moneda])
   @@map("saldo_turno")
+}
+
+enum SentidoMovimiento {
+  entrada
+  salida
+
+  @@map("sentido_movimiento")
+}
+
+/// De dónde viene un movimiento. Crece con cada fase (gastos, traslados, devoluciones…).
+enum OrigenMovimiento {
+  /// El dinero del cliente entra a la cuenta de ingreso de una remesa.
+  remesa_ingreso
+  /// Sale de la cuenta de origen lo que pagó el digitador (en la moneda destino).
+  remesa_pago
+  /// Sale el costo bancario de ese pago.
+  remesa_costo
+  /// Deshace el ingreso de una remesa anulada.
+  remesa_anulacion
+
+  @@map("origen_movimiento")
+}
+
+/// Libro de las cuentas de dinero (fase 3, D120): cada entrada y salida, con su origen. El saldo de una
+/// cuenta es la suma de sus entradas menos sus salidas. Es de solo inserción: un error se corrige con
+/// un movimiento contrario que apunta al original (`revierteId`), nunca editando ni borrando.
+model MovimientoCuenta {
+  id          String            @id @default(uuid(7)) @db.Uuid
+  cuentaId    String            @map("cuenta_id") @db.Uuid
+  cuenta      CuentaDinero      @relation(fields: [cuentaId], references: [id], onDelete: Restrict)
+  sentido     SentidoMovimiento
+  /// Siempre positivo; el sentido dice si entra o sale. En la moneda de la cuenta.
+  monto       Decimal           @db.Decimal(18, 3)
+  origen      OrigenMovimiento
+  operacionId String?           @map("operacion_id") @db.Uuid
+  operacion   Operacion?        @relation(fields: [operacionId], references: [id], onDelete: Restrict)
+  /// Turno en el que ocurrió, si lo hay (se llena desde la tarea 3.3).
+  turnoId     String?           @map("turno_id") @db.Uuid
+  turno       Turno?            @relation(fields: [turnoId], references: [id], onDelete: Restrict)
+  /// El movimiento que este deshace; cada movimiento se revierte, como mucho, una vez.
+  revierteId  String?           @unique @map("revierte_id") @db.Uuid
+  revierte    MovimientoCuenta? @relation("Reversion", fields: [revierteId], references: [id], onDelete: Restrict)
+  reversion   MovimientoCuenta? @relation("Reversion")
+  usuarioId   String            @map("usuario_id") @db.Uuid
+  usuario     Usuario           @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+  creadoEn    DateTime          @default(now()) @map("creado_en") @db.Timestamptz(6)
+
+  @@index([cuentaId, creadoEn])
+  @@index([operacionId])
+  @@map("movimiento_cuenta")
 }

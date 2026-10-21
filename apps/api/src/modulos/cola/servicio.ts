@@ -1,3 +1,5 @@
+import type { Moneda } from '@cambios-jc/shared';
+
 import { Prisma } from '../../generated/prisma/client.js';
 import type { Almacenamiento } from '../../lib/almacenamiento.js';
 import { notificadorNulo, type Notificador } from '../../lib/tiempo-real.js';
@@ -5,6 +7,7 @@ import { errores } from '../../lib/errores.js';
 import type { ImagenDetectada } from '../../lib/imagen.js';
 import type { PrismaClient } from '../../lib/prisma.js';
 import type { ContextoPeticion } from '../auth/servicio.js';
+import { pagarRemesa } from '../remesas/movimientos.js';
 import { moverEstado, type Actor } from '../remesas/servicio.js';
 
 import type { DatosCompletar, ItemCola, RespuestaCola } from './esquemas.js';
@@ -260,6 +263,14 @@ export function crearServicioCola({
                 comprobanteClave: clave,
                 completadaEn: new Date(),
               },
+            });
+            // Salen de la cuenta de origen los bolívares pagados y el costo bancario (D121).
+            await pagarRemesa(tx, {
+              operacionId: id,
+              cuentaOrigenId: cuenta.id,
+              moneda: cuenta.moneda as Moneda,
+              costo: datos.costoBancario ?? cuenta.comisionPorDefecto?.toString() ?? null,
+              usuarioId: actor.id,
             });
           },
         });

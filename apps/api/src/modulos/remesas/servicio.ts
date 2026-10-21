@@ -16,6 +16,8 @@ import type { Almacenamiento, ComprobanteAbierto } from '../../lib/almacenamient
 import { notificadorNulo, type Notificador } from '../../lib/tiempo-real.js';
 import type { ContextoPeticion } from '../auth/servicio.js';
 
+import { ingresarPorRemesa, revertirIngresoDeRemesa } from './movimientos.js';
+
 import type {
   DatosRegistrarRemesa,
   EventoRemesa,
@@ -222,6 +224,7 @@ export function crearServicioRemesas({
         mensajeSiNo: 'Solo se verifica el pago de una remesa registrada que aún no pasó a la cola.',
         actor,
         contexto,
+        dentro: (tx) => ingresarPorRemesa(tx, id, actor.id),
       });
       return avisar(await cargar(id));
     },
@@ -331,6 +334,7 @@ export function crearServicioRemesas({
           'Ya no se puede anular: el digitador la tomó o ya terminó. Si hay un problema, se maneja como incidencia o devolución.',
         actor,
         contexto,
+        dentro: (tx) => revertirIngresoDeRemesa(tx, id, actor.id),
       });
       return avisar(await cargar(id));
     },
@@ -458,6 +462,9 @@ export function crearServicioRemesas({
             });
             anterior = estado;
           }
+
+          // El efectivo ya está en la caja; la transferencia entra cuando se verifica (D121).
+          if (datos.formaPago === 'efectivo') await ingresarPorRemesa(tx, creada.id, actor.id);
 
           await registrarAuditoria(tx, {
             usuarioId: actor.id,
