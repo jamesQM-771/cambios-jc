@@ -108,6 +108,10 @@ export const esquemaRemesaPublica = z.object({
     numeroDocumentoTitular: z.string(),
   }),
   cuentaIngreso: z.object({ id: z.string(), nombre: z.string() }),
+  /** Turno y caja donde se registró; `null` en las remesas anteriores a la fase 3. */
+  turno: z
+    .object({ id: z.string(), caja: z.object({ id: z.string(), nombre: z.string() }) })
+    .nullable(),
   montoPesos: z.string(),
   montoBolivares: z.string(),
   tasaCalculada: z.string(),
@@ -152,8 +156,14 @@ export const esquemaOpcionesRemesa = z.object({
       nombre: z.string(),
       tipo: z.enum(['caja', 'banco', 'billetera']),
       moneda: z.string(),
+      /** Caja a la que pertenece una cuenta de efectivo; `null` en bancos, billeteras y la bóveda. */
+      cajaId: z.string().nullable(),
     }),
   ),
+  /** Turno abierto de quien pide las opciones: sin él no se registra (D123). */
+  miTurno: z
+    .object({ id: z.string(), caja: z.object({ id: z.string(), nombre: z.string() }) })
+    .nullable(),
 });
 
 export type OpcionesRemesa = z.infer<typeof esquemaOpcionesRemesa>;

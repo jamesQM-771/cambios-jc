@@ -61,9 +61,11 @@ const OPCIONES: OpcionesRemesa = {
     },
   ],
   cuentasIngreso: [
-    { id: 'cu-1', nombre: 'Caja principal', tipo: 'caja', moneda: 'COP' },
-    { id: 'cu-2', nombre: 'Bancolombia', tipo: 'banco', moneda: 'COP' },
+    { id: 'cu-1', nombre: 'Caja principal', tipo: 'caja', moneda: 'COP', cajaId: 'caja-1' },
+    { id: 'cu-3', nombre: 'Caja de otro turno', tipo: 'caja', moneda: 'COP', cajaId: 'caja-2' },
+    { id: 'cu-2', nombre: 'Bancolombia', tipo: 'banco', moneda: 'COP', cajaId: null },
   ],
+  miTurno: { id: 't-1', caja: { id: 'caja-1', nombre: 'Caja 1' } },
 };
 
 const clienteFalso = (cambios: Partial<Cliente> = {}): Cliente => ({
@@ -382,11 +384,40 @@ describe('nueva remesa', () => {
     expect(await screen.findByLabelText('Usar otra tasa en esta remesa')).toBeInTheDocument();
   });
 
+  it('sin turno de caja abierto pide abrirlo', async () => {
+    simularApi({
+      'GET /auth/yo': { cuerpo: sesionFalsa('vendedor') },
+      'GET /remesas': { cuerpo: { remesas: [] } },
+      'GET /remesas/opciones': { cuerpo: { ...OPCIONES, miTurno: null } },
+    });
+    const { usuario } = renderizarApp('/remesas');
+
+    await usuario.click(await screen.findByRole('button', { name: 'Nueva remesa' }));
+
+    expect(await screen.findByText(/No tienes un turno de caja abierto/)).toBeInTheDocument();
+    expect(screen.queryByLabelText('Pesos entregados (COP)')).not.toBeInTheDocument();
+  });
+
+  it('en efectivo solo ofrece la caja del propio turno', async () => {
+    simularApi({
+      'GET /auth/yo': { cuerpo: sesionFalsa('vendedor') },
+      'GET /remesas': { cuerpo: { remesas: [] } },
+      'GET /remesas/opciones': { cuerpo: OPCIONES },
+    });
+    const { usuario } = renderizarApp('/remesas');
+
+    await usuario.click(await screen.findByRole('button', { name: 'Nueva remesa' }));
+
+    const caja = await screen.findByLabelText('Caja donde entra');
+    expect(within(caja).getByRole('option', { name: 'Caja principal' })).toBeInTheDocument();
+    expect(within(caja).queryByRole('option', { name: 'Caja de otro turno' })).toBeNull();
+  });
+
   it('sin línea de remesas activa lo explica', async () => {
     simularApi({
       'GET /auth/yo': { cuerpo: sesionFalsa('vendedor') },
       'GET /remesas': { cuerpo: { remesas: [] } },
-      'GET /remesas/opciones': { cuerpo: { lineas: [], cuentasIngreso: [] } },
+      'GET /remesas/opciones': { cuerpo: { lineas: [], cuentasIngreso: [], miTurno: null } },
     });
     const { usuario } = renderizarApp('/remesas');
 

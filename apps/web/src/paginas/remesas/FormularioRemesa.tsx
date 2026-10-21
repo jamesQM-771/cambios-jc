@@ -76,8 +76,12 @@ export function FormularioRemesa({
     medios.find((m) => m.id === medioPagoId) ?? (medios.length === 1 ? medios[0] : undefined);
 
   const linea = opciones.lineas.find((l) => l.id === lineaId);
+  // El efectivo solo entra a la caja del propio turno: es la que se arquea al cerrarlo.
   const cuentas = opciones.cuentasIngreso.filter(
-    (c) => c.moneda === linea?.monedaOrigen && (formaPago === 'efectivo') === (c.tipo === 'caja'),
+    (c) =>
+      c.moneda === linea?.monedaOrigen &&
+      (formaPago === 'efectivo') === (c.tipo === 'caja') &&
+      (formaPago !== 'efectivo' || c.cajaId === opciones.miTurno?.caja.id),
   );
   const cuentaId = cuentas.some((c) => c.id === cuentaElegida)
     ? cuentaElegida
@@ -131,6 +135,14 @@ export function FormularioRemesa({
     return (
       <Aviso tipo="advertencia">
         No hay una línea de remesas activa. Pídele al administrador que la configure.
+      </Aviso>
+    );
+  }
+
+  if (!opciones.miTurno) {
+    return (
+      <Aviso tipo="advertencia">
+        No tienes un turno de caja abierto. Ábrelo antes de registrar una remesa.
       </Aviso>
     );
   }

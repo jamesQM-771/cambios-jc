@@ -62,6 +62,7 @@ const SELECCION = {
     },
   },
   cuentaIngreso: { select: { id: true, nombre: true } },
+  turno: { select: { id: true, caja: { select: { id: true, nombre: true } } } },
   montoPesos: true,
   montoBolivares: true,
   tasaCalculada: true,
@@ -114,6 +115,7 @@ function aPublica(fila: FilaRemesa): RemesaPublica {
       numeroDocumentoTitular: medio.numeroDocumentoTitular,
     },
     cuentaIngreso: fila.cuentaIngreso,
+    turno: fila.turno,
     montoPesos: fila.montoPesos.toFixed(2),
     montoBolivares: fila.montoBolivares.toFixed(3),
     tasaCalculada: fila.tasaCalculada.toFixed(DECIMALES_TASA),
@@ -161,8 +163,8 @@ export function crearServicioRemesas({
   return {
     obtener: cargar,
 
-    async opciones(): Promise<OpcionesRemesa> {
-      const [lineas, cuentas] = await Promise.all([
+    async opciones(actor: Actor): Promise<OpcionesRemesa> {
+      const [lineas, cuentas, miTurno] = await Promise.all([
         prisma.lineaNegocio.findMany({
           where: { clase: 'remesa', activa: true },
           orderBy: { nombre: 'asc' },
@@ -177,7 +179,11 @@ export function crearServicioRemesas({
         prisma.cuentaDinero.findMany({
           where: { activa: true },
           orderBy: { nombre: 'asc' },
-          select: { id: true, nombre: true, tipo: true, moneda: true },
+          select: { id: true, nombre: true, tipo: true, moneda: true, cajaId: true },
+        }),
+        prisma.turno.findUnique({
+          where: { usuarioEnUso: actor.id },
+          select: { id: true, caja: { select: { id: true, nombre: true } } },
         }),
       ]);
       return {
@@ -186,6 +192,7 @@ export function crearServicioRemesas({
           tasaVenta: tasas[0]?.tasaVenta.toFixed(DECIMALES_TASA) ?? null,
         })),
         cuentasIngreso: cuentas,
+        miTurno,
       };
     },
 
@@ -364,6 +371,14 @@ export function crearServicioRemesas({
 
       if (datos.tasaManual && !puedeCambiarTasa) throw errores.sinPermiso();
 
+      // Toda remesa se registra dentro de un turno de caja: así entra al arqueo de quien la vendió (D123).
+      const turno = await prisma.turno.findUnique({
+        where: { usuarioEnUso: actor.id },
+        select: { id: true, cajaId: true },
+      });
+      if (!turno)
+        throw errores.estadoInvalido('Abre tu turno de caja antes de registrar una remesa.');
+
       const [linea, remitente, medio, cuenta] = await Promise.all([
         prisma.lineaNegocio.findUnique({ where: { id: datos.lineaNegocioId } }),
         prisma.cliente.findUnique({ where: { id: datos.remitenteId } }),
@@ -401,6 +416,10 @@ export function crearServicioRemesas({
             : 'Una transferencia entra a una cuenta bancaria, no a una caja.',
         );
       }
+      // El efectivo queda en la caja que se va a arquear al cerrar este turno, no en otra.
+      if (datos.formaPago === 'efectivo' && cuenta.cajaId !== turno.cajaId) {
+        throw errores.estadoInvalido('El efectivo entra a la cuenta de la caja de tu turno.');
+      }
 
       const tasaVigente = await prisma.tasa.findFirst({
         where: { lineaNegocioId: linea.id, vigenteHasta: null },
@@ -436,6 +455,7 @@ export function crearServicioRemesas({
               remitenteId: remitente.id,
               formaPago: datos.formaPago,
               cuentaIngresoId: cuenta.id,
+              turnoId: turno.id,
               montoPesos: montos.pesos,
               montoBolivares: montos.bolivares,
               tasaCalculada: tasaVigente.tasaVenta,

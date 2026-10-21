@@ -83,7 +83,11 @@ export interface OpcionesRemesa {
     nombre: string;
     tipo: 'caja' | 'banco' | 'billetera';
     moneda: string;
+    /** Caja a la que pertenece una cuenta de efectivo; `null` en bancos, billeteras y la bóveda. */
+    cajaId: string | null;
   }[];
+  /** Turno abierto de quien vende: sin él no se registra una remesa. */
+  miTurno: { id: string; caja: { id: string; nombre: string } } | null;
 }
 
 export interface DatosRemesaNueva {

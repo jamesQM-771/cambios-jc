@@ -11,6 +11,21 @@ import { registrarMovimiento } from '../../lib/libro.js';
  * - al completarse, de la cuenta desde la que pagó el digitador salen los bolívares y el costo bancario.
  */
 
+/**
+ * Turno abierto de quien hace el movimiento (D123): así el arqueo de su caja sabe qué entró y salió
+ * durante su turno. El digitador y el administrador sin turno lo dejan en `null`.
+ */
+async function turnoAbiertoDe(
+  tx: Prisma.TransactionClient,
+  usuarioId: string,
+): Promise<string | null> {
+  const turno = await tx.turno.findUnique({
+    where: { usuarioEnUso: usuarioId },
+    select: { id: true },
+  });
+  return turno?.id ?? null;
+}
+
 /** Entra a la cuenta de ingreso lo que entregó el cliente. */
 export async function ingresarPorRemesa(
   tx: Prisma.TransactionClient,
@@ -32,6 +47,7 @@ export async function ingresarPorRemesa(
     moneda: operacion.lineaNegocio.monedaOrigen as Moneda,
     origen: 'remesa_ingreso',
     operacionId,
+    turnoId: await turnoAbiertoDe(tx, usuarioId),
     usuarioId,
   });
 }
@@ -56,6 +72,7 @@ export async function revertirIngresoDeRemesa(
     origen: 'remesa_anulacion',
     operacionId,
     revierteId: ingreso.id,
+    turnoId: await turnoAbiertoDe(tx, usuarioId),
     usuarioId,
   });
 }

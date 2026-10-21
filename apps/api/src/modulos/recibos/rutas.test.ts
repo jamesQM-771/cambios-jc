@@ -11,6 +11,7 @@ import {
   cuerpoError,
   llamar,
 } from '../../../test/auth.js';
+import { abrirTurnoDePrueba } from '../../../test/turnos.js';
 import { crearPrisma, type PrismaClient } from '../../lib/prisma.js';
 
 import { fechaEnZona } from './servicio.js';
@@ -82,6 +83,7 @@ async function remesaRegistrada() {
   const caja = await prisma.cuentaDinero.create({
     data: { nombre: `Caja ${unico()}`, tipo: 'caja', moneda: 'COP', sucursalId: sucursal.id },
   });
+  await abrirTurnoDePrueba(prisma, { usuarioId: vendedor.id, cuentaCajaId: caja.id });
   const banco = await prisma.banco.upsert({
     where: { codigo: '9127' },
     update: {},

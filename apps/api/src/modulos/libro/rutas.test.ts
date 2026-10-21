@@ -15,6 +15,7 @@ import {
   llamar,
 } from '../../../test/auth.js';
 import { formularioConArchivos, pngDePrueba } from '../../../test/imagenes.js';
+import { abrirTurnoDePrueba } from '../../../test/turnos.js';
 import { crearPrisma, type PrismaClient } from '../../lib/prisma.js';
 import { registrarMovimiento, saldoDeCuenta } from '../../lib/libro.js';
 
@@ -113,6 +114,7 @@ async function escenario(): Promise<Escenario> {
     }),
   ]);
   const [caja, billetera, cuentaVes] = cuentas;
+  await abrirTurnoDePrueba(prisma, { usuarioId: vendedor.id, cuentaCajaId: caja.id });
   const banco = await prisma.banco.upsert({
     where: { codigo: '9500' },
     update: {},

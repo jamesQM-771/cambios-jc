@@ -69,7 +69,7 @@ export function rutasRemesas(app: FastifyInstance, servicio: ServicioRemesas): v
   rutas.get(
     '/remesas/opciones',
     { config: PERMISO, schema: { response: { 200: esquemaOpcionesRemesa } } },
-    async () => servicio.opciones(),
+    async (request) => servicio.opciones(actorDe(request)),
   );
 
   rutas.get(

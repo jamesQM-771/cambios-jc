@@ -393,6 +393,9 @@ model Operacion {
   /// Cuenta por donde entró el dinero del cliente.
   cuentaIngresoId   String            @map("cuenta_ingreso_id") @db.Uuid
   cuentaIngreso     CuentaDinero      @relation(fields: [cuentaIngresoId], references: [id], onDelete: Restrict)
+  /// Turno de caja de quien la registró (D123). Nulo solo en las remesas anteriores a la fase 3.
+  turnoId           String?           @map("turno_id") @db.Uuid
+  turno             Turno?            @relation(fields: [turnoId], references: [id], onDelete: Restrict)
   montoPesos        Decimal           @map("monto_pesos") @db.Decimal(18, 2)
   montoBolivares    Decimal           @map("monto_bolivares") @db.Decimal(18, 3)
   tasaCalculada     Decimal           @map("tasa_calculada") @db.Decimal(18, 6)
@@ -412,6 +415,7 @@ model Operacion {
   movimientos MovimientoCuenta[]
 
   @@index([estado, creadoEn])
+  @@index([turnoId])
   @@map("operacion")
 }
 
@@ -538,6 +542,7 @@ model Turno {
   saldos       SaldoTurno[]
 
   movimientos MovimientoCuenta[]
+  operaciones Operacion[]
 
   @@index([jornadaId])
   @@index([cajaId, abiertoEn])

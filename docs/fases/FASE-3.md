@@ -34,7 +34,7 @@ Cada una termina con pruebas, `npm run check` en verde y commit.
 |---|---|---|
 | 3.1 | Cuentas de efectivo ligadas a su caja; turnos con apertura por conteo de denominaciones | Hecha |
 | 3.2 | Libro de movimientos por cuenta (entradas y salidas con su origen) | Hecha |
-| 3.3 | La remesa queda ligada al turno que la registra | Pendiente |
+| 3.3 | La remesa queda ligada al turno que la registra | Hecha |
 | 3.4 | Traslados entre cajas, bóveda y bancos | Pendiente |
 | 3.5 | Gastos: operativos y retiros del dueño | Pendiente |
 | 3.6 | Devoluciones de remesas | Pendiente |

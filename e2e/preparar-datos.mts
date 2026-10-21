@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 
 import { crearPrisma } from '../apps/api/src/lib/prisma.js';
 import { abrirSesion, asegurarEmpresa, crearUsuarioDePrueba } from '../apps/api/test/auth.js';
+import { abrirTurnoDePrueba } from '../apps/api/test/turnos.js';
 
 import { leerEnv } from './lanzar.mjs';
 
@@ -67,9 +68,11 @@ try {
   await prisma.tasa.create({
     data: { lineaNegocioId: linea.id, tasaVenta: '3.760000', publicadaPorId: administrador.id },
   });
-  await prisma.cuentaDinero.create({
+  const caja = await prisma.cuentaDinero.create({
     data: { nombre: `Caja E2E ${unico}`, tipo: 'caja', moneda: 'COP', sucursalId: sucursal.id },
   });
+  // Desde la tarea 3.3 se vende dentro de un turno; la pantalla para abrirlo llega en la 3.9.
+  await abrirTurnoDePrueba(prisma, { usuarioId: vendedor.id, cuentaCajaId: caja.id });
   const cuentaOrigen = `Banco VES E2E ${unico}`;
   await prisma.cuentaDinero.create({
     data: {

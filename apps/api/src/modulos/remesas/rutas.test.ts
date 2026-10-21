@@ -12,6 +12,7 @@ import {
   cuerpoError,
   llamar,
 } from '../../../test/auth.js';
+import { abrirTurnoDePrueba } from '../../../test/turnos.js';
 import { crearPrisma, type PrismaClient } from '../../lib/prisma.js';
 
 import { calcularMontos } from './servicio.js';
@@ -46,6 +47,8 @@ interface Escenario {
   remitenteId: string;
   medioPagoId: string;
   cajaId: string;
+  /** Efectivo de la caja del administrador, que también vende con su propio turno. */
+  cajaAdminId: string;
   bancoCuentaId: string;
   vendedor: { id: string; token: string };
   admin: { id: string; token: string };
@@ -72,6 +75,11 @@ async function escenario(tasaVenta = '5.190000'): Promise<Escenario> {
   const caja = await prisma.cuentaDinero.create({
     data: { nombre: `Caja ${unico()}`, tipo: 'caja', moneda: 'COP', sucursalId: sucursal.id },
   });
+  await abrirTurnoDePrueba(prisma, { usuarioId: vendedor.id, cuentaCajaId: caja.id });
+  const cajaAdmin = await prisma.cuentaDinero.create({
+    data: { nombre: `Caja ${unico()}`, tipo: 'caja', moneda: 'COP', sucursalId: sucursal.id },
+  });
+  await abrirTurnoDePrueba(prisma, { usuarioId: admin.id, cuentaCajaId: cajaAdmin.id });
   const bancoCuenta = await prisma.cuentaDinero.create({
     data: { nombre: `Banco ${unico()}`, tipo: 'billetera', moneda: 'COP', sucursalId: sucursal.id },
   });
@@ -114,6 +122,7 @@ async function escenario(tasaVenta = '5.190000'): Promise<Escenario> {
     remitenteId: remitente.id,
     medioPagoId: medio.id,
     cajaId: caja.id,
+    cajaAdminId: cajaAdmin.id,
     bancoCuentaId: bancoCuenta.id,
     vendedor: { id: vendedor.id, token: await abrirSesion(prisma, vendedor.id) },
     admin: { id: admin.id, token: await abrirSesion(prisma, admin.id) },
@@ -133,6 +142,7 @@ const cuerpoBase = (e: Escenario, extra: Record<string, unknown> = {}) => ({
 
 interface RemesaJson {
   id: string;
+  turno: { id: string; caja: { id: string; nombre: string } } | null;
   numeroComprobante: number;
   estado: string;
   montoPesos: string;
@@ -335,11 +345,14 @@ describe('registrar remesa', () => {
     });
     const sinMotivo = await llamar(api, 'POST', '/remesas', {
       token: e.admin.token,
-      cuerpo: cuerpoBase(e, { tasaManual: { tasa: '5.000000', motivo: '' } }),
+      cuerpo: cuerpoBase(e, {
+        cuentaIngresoId: e.cajaAdminId,
+        tasaManual: { tasa: '5.000000', motivo: '' },
+      }),
     });
     const admin = await llamar(api, 'POST', '/remesas', {
       token: e.admin.token,
-      cuerpo: cuerpoBase(e, { tasaManual }),
+      cuerpo: cuerpoBase(e, { cuentaIngresoId: e.cajaAdminId, tasaManual }),
     });
 
     expect(vendedor.statusCode).toBe(403);
@@ -469,7 +482,10 @@ describe('consultar remesas', () => {
     const e = await escenario();
     const api = nuevaApp();
     const delAdmin = remesaDe(
-      await llamar(api, 'POST', '/remesas', { token: e.admin.token, cuerpo: cuerpoBase(e) }),
+      await llamar(api, 'POST', '/remesas', {
+        token: e.admin.token,
+        cuerpo: cuerpoBase(e, { cuentaIngresoId: e.cajaAdminId }),
+      }),
     );
     const porRegistrar = remesaDe(
       await llamar(api, 'POST', '/remesas', {
@@ -724,5 +740,129 @@ describe('opciones del formulario', () => {
 
     expect((await llamar(api, 'GET', '/remesas/opciones')).statusCode).toBe(401);
     expect((await llamar(api, 'GET', '/remesas/opciones', { token })).statusCode).toBe(403);
+  });
+});
+
+describe('la remesa se registra dentro de un turno de caja (D123)', () => {
+  it('sin turno abierto no se registra, y no queda nada creado', async () => {
+    const e = await escenario();
+    const sinTurno = await crearUsuarioDePrueba(prisma, { rol: 'vendedor' });
+    const cuerpo = cuerpoBase(e);
+
+    const respuesta = await llamar(nuevaApp(), 'POST', '/remesas', {
+      token: await abrirSesion(prisma, sinTurno.id),
+      cuerpo,
+    });
+
+    expect(respuesta.statusCode).toBe(409);
+    expect(cuerpoError(respuesta)).toMatchObject({
+      codigo: 'ESTADO_INVALIDO',
+      mensaje: 'Abre tu turno de caja antes de registrar una remesa.',
+    });
+    expect(
+      await prisma.operacion.count({ where: { claveIdempotencia: cuerpo.claveIdempotencia } }),
+    ).toBe(0);
+  });
+
+  it('con el turno ya cerrado tampoco', async () => {
+    const e = await escenario();
+    await prisma.turno.updateMany({
+      where: { usuarioId: e.vendedor.id, estado: 'abierto' },
+      data: { estado: 'cerrado', cerradoEn: new Date(), cajaEnUso: null, usuarioEnUso: null },
+    });
+
+    const respuesta = await llamar(nuevaApp(), 'POST', '/remesas', {
+      token: e.vendedor.token,
+      cuerpo: cuerpoBase(e),
+    });
+
+    expect(respuesta.statusCode).toBe(409);
+  });
+
+  it('el efectivo entra solo a la caja del propio turno', async () => {
+    const e = await escenario();
+
+    const respuesta = await llamar(nuevaApp(), 'POST', '/remesas', {
+      token: e.vendedor.token,
+      cuerpo: cuerpoBase(e, { cuentaIngresoId: e.cajaAdminId }),
+    });
+
+    expect(respuesta.statusCode).toBe(409);
+    expect(cuerpoError(respuesta).mensaje).toBe(
+      'El efectivo entra a la cuenta de la caja de tu turno.',
+    );
+  });
+
+  it('la remesa y su ingreso quedan en el turno de quien la registra', async () => {
+    const e = await escenario();
+    const turno = await prisma.turno.findUniqueOrThrow({
+      where: { usuarioEnUso: e.vendedor.id },
+      include: { caja: true },
+    });
+
+    const remesa = remesaDe(
+      await llamar(nuevaApp(), 'POST', '/remesas', {
+        token: e.vendedor.token,
+        cuerpo: cuerpoBase(e),
+      }),
+    );
+
+    expect(remesa.turno).toEqual({
+      id: turno.id,
+      caja: { id: turno.cajaId, nombre: turno.caja.nombre },
+    });
+    const ingreso = await prisma.movimientoCuenta.findFirstOrThrow({
+      where: { operacionId: remesa.id, origen: 'remesa_ingreso' },
+    });
+    expect(ingreso.turnoId).toBe(turno.id);
+  });
+
+  it('una transferencia entra al turno de quien verifica el pago', async () => {
+    const e = await escenario();
+    const api = nuevaApp();
+    const remesa = remesaDe(
+      await llamar(api, 'POST', '/remesas', {
+        token: e.vendedor.token,
+        cuerpo: cuerpoBase(e, { formaPago: 'transferencia', cuentaIngresoId: e.bancoCuentaId }),
+      }),
+    );
+
+    await llamar(api, 'POST', `/remesas/${remesa.id}/verificar-pago`, {
+      token: e.admin.token,
+    });
+
+    const turnoAdmin = await prisma.turno.findUniqueOrThrow({
+      where: { usuarioEnUso: e.admin.id },
+    });
+    const ingreso = await prisma.movimientoCuenta.findFirstOrThrow({
+      where: { operacionId: remesa.id, origen: 'remesa_ingreso' },
+    });
+    expect(ingreso.turnoId).toBe(turnoAdmin.id);
+  });
+
+  it('las opciones dicen el turno abierto y a qué caja pertenece cada cuenta', async () => {
+    const e = await escenario();
+    const api = nuevaApp();
+    const sinTurno = await crearUsuarioDePrueba(prisma, { rol: 'vendedor' });
+    const turno = await prisma.turno.findUniqueOrThrow({
+      where: { usuarioEnUso: e.vendedor.id },
+    });
+
+    const conTurno = (
+      await llamar(api, 'GET', '/remesas/opciones', { token: e.vendedor.token })
+    ).json<{
+      miTurno: { id: string; caja: { id: string } } | null;
+      cuentasIngreso: { id: string; cajaId: string | null }[];
+    }>();
+    const ninguno = (
+      await llamar(api, 'GET', '/remesas/opciones', {
+        token: await abrirSesion(prisma, sinTurno.id),
+      })
+    ).json<{ miTurno: unknown }>();
+
+    expect(conTurno.miTurno).toMatchObject({ id: turno.id, caja: { id: turno.cajaId } });
+    expect(conTurno.cuentasIngreso.find((c) => c.id === e.cajaId)?.cajaId).toBe(turno.cajaId);
+    expect(conTurno.cuentasIngreso.find((c) => c.id === e.bancoCuentaId)?.cajaId).toBeNull();
+    expect(ninguno.miTurno).toBeNull();
   });
 });

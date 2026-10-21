@@ -8,6 +8,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
 import { cerrarApp, crearAppPrueba } from '../../test/ayudas.js';
 import { abrirSesion, asegurarEmpresa, crearUsuarioDePrueba, llamar } from '../../test/auth.js';
+import { abrirTurnoDePrueba } from '../../test/turnos.js';
 
 import { crearPrisma, type PrismaClient } from './prisma.js';
 import { leerCookie } from './tiempo-real.js';
@@ -99,6 +100,7 @@ async function prepararRemesa(vendedorId: string, adminId: string) {
   const caja = await prisma.cuentaDinero.create({
     data: { nombre: `Caja ${unico()}`, tipo: 'caja', moneda: 'COP', sucursalId: sucursal.id },
   });
+  await abrirTurnoDePrueba(prisma, { usuarioId: vendedorId, cuentaCajaId: caja.id });
   const banco = await prisma.banco.upsert({
     where: { codigo: '9126' },
     update: {},
