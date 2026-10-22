@@ -13,6 +13,7 @@ import {
   llamar,
 } from '../../../test/auth.js';
 import { abrirTurnoDePrueba } from '../../../test/turnos.js';
+import { saldoDeCuenta } from '../../lib/libro.js';
 import { crearPrisma, type PrismaClient } from '../../lib/prisma.js';
 
 import { calcularMontos } from './servicio.js';
@@ -864,5 +865,172 @@ describe('la remesa se registra dentro de un turno de caja (D123)', () => {
     expect(conTurno.cuentasIngreso.find((c) => c.id === e.cajaId)?.cajaId).toBe(turno.cajaId);
     expect(conTurno.cuentasIngreso.find((c) => c.id === e.bancoCuentaId)?.cajaId).toBeNull();
     expect(ninguno.miTurno).toBeNull();
+  });
+});
+
+describe('devolver el dinero de una remesa con incidencia (D126)', () => {
+  const saldo = async (cuentaId: string) => (await saldoDeCuenta(prisma, cuentaId)).toFixed(2);
+
+  /** Registra una remesa y la deja con incidencia, como si el digitador no hubiera podido pagarla. */
+  async function conIncidencia(e: Escenario, extra: Record<string, unknown> = {}) {
+    const api = nuevaApp();
+    const remesa = remesaDe(
+      await llamar(api, 'POST', '/remesas', {
+        token: e.vendedor.token,
+        cuerpo: cuerpoBase(e, extra),
+      }),
+    );
+    if (extra.formaPago === 'transferencia') {
+      await llamar(api, 'POST', `/remesas/${remesa.id}/verificar-pago`, {
+        token: e.vendedor.token,
+      });
+    }
+    await prisma.operacion.update({ where: { id: remesa.id }, data: { estado: 'con_incidencia' } });
+    return { api, remesa };
+  }
+
+  const devolver = (
+    api: FastifyInstance,
+    token: string,
+    id: string,
+    motivo = 'El cliente se arrepintió',
+  ) => llamar(api, 'POST', `/remesas/${id}/devolver`, { token, cuerpo: { motivo } });
+
+  it('el administrador devuelve el monto completo por la misma cuenta por la que entró', async () => {
+    const e = await escenario();
+    const { api, remesa } = await conIncidencia(e);
+    expect(await saldo(e.cajaId)).toBe('162000.00');
+
+    const respuesta = await devolver(api, e.admin.token, remesa.id);
+
+    expect(respuesta.statusCode).toBe(200);
+    expect(remesaDe(respuesta).estado).toBe('devuelta');
+    expect(await saldo(e.cajaId)).toBe('0.00');
+    const devolucion = await prisma.movimientoCuenta.findFirstOrThrow({
+      where: { operacionId: remesa.id, origen: 'remesa_devolucion' },
+    });
+    expect(devolucion).toMatchObject({ cuentaId: e.cajaId, sentido: 'salida' });
+    expect(devolucion.monto.toFixed(2)).toBe('162000.00');
+    expect(devolucion.revierteId).not.toBeNull();
+    // Nada se borra: el ingreso original sigue en el libro.
+    expect(await prisma.movimientoCuenta.count({ where: { operacionId: remesa.id } })).toBe(2);
+  });
+
+  it('queda en el historial con el motivo y en la bitácora', async () => {
+    const e = await escenario();
+    const { api, remesa } = await conIncidencia(e);
+
+    await devolver(api, e.admin.token, remesa.id, 'No se encontró la cuenta del beneficiario');
+
+    const evento = await prisma.eventoOperacion.findFirstOrThrow({
+      where: { operacionId: remesa.id, estadoNuevo: 'devuelta' },
+    });
+    expect(evento).toMatchObject({
+      estadoAnterior: 'con_incidencia',
+      motivo: 'No se encontró la cuenta del beneficiario',
+      usuarioId: e.admin.id,
+    });
+    const registro = await prisma.auditoria.findFirstOrThrow({
+      where: { accion: 'remesa.devolver', entidadId: remesa.id },
+    });
+    expect(JSON.stringify(registro.despues)).toContain('No se encontró la cuenta');
+  });
+
+  it('una transferencia se devuelve por la misma cuenta bancaria', async () => {
+    const e = await escenario();
+    const { api, remesa } = await conIncidencia(e, {
+      formaPago: 'transferencia',
+      cuentaIngresoId: e.bancoCuentaId,
+    });
+    expect(await saldo(e.bancoCuentaId)).toBe('162000.00');
+
+    const respuesta = await devolver(api, e.admin.token, remesa.id);
+
+    expect(respuesta.statusCode).toBe(200);
+    expect(await saldo(e.bancoCuentaId)).toBe('0.00');
+    expect(await saldo(e.cajaId)).toBe('0.00');
+  });
+
+  it('solo el administrador, y siempre con motivo', async () => {
+    const e = await escenario();
+    const { api, remesa } = await conIncidencia(e);
+
+    const vendedor = await devolver(api, e.vendedor.token, remesa.id);
+    const sinMotivo = await devolver(api, e.admin.token, remesa.id, '');
+
+    expect(vendedor.statusCode).toBe(403);
+    expect(cuerpoError(vendedor).codigo).toBe('SIN_PERMISO');
+    expect(sinMotivo.statusCode).toBe(400);
+    expect(await saldo(e.cajaId)).toBe('162000.00');
+  });
+
+  it('solo se devuelve desde "con incidencia"', async () => {
+    const e = await escenario();
+    const api = nuevaApp();
+    for (const estado of ['en_cola', 'tomada', 'completada', 'anulada'] as const) {
+      const remesa = remesaDe(
+        await llamar(api, 'POST', '/remesas', { token: e.vendedor.token, cuerpo: cuerpoBase(e) }),
+      );
+      await prisma.operacion.update({ where: { id: remesa.id }, data: { estado } });
+
+      const respuesta = await devolver(api, e.admin.token, remesa.id);
+
+      expect(respuesta.statusCode, estado).toBe(409);
+      expect(cuerpoError(respuesta).codigo).toBe('ESTADO_INVALIDO');
+    }
+    expect((await devolver(api, e.admin.token, randomUUID())).statusCode).toBe(404);
+  });
+
+  it('no se devuelve dos veces: dos intentos a la vez devuelven la plata una sola vez', async () => {
+    const e = await escenario();
+    const { api, remesa } = await conIncidencia(e);
+
+    const [a, b] = await Promise.all([
+      devolver(api, e.admin.token, remesa.id),
+      devolver(api, e.admin.token, remesa.id),
+    ]);
+
+    expect([a.statusCode, b.statusCode].sort()).toEqual([200, 409]);
+    expect(await saldo(e.cajaId)).toBe('0.00');
+    expect(
+      await prisma.movimientoCuenta.count({
+        where: { operacionId: remesa.id, origen: 'remesa_devolucion' },
+      }),
+    ).toBe(1);
+  });
+
+  it('una remesa sin ingreso en el libro no se devuelve y no cambia nada', async () => {
+    const e = await escenario();
+    const api = nuevaApp();
+    // Una transferencia que nunca se verificó no recibió dinero; se fuerza la incidencia a mano.
+    const remesa = remesaDe(
+      await llamar(api, 'POST', '/remesas', {
+        token: e.vendedor.token,
+        cuerpo: cuerpoBase(e, { formaPago: 'transferencia', cuentaIngresoId: e.bancoCuentaId }),
+      }),
+    );
+    await prisma.operacion.update({ where: { id: remesa.id }, data: { estado: 'con_incidencia' } });
+
+    const respuesta = await devolver(api, e.admin.token, remesa.id);
+
+    expect(respuesta.statusCode).toBe(409);
+    expect((await prisma.operacion.findUniqueOrThrow({ where: { id: remesa.id } })).estado).toBe(
+      'con_incidencia',
+    );
+    expect(await saldo(e.bancoCuentaId)).toBe('0.00');
+  });
+
+  it('una remesa devuelta no se puede anular después', async () => {
+    const e = await escenario();
+    const { api, remesa } = await conIncidencia(e);
+    await devolver(api, e.admin.token, remesa.id);
+
+    const respuesta = await llamar(api, 'POST', `/remesas/${remesa.id}/anular`, {
+      token: e.admin.token,
+      cuerpo: { motivo: 'Otra vez' },
+    });
+
+    expect(respuesta.statusCode).toBe(409);
+    expect(await saldo(e.cajaId)).toBe('0.00');
   });
 });

@@ -26,6 +26,7 @@ const MATRIZ: Record<Permiso, readonly [boolean, boolean, boolean]> = {
   'remesa.verificar_pago': [true, true, false],
   'remesa.anular': [true, false, false],
   'remesa.liberar': [true, false, false],
+  'remesa.devolver': [true, false, false],
   'remesa.tomar_completar': [false, false, true],
   'tasa.publicar': [true, false, false],
   'tasa.cambiar_en_operacion': [true, false, false],

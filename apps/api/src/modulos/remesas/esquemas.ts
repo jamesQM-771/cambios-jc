@@ -58,6 +58,10 @@ export const esquemaAnularRemesa = z.object({
   motivo: z.string().trim().min(3, 'Explica por qué se anula.').max(300),
 });
 
+export const esquemaDevolverRemesa = z.object({
+  motivo: z.string().trim().min(3, 'Explica por qué se devuelve el dinero.').max(300),
+});
+
 /** El vendedor corrige a dónde se paga una remesa que quedó con incidencia (§8). */
 export const esquemaCorregirRemesa = z.object({
   medioPagoId: z.uuid(),

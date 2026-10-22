@@ -346,6 +346,30 @@ export function crearServicioRemesas({
       return avisar(await cargar(id));
     },
 
+    /**
+     * El administrador devuelve al cliente todo lo que entregó, por la misma cuenta por la que entró,
+     * cuando el pago no se pudo hacer ni corregir (D126). Solo desde "con incidencia", siempre con motivo.
+     */
+    async devolver(
+      id: string,
+      motivo: string,
+      actor: Actor,
+      contexto: ContextoPeticion,
+    ): Promise<RemesaPublica> {
+      await moverEstado(prisma, {
+        id,
+        desde: ['con_incidencia'],
+        pasos: [{ estado: 'devuelta', motivo }],
+        accion: 'remesa.devolver',
+        mensajeSiNo: 'Solo se devuelve el dinero de una remesa que quedó con incidencia.',
+        actor,
+        contexto,
+        dentro: (tx) =>
+          revertirIngresoDeRemesa(tx, id, actor.id, { origen: 'remesa_devolucion', exigir: true }),
+      });
+      return avisar(await cargar(id));
+    },
+
     async listar(filtro: { estado?: FilaRemesa['estado'] | undefined }): Promise<RemesaPublica[]> {
       const filas = await prisma.operacion.findMany({
         where: filtro.estado ? { estado: filtro.estado } : {},

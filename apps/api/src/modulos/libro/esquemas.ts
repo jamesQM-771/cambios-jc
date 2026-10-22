@@ -22,6 +22,7 @@ export const esquemaMovimiento = z.object({
     'remesa_pago',
     'remesa_costo',
     'remesa_anulacion',
+    'remesa_devolucion',
     'traslado_salida',
     'traslado_entrada',
     'traslado_anulacion',

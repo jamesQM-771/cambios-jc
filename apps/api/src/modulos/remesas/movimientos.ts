@@ -1,6 +1,7 @@
 import { comparar, type Moneda } from '@cambios-jc/shared';
 
 import type { Prisma } from '../../generated/prisma/client.js';
+import { errores } from '../../lib/errores.js';
 import { registrarMovimiento } from '../../lib/libro.js';
 
 /**
@@ -52,24 +53,39 @@ export async function ingresarPorRemesa(
   });
 }
 
-/** Deshace el ingreso de una remesa anulada (si llegó a haberlo): sale lo mismo que entró. */
+/**
+ * Deshace el ingreso de una remesa (si llegó a haberlo): sale lo mismo que entró, por la misma
+ * cuenta. Al anular, un ingreso que no existe no es problema; al devolver (`exigir`), sí: no se
+ * devuelve plata que el libro no vio entrar.
+ */
 export async function revertirIngresoDeRemesa(
   tx: Prisma.TransactionClient,
   operacionId: string,
   usuarioId: string,
+  {
+    origen = 'remesa_anulacion',
+    exigir = false,
+  }: { origen?: 'remesa_anulacion' | 'remesa_devolucion'; exigir?: boolean } = {},
 ): Promise<void> {
   const ingreso = await tx.movimientoCuenta.findFirst({
     where: { operacionId, origen: 'remesa_ingreso', reversion: { is: null } },
     include: { cuenta: { select: { moneda: true } } },
   });
   // Una transferencia anulada antes de verificarse no recibió nada: no hay qué revertir.
-  if (!ingreso) return;
+  if (!ingreso) {
+    if (exigir) {
+      throw errores.estadoInvalido(
+        'Esta remesa no tiene un ingreso en el libro de caja (es anterior a la fase de caja): la devolución se maneja fuera del sistema.',
+      );
+    }
+    return;
+  }
   await registrarMovimiento(tx, {
     cuentaId: ingreso.cuentaId,
     sentido: 'salida',
     monto: ingreso.monto.toString(),
     moneda: ingreso.cuenta.moneda as Moneda,
-    origen: 'remesa_anulacion',
+    origen,
     operacionId,
     revierteId: ingreso.id,
     turnoId: await turnoAbiertoDe(tx, usuarioId),

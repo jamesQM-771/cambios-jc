@@ -614,6 +614,8 @@ enum OrigenMovimiento {
   remesa_costo
   /// Deshace el ingreso de una remesa anulada.
   remesa_anulacion
+  /// Sale de la cuenta de ingreso lo que se le devuelve al cliente de una remesa con incidencia.
+  remesa_devolucion
   /// Sale de la cuenta de origen de un traslado.
   traslado_salida
   /// Entra a la cuenta de destino de un traslado.
