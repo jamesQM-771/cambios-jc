@@ -127,6 +127,8 @@ model CuentaDinero {
 
   gastos Gasto[]
 
+  saldosJornada SaldoCuentaJornada[]
+
   @@map("cuenta_dinero")
 }
 
@@ -247,6 +249,9 @@ model Usuario {
 
   gastosCreados  Gasto[] @relation("GastoCreadoPor")
   gastosAnulados Gasto[] @relation("GastoAnuladoPor")
+
+  jornadasCerradas Jornada[]       @relation("JornadaCerradaPor")
+  eventosJornada   EventoJornada[] @relation("EventoJornadaUsuario")
 
   @@map("usuario")
 }
@@ -521,14 +526,22 @@ enum MomentoConteo {
 /// Un día de operación de una sucursal (§5.16 de PROYECTO.md). Se crea sola al abrir el primer turno
 /// del día, con la fecha en la zona horaria de la empresa (D118).
 model Jornada {
-  id         String        @id @default(uuid(7)) @db.Uuid
-  sucursalId String        @map("sucursal_id") @db.Uuid
-  sucursal   Sucursal      @relation(fields: [sucursalId], references: [id], onDelete: Restrict)
-  fecha      DateTime      @db.Date
-  estado     EstadoJornada @default(abierta)
-  cerradaEn  DateTime?     @map("cerrada_en") @db.Timestamptz(6)
-  creadoEn   DateTime      @default(now()) @map("creado_en") @db.Timestamptz(6)
-  turnos     Turno[]
+  id           String               @id @default(uuid(7)) @db.Uuid
+  sucursalId   String               @map("sucursal_id") @db.Uuid
+  sucursal     Sucursal             @relation(fields: [sucursalId], references: [id], onDelete: Restrict)
+  fecha        DateTime             @db.Date
+  estado       EstadoJornada        @default(abierta)
+  cerradaEn    DateTime?            @map("cerrada_en") @db.Timestamptz(6)
+  cerradaPorId String?              @map("cerrada_por_id") @db.Uuid
+  cerradaPor   Usuario?             @relation("JornadaCerradaPor", fields: [cerradaPorId], references: [id], onDelete: Restrict)
+  /// Cuántas veces se ha cerrado: cada reapertura y nuevo cierre es otro ciclo (D128).
+  ciclo        Int                  @default(0)
+  /// Foto del día al cerrar (disponible, remesas, gastos, diferencias de arqueo…). El cierre es de solo lectura.
+  resumen      Json?
+  creadoEn     DateTime             @default(now()) @map("creado_en") @db.Timestamptz(6)
+  turnos       Turno[]
+  eventos      EventoJornada[]
+  saldosCuenta SaldoCuentaJornada[]
 
   @@unique([sucursalId, fecha])
   @@map("jornada")
@@ -756,4 +769,47 @@ model Gasto {
   @@index([cuentaId, creadoEn])
   @@index([creadoEn])
   @@map("gasto")
+}
+
+enum TipoEventoJornada {
+  cierre
+  reapertura
+
+  @@map("tipo_evento_jornada")
+}
+
+/// Historial de una jornada: cada cierre y cada reapertura (con su motivo). Solo se inserta.
+model EventoJornada {
+  id        String            @id @default(uuid(7)) @db.Uuid
+  jornadaId String            @map("jornada_id") @db.Uuid
+  jornada   Jornada           @relation(fields: [jornadaId], references: [id], onDelete: Restrict)
+  tipo      TipoEventoJornada
+  usuarioId String            @map("usuario_id") @db.Uuid
+  usuario   Usuario           @relation("EventoJornadaUsuario", fields: [usuarioId], references: [id], onDelete: Restrict)
+  motivo    String?
+  creadoEn  DateTime          @default(now()) @map("creado_en") @db.Timestamptz(6)
+
+  @@index([jornadaId, creadoEn])
+  @@map("evento_jornada")
+}
+
+/// Saldo que el administrador reportó de una cuenta sin caja (bóveda, banco, billetera) al cerrar la
+/// jornada, contra lo esperado (D128). Sin tolerancia: cualquier diferencia lleva explicación.
+model SaldoCuentaJornada {
+  id          String       @id @default(uuid(7)) @db.Uuid
+  jornadaId   String       @map("jornada_id") @db.Uuid
+  jornada     Jornada      @relation(fields: [jornadaId], references: [id], onDelete: Restrict)
+  ciclo       Int
+  cuentaId    String       @map("cuenta_id") @db.Uuid
+  cuenta      CuentaDinero @relation(fields: [cuentaId], references: [id], onDelete: Restrict)
+  moneda      String       @db.Char(3)
+  /// Null cuando no hay contra qué comparar (primera vez que se arquea la cuenta).
+  esperado    Decimal?     @db.Decimal(18, 3)
+  reportado   Decimal      @db.Decimal(18, 3)
+  diferencia  Decimal?     @db.Decimal(18, 3)
+  explicacion String?
+
+  @@unique([jornadaId, ciclo, cuentaId])
+  @@index([cuentaId])
+  @@map("saldo_cuenta_jornada")
 }
