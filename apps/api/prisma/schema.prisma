@@ -122,6 +122,9 @@ model CuentaDinero {
 
   movimientos MovimientoCuenta[]
 
+  trasladosOrigen  Traslado[] @relation("TrasladoOrigen")
+  trasladosDestino Traslado[] @relation("TrasladoDestino")
+
   @@map("cuenta_dinero")
 }
 
@@ -235,6 +238,9 @@ model Usuario {
   turnos Turno[]
 
   movimientosCuenta MovimientoCuenta[]
+
+  trasladosCreados  Traslado[] @relation("TrasladoCreadoPor")
+  trasladosAnulados Traslado[] @relation("TrasladoAnuladoPor")
 
   @@map("usuario")
 }
@@ -543,6 +549,7 @@ model Turno {
 
   movimientos MovimientoCuenta[]
   operaciones Operacion[]
+  traslados   Traslado[]
 
   @@index([jornadaId])
   @@index([cajaId, abiertoEn])
@@ -601,6 +608,12 @@ enum OrigenMovimiento {
   remesa_costo
   /// Deshace el ingreso de una remesa anulada.
   remesa_anulacion
+  /// Sale de la cuenta de origen de un traslado.
+  traslado_salida
+  /// Entra a la cuenta de destino de un traslado.
+  traslado_entrada
+  /// Deshace una de las dos patas de un traslado anulado.
+  traslado_anulacion
 
   @@map("origen_movimiento")
 }
@@ -623,6 +636,9 @@ model MovimientoCuenta {
   turno       Turno?            @relation(fields: [turnoId], references: [id], onDelete: Restrict)
   /// El movimiento que este deshace; cada movimiento se revierte, como mucho, una vez.
   revierteId  String?           @unique @map("revierte_id") @db.Uuid
+  /// Traslado del que forma parte (cada traslado tiene dos movimientos: una salida y una entrada).
+  trasladoId  String?           @map("traslado_id") @db.Uuid
+  traslado    Traslado?         @relation(fields: [trasladoId], references: [id], onDelete: Restrict)
   revierte    MovimientoCuenta? @relation("Reversion", fields: [revierteId], references: [id], onDelete: Restrict)
   reversion   MovimientoCuenta? @relation("Reversion")
   usuarioId   String            @map("usuario_id") @db.Uuid
@@ -631,5 +647,37 @@ model MovimientoCuenta {
 
   @@index([cuentaId, creadoEn])
   @@index([operacionId])
+  @@index([trasladoId])
   @@map("movimiento_cuenta")
+}
+
+/// Dinero que pasa de una cuenta a otra de la misma moneda (D124): de una caja a la bóveda, de la
+/// bóveda a un banco, etc. Son dos movimientos del libro (salida y entrada) que se crean y se
+/// anulan juntos. Nada se edita ni se borra: un error se anula con motivo.
+model Traslado {
+  id                String       @id @default(uuid(7)) @db.Uuid
+  origenId          String       @map("origen_id") @db.Uuid
+  origen            CuentaDinero @relation("TrasladoOrigen", fields: [origenId], references: [id], onDelete: Restrict)
+  destinoId         String       @map("destino_id") @db.Uuid
+  destino           CuentaDinero @relation("TrasladoDestino", fields: [destinoId], references: [id], onDelete: Restrict)
+  /// En la moneda de las dos cuentas (que es la misma).
+  monto             Decimal      @db.Decimal(18, 3)
+  nota              String?
+  /// Turno abierto de quien lo registró, si lo tenía.
+  turnoId           String?      @map("turno_id") @db.Uuid
+  turno             Turno?       @relation(fields: [turnoId], references: [id], onDelete: Restrict)
+  claveIdempotencia String       @unique @map("clave_idempotencia") @db.VarChar(64)
+  creadoPorId       String       @map("creado_por_id") @db.Uuid
+  creadoPor         Usuario      @relation("TrasladoCreadoPor", fields: [creadoPorId], references: [id], onDelete: Restrict)
+  creadoEn          DateTime     @default(now()) @map("creado_en") @db.Timestamptz(6)
+  anuladoEn         DateTime?    @map("anulado_en") @db.Timestamptz(6)
+  anuladoPorId      String?      @map("anulado_por_id") @db.Uuid
+  anuladoPor        Usuario?     @relation("TrasladoAnuladoPor", fields: [anuladoPorId], references: [id], onDelete: Restrict)
+  motivoAnulacion   String?      @map("motivo_anulacion")
+
+  movimientos MovimientoCuenta[]
+
+  @@index([origenId, creadoEn])
+  @@index([destinoId, creadoEn])
+  @@map("traslado")
 }

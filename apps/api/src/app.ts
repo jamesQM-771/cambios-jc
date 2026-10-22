@@ -29,6 +29,8 @@ import { crearServicioRecibos } from './modulos/recibos/servicio.js';
 import { rutasRemesas } from './modulos/remesas/rutas.js';
 import { crearServicioRemesas } from './modulos/remesas/servicio.js';
 import { rutasLibro } from './modulos/libro/rutas.js';
+import { rutasTraslados } from './modulos/traslados/rutas.js';
+import { crearServicioTraslados } from './modulos/traslados/servicio.js';
 import { crearServicioLibro } from './modulos/libro/servicio.js';
 import { rutasTurnos } from './modulos/turnos/rutas.js';
 import { crearServicioTurnos } from './modulos/turnos/servicio.js';
@@ -121,6 +123,7 @@ export function construirApp({
     rutasClientes(rutas, crearServicioClientes({ prisma }));
     rutasTurnos(rutas, crearServicioTurnos({ prisma }));
     rutasLibro(rutas, crearServicioLibro({ prisma }));
+    rutasTraslados(rutas, crearServicioTraslados({ prisma }));
     rutasCuentasDinero(rutas, crearServicioCuentasDinero({ prisma }));
     listo();
   });

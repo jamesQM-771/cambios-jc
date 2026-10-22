@@ -17,8 +17,18 @@ export const esquemaMovimiento = z.object({
   sentido: z.enum(['entrada', 'salida']),
   /** Siempre positivo; el sentido dice si entra o sale. */
   monto: z.string(),
-  origen: z.enum(['remesa_ingreso', 'remesa_pago', 'remesa_costo', 'remesa_anulacion']),
+  origen: z.enum([
+    'remesa_ingreso',
+    'remesa_pago',
+    'remesa_costo',
+    'remesa_anulacion',
+    'traslado_salida',
+    'traslado_entrada',
+    'traslado_anulacion',
+  ]),
   operacion: z.object({ id: z.string(), numeroComprobante: z.number().int() }).nullable(),
+  /** Traslado del que forma parte, si lo hay. */
+  trasladoId: z.string().nullable(),
   /** Si este movimiento deshace otro, cuál. */
   revierteId: z.string().nullable(),
   usuario: z.object({ id: z.string(), nombre: z.string() }),

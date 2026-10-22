@@ -20,6 +20,8 @@ export interface DatosMovimiento {
   moneda: Moneda;
   origen: OrigenMovimiento;
   operacionId?: string | undefined;
+  /** Traslado del que forma parte este movimiento (sus dos patas). */
+  trasladoId?: string | undefined;
   turnoId?: string | null | undefined;
   /** El movimiento que este deshace (anulaciones y correcciones): se revierte una sola vez. */
   revierteId?: string | undefined;
@@ -43,6 +45,7 @@ export async function registrarMovimiento(
       monto: monto.toString(),
       origen: datos.origen,
       operacionId: datos.operacionId ?? null,
+      trasladoId: datos.trasladoId ?? null,
       turnoId: datos.turnoId ?? null,
       revierteId: datos.revierteId ?? null,
       usuarioId: datos.usuarioId,

@@ -13,6 +13,7 @@ export const PERMISOS_POR_ROL: Readonly<Record<Rol, readonly Permiso[]>> = {
     'remesa.verificar_pago',
     'divisa_caja.operar',
     'gasto.registrar',
+    'traslado.registrar',
     // 'tasa.cambiar_en_operacion' queda fuera por defecto (D29): quienes venden en Cambios JC
     // entran como administradores. Pregunta abierta #6 de PROYECTO.md §13.
   ],

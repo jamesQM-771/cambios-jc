@@ -18,6 +18,8 @@ const MATRIZ: Record<Permiso, readonly [boolean, boolean, boolean]> = {
   'caja.reabrir': [true, false, false],
   'jornada.cerrar': [true, false, false],
   'gasto.registrar': [true, true, false],
+  'traslado.registrar': [true, true, false],
+  'traslado.gestionar': [true, false, false],
   'cliente.registrar': [true, true, false],
   'remesa.registrar': [true, true, false],
   'remesa.verificar_pago': [true, true, false],

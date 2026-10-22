@@ -76,6 +76,7 @@ export function crearServicioLibro({ prisma }: { prisma: PrismaClient }) {
           monto: true,
           origen: true,
           operacion: { select: { id: true, numeroComprobante: true } },
+          trasladoId: true,
           revierteId: true,
           usuario: { select: { id: true, nombre: true } },
           creadoEn: true,
