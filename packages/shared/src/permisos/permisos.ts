@@ -15,6 +15,7 @@ export const PERMISOS = [
   'caja.reabrir',
   'jornada.cerrar',
   'gasto.registrar',
+  'gasto.gestionar',
   'traslado.registrar',
   'traslado.gestionar',
   // Clientes y remesas

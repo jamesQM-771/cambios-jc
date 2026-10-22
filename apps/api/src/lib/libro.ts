@@ -22,6 +22,8 @@ export interface DatosMovimiento {
   operacionId?: string | undefined;
   /** Traslado del que forma parte este movimiento (sus dos patas). */
   trasladoId?: string | undefined;
+  /** Gasto o retiro del dueño que lo causó. */
+  gastoId?: string | undefined;
   turnoId?: string | null | undefined;
   /** El movimiento que este deshace (anulaciones y correcciones): se revierte una sola vez. */
   revierteId?: string | undefined;
@@ -46,6 +48,7 @@ export async function registrarMovimiento(
       origen: datos.origen,
       operacionId: datos.operacionId ?? null,
       trasladoId: datos.trasladoId ?? null,
+      gastoId: datos.gastoId ?? null,
       turnoId: datos.turnoId ?? null,
       revierteId: datos.revierteId ?? null,
       usuarioId: datos.usuarioId,

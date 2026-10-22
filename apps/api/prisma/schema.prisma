@@ -125,6 +125,8 @@ model CuentaDinero {
   trasladosOrigen  Traslado[] @relation("TrasladoOrigen")
   trasladosDestino Traslado[] @relation("TrasladoDestino")
 
+  gastos Gasto[]
+
   @@map("cuenta_dinero")
 }
 
@@ -241,6 +243,9 @@ model Usuario {
 
   trasladosCreados  Traslado[] @relation("TrasladoCreadoPor")
   trasladosAnulados Traslado[] @relation("TrasladoAnuladoPor")
+
+  gastosCreados  Gasto[] @relation("GastoCreadoPor")
+  gastosAnulados Gasto[] @relation("GastoAnuladoPor")
 
   @@map("usuario")
 }
@@ -550,6 +555,7 @@ model Turno {
   movimientos MovimientoCuenta[]
   operaciones Operacion[]
   traslados   Traslado[]
+  gastos      Gasto[]
 
   @@index([jornadaId])
   @@index([cajaId, abiertoEn])
@@ -614,6 +620,12 @@ enum OrigenMovimiento {
   traslado_entrada
   /// Deshace una de las dos patas de un traslado anulado.
   traslado_anulacion
+  /// Sale de la cuenta con la que se pagó un gasto operativo.
+  gasto
+  /// Sale de la cuenta de la que el dueño retiró dinero para sí.
+  retiro_dueno
+  /// Deshace un gasto o retiro anulado.
+  gasto_anulacion
 
   @@map("origen_movimiento")
 }
@@ -637,6 +649,8 @@ model MovimientoCuenta {
   /// El movimiento que este deshace; cada movimiento se revierte, como mucho, una vez.
   revierteId  String?           @unique @map("revierte_id") @db.Uuid
   /// Traslado del que forma parte (cada traslado tiene dos movimientos: una salida y una entrada).
+  gastoId     String?           @map("gasto_id") @db.Uuid
+  gasto       Gasto?            @relation(fields: [gastoId], references: [id], onDelete: Restrict)
   trasladoId  String?           @map("traslado_id") @db.Uuid
   traslado    Traslado?         @relation(fields: [trasladoId], references: [id], onDelete: Restrict)
   revierte    MovimientoCuenta? @relation("Reversion", fields: [revierteId], references: [id], onDelete: Restrict)
@@ -648,6 +662,7 @@ model MovimientoCuenta {
   @@index([cuentaId, creadoEn])
   @@index([operacionId])
   @@index([trasladoId])
+  @@index([gastoId])
   @@map("movimiento_cuenta")
 }
 
@@ -680,4 +695,57 @@ model Traslado {
   @@index([origenId, creadoEn])
   @@index([destinoId, creadoEn])
   @@map("traslado")
+}
+
+enum TipoGasto {
+  /// Resta a la ganancia del día.
+  operativo
+  /// El dueño saca dinero para sí: no resta a la ganancia.
+  retiro_dueno
+
+  @@map("tipo_gasto")
+}
+
+/// Catálogo simple de categorías de gasto (arriendo, servicios, nómina…). Se desactivan, no se borran.
+model CategoriaGasto {
+  id       String   @id @default(uuid(7)) @db.Uuid
+  nombre   String   @unique
+  activa   Boolean  @default(true)
+  creadoEn DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
+
+  gastos Gasto[]
+
+  @@map("categoria_gasto")
+}
+
+/// Plata que sale de una cuenta sin ser una remesa ni un traslado (D125). Siempre sale de una
+/// cuenta, así el arqueo lo ve. Nada se edita ni se borra: un error se anula con motivo.
+model Gasto {
+  id                String          @id @default(uuid(7)) @db.Uuid
+  tipo              TipoGasto
+  /// Obligatoria en un gasto operativo; un retiro del dueño puede no llevarla.
+  categoriaId       String?         @map("categoria_id") @db.Uuid
+  categoria         CategoriaGasto? @relation(fields: [categoriaId], references: [id], onDelete: Restrict)
+  descripcion       String
+  cuentaId          String          @map("cuenta_id") @db.Uuid
+  cuenta            CuentaDinero    @relation(fields: [cuentaId], references: [id], onDelete: Restrict)
+  /// En la moneda de la cuenta.
+  monto             Decimal         @db.Decimal(18, 3)
+  /// Turno abierto de quien lo registró, si lo tenía.
+  turnoId           String?         @map("turno_id") @db.Uuid
+  turno             Turno?          @relation(fields: [turnoId], references: [id], onDelete: Restrict)
+  claveIdempotencia String          @unique @map("clave_idempotencia") @db.VarChar(64)
+  creadoPorId       String          @map("creado_por_id") @db.Uuid
+  creadoPor         Usuario         @relation("GastoCreadoPor", fields: [creadoPorId], references: [id], onDelete: Restrict)
+  creadoEn          DateTime        @default(now()) @map("creado_en") @db.Timestamptz(6)
+  anuladoEn         DateTime?       @map("anulado_en") @db.Timestamptz(6)
+  anuladoPorId      String?         @map("anulado_por_id") @db.Uuid
+  anuladoPor        Usuario?        @relation("GastoAnuladoPor", fields: [anuladoPorId], references: [id], onDelete: Restrict)
+  motivoAnulacion   String?         @map("motivo_anulacion")
+
+  movimientos MovimientoCuenta[]
+
+  @@index([cuentaId, creadoEn])
+  @@index([creadoEn])
+  @@map("gasto")
 }

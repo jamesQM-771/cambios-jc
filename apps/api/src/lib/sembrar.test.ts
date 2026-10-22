@@ -71,6 +71,7 @@ describe('sembrar', () => {
       bancosCreados: 0,
       denominacionesCreadas: 0,
       lineasNegocioCreadas: 0,
+      categoriasGastoCreadas: 0,
     });
     expect(await prisma.usuario.count({ where: { login } })).toBe(1);
     expect(await prisma.empresa.count()).toBe(1);
@@ -110,6 +111,15 @@ describe('sembrar', () => {
       pais: 'VE',
       activo: true,
     });
+  });
+
+  it('siembra las categorías de gasto de uso común, sin duplicar', async () => {
+    await sembrar(prisma, { loginAdmin: loginUnico(), contrasenaAdmin: contrasena });
+    await sembrar(prisma, { loginAdmin: loginUnico(), contrasenaAdmin: contrasena });
+
+    for (const nombre of ['Arriendo', 'Nómina', 'Otros']) {
+      expect(await prisma.categoriaGasto.count({ where: { nombre } }), nombre).toBe(1);
+    }
   });
 
   it('siembra las denominaciones de COP, USD y VES, sin duplicar', async () => {

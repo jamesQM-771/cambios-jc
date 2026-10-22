@@ -3,6 +3,17 @@ import { hashContrasena, LONGITUD_MINIMA_CONTRASENA } from './contrasenas.js';
 import { DENOMINACIONES_SEMILLA } from './denominaciones-semilla.js';
 import type { PrismaClient } from './prisma.js';
 
+/** Categorías de gasto de uso común; el administrador agrega o desactiva las que quiera. */
+const CATEGORIAS_GASTO_SEMILLA = [
+  'Arriendo',
+  'Servicios públicos',
+  'Nómina',
+  'Transporte',
+  'Papelería y aseo',
+  'Comisiones y cuotas bancarias',
+  'Otros',
+] as const;
+
 export interface DatosSemilla {
   loginAdmin: string;
   contrasenaAdmin: string;
@@ -15,6 +26,7 @@ export interface ResultadoSemilla {
   bancosCreados: number;
   denominacionesCreadas: number;
   lineasNegocioCreadas: number;
+  categoriasGastoCreadas: number;
 }
 
 /**
@@ -44,6 +56,7 @@ export async function sembrar(
       bancosCreados: 0,
       denominacionesCreadas: 0,
       lineasNegocioCreadas: 0,
+      categoriasGastoCreadas: 0,
     };
 
     if (!(await tx.empresa.findUnique({ where: { unica: true } }))) {
@@ -151,6 +164,12 @@ export async function sembrar(
       skipDuplicates: true,
     });
     resultado.lineasNegocioCreadas = lineasCreadas;
+
+    const { count: categoriasCreadas } = await tx.categoriaGasto.createMany({
+      data: CATEGORIAS_GASTO_SEMILLA.map((nombre) => ({ nombre })),
+      skipDuplicates: true,
+    });
+    resultado.categoriasGastoCreadas = categoriasCreadas;
 
     return resultado;
   });
