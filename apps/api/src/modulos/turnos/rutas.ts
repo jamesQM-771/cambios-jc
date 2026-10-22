@@ -7,6 +7,7 @@ import type { ContextoPeticion } from '../auth/servicio.js';
 
 import {
   esquemaAbrirTurno,
+  esquemaCerrarTurno,
   esquemaId,
   esquemaListarTurnos,
   esquemaOpcionesTurno,
@@ -55,6 +56,26 @@ export function rutasTurnos(app: FastifyInstance, servicio: ServicioTurnos): voi
         contextoDe(request),
       );
       return respuesta.status(201).send({ turno });
+    },
+  );
+
+  rutas.post(
+    '/turnos/:id/cerrar',
+    {
+      config: PROPIO,
+      schema: { params: esquemaId, body: esquemaCerrarTurno, response: { 200: respuestaTurno } },
+    },
+    async (request) => {
+      const usuario = usuarioDe(request);
+      return {
+        turno: await servicio.cerrar(
+          request.params.id,
+          request.body,
+          { id: usuario.id },
+          tienePermiso(usuario.rol, 'jornada.cerrar'),
+          contextoDe(request),
+        ),
+      };
     },
   );
 

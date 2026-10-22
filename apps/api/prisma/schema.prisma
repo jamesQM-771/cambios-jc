@@ -237,7 +237,8 @@ model Usuario {
   impresionesRecibo     ImpresionRecibo[]
   transferenciasTomadas Transferencia[]   @relation("OperadorTransferencia")
 
-  turnos Turno[]
+  turnos         Turno[] @relation("TurnoDeUsuario")
+  turnosCerrados Turno[] @relation("TurnoCerradoPor")
 
   movimientosCuenta MovimientoCuenta[]
 
@@ -539,12 +540,17 @@ model Turno {
   cajaId       String        @map("caja_id") @db.Uuid
   caja         Caja          @relation(fields: [cajaId], references: [id], onDelete: Restrict)
   usuarioId    String        @map("usuario_id") @db.Uuid
-  usuario      Usuario       @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+  usuario      Usuario       @relation("TurnoDeUsuario", fields: [usuarioId], references: [id], onDelete: Restrict)
   jornadaId    String        @map("jornada_id") @db.Uuid
   jornada      Jornada       @relation(fields: [jornadaId], references: [id], onDelete: Restrict)
   estado       EstadoTurno   @default(abierto)
   abiertoEn    DateTime      @default(now()) @map("abierto_en") @db.Timestamptz(6)
   cerradoEn    DateTime?     @map("cerrado_en") @db.Timestamptz(6)
+  /// Quién lo cerró: la misma persona, o el administrador si el turno quedó olvidado (D127).
+  cerradoPorId String?       @map("cerrado_por_id") @db.Uuid
+  cerradoPor   Usuario?      @relation("TurnoCerradoPor", fields: [cerradoPorId], references: [id], onDelete: Restrict)
+  /// Por qué lo cerró otra persona; solo cuando quien cierra no es su dueño.
+  motivoCierre String?       @map("motivo_cierre")
   /// Candados de "un turno abierto por caja y por persona" (D117): valen mientras el turno está
   /// abierto y pasan a null al cerrarlo. Un índice único no se repite, pero los null sí.
   cajaEnUso    String?       @unique @map("caja_en_uso") @db.Uuid

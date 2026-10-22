@@ -12,6 +12,7 @@ import {
   cuerpoError,
   llamar,
 } from '../../../test/auth.js';
+import { registrarMovimiento } from '../../lib/libro.js';
 import { crearPrisma, type PrismaClient } from '../../lib/prisma.js';
 
 import { fechaEnZona } from './servicio.js';
@@ -128,8 +129,12 @@ interface TurnoJson {
     esperado: string | null;
     contado: string;
     diferencia: string | null;
+    explicacion: string | null;
+    resultado: string | null;
   }[];
-  conteos: { moneda: string; valor: string; cantidad: number }[];
+  cerradoPor: { id: string } | null;
+  motivoCierre: string | null;
+  conteos: { momento: string; moneda: string; valor: string; cantidad: number }[];
 }
 
 const turnoDe = (respuesta: { json: () => unknown }): TurnoJson =>
@@ -215,6 +220,7 @@ describe('abrir un turno', () => {
         contado: '160005.00',
         diferencia: null,
         explicacion: null,
+        resultado: null,
       },
     ]);
     expect(turno.conteos).toEqual([
@@ -668,5 +674,310 @@ describe('fecha del local', () => {
     expect(fechaEnZona(instante, 'America/Bogota')).toBe('2026-10-13');
     expect(fechaEnZona(instante, 'UTC')).toBe('2026-10-14');
     expect(fechaEnZona(instante, 'America/Caracas')).toBe('2026-10-13');
+  });
+});
+
+describe('cerrar un turno con arqueo (D127)', () => {
+  /** Abre el turno del vendedor con 2 × 50.001 + 3 × 20.001 = 160.005 en caja. */
+  async function abierto(e: Escenario, api: FastifyInstance) {
+    const respuesta = await llamar(api, 'POST', '/turnos', {
+      token: e.vendedor.token,
+      cuerpo: cuerpoApertura(e),
+    });
+    expect(respuesta.statusCode).toBe(201);
+    return turnoDe(respuesta).id;
+  }
+
+  const cerrar = (
+    api: FastifyInstance,
+    token: string,
+    id: string,
+    cuerpo: Record<string, unknown>,
+  ) => llamar(api, 'POST', `/turnos/${id}/cerrar`, { token, cuerpo });
+
+  /** Anota en el libro un movimiento de la caja durante el turno (como lo harían una venta o un gasto). */
+  async function mover(e: Escenario, sentido: 'entrada' | 'salida', monto: string) {
+    await prisma.$transaction((tx) =>
+      registrarMovimiento(tx, {
+        cuentaId: e.cuentaId,
+        sentido,
+        monto,
+        moneda: 'COP',
+        origen: sentido === 'entrada' ? 'remesa_ingreso' : 'gasto',
+        usuarioId: e.vendedor.id,
+      }),
+    );
+  }
+
+  const cierreDe = (turno: TurnoJson) =>
+    turno.saldos.find((saldo) => saldo.momento === 'cierre' && saldo.moneda === 'COP');
+
+  it('si el efectivo cuadra: diferencia cero, turno cerrado y la caja queda libre', async () => {
+    const e = await escenario();
+    const api = nuevaApp();
+    const id = await abierto(e, api);
+
+    const respuesta = await cerrar(api, e.vendedor.token, id, { conteos: [conteoCop(e, 2, 3)] });
+
+    expect(respuesta.statusCode).toBe(200);
+    const turno = turnoDe(respuesta);
+    expect(turno).toMatchObject({
+      estado: 'cerrado',
+      cerradoPor: { id: e.vendedor.id },
+      motivoCierre: null,
+    });
+    expect(cierreDe(turno)).toMatchObject({
+      esperado: '160005.00',
+      contado: '160005.00',
+      diferencia: '0.00',
+      explicacion: null,
+      resultado: 'cuadrado',
+    });
+    expect(turno.conteos.filter((c) => c.momento === 'cierre')).toHaveLength(2);
+    const fila = await prisma.turno.findUniqueOrThrow({ where: { id } });
+    expect(fila).toMatchObject({ cajaEnUso: null, usuarioEnUso: null });
+    // La misma persona y la misma caja pueden abrir otro turno.
+    const otro = await llamar(api, 'POST', '/turnos', {
+      token: e.vendedor.token,
+      cuerpo: cuerpoApertura(e),
+    });
+    expect(otro.statusCode).toBe(201);
+  });
+
+  it('lo esperado suma lo que entró y resta lo que salió de la caja durante el turno', async () => {
+    const e = await escenario();
+    const api = nuevaApp();
+    const id = await abierto(e, api);
+    await mover(e, 'entrada', '50001'); // una venta en efectivo
+    await mover(e, 'salida', '20001'); // un gasto
+
+    // 160.005 + 50.001 − 20.001 = 190.005 = 3 × 50.001 + 2 × 20.001
+    const respuesta = await cerrar(api, e.vendedor.token, id, { conteos: [conteoCop(e, 3, 2)] });
+
+    expect(respuesta.statusCode, respuesta.body).toBe(200);
+    expect(cierreDe(turnoDe(respuesta))).toMatchObject({
+      esperado: '190005.00',
+      contado: '190005.00',
+      diferencia: '0.00',
+      resultado: 'cuadrado',
+    });
+  });
+
+  it('un faltante exige explicación y queda atribuido a ese turno', async () => {
+    const e = await escenario();
+    const api = nuevaApp();
+    const id = await abierto(e, api);
+
+    const sinExplicar = await cerrar(api, e.vendedor.token, id, { conteos: [conteoCop(e, 2, 2)] });
+    expect(sinExplicar.statusCode).toBe(400);
+    expect((await prisma.turno.findUniqueOrThrow({ where: { id } })).estado).toBe('abierto');
+    expect(await prisma.saldoTurno.count({ where: { turnoId: id, momento: 'cierre' } })).toBe(0);
+
+    const explicado = await cerrar(api, e.vendedor.token, id, {
+      conteos: [conteoCop(e, 2, 2)],
+      explicaciones: [{ moneda: 'COP', texto: 'Billete de 20.001 que se dio de vueltos' }],
+    });
+
+    expect(explicado.statusCode).toBe(200);
+    expect(cierreDe(turnoDe(explicado))).toMatchObject({
+      esperado: '160005.00',
+      contado: '140004.00',
+      diferencia: '-20001.00',
+      explicacion: 'Billete de 20.001 que se dio de vueltos',
+      resultado: 'faltante',
+    });
+  });
+
+  it('un sobrante también, y sin tolerancia: un solo billete de diferencia ya cuenta', async () => {
+    const e = await escenario();
+    const api = nuevaApp();
+    const id = await abierto(e, api);
+
+    const respuesta = await cerrar(api, e.vendedor.token, id, {
+      conteos: [conteoCop(e, 2, 4)],
+      explicaciones: [{ moneda: 'COP', texto: 'Un cliente dejó de más' }],
+    });
+
+    expect(cierreDe(turnoDe(respuesta))).toMatchObject({
+      diferencia: '20001.00',
+      resultado: 'sobrante',
+    });
+  });
+
+  it('una explicación de más no se guarda si el efectivo cuadra', async () => {
+    const e = await escenario();
+    const api = nuevaApp();
+    const id = await abierto(e, api);
+
+    const respuesta = await cerrar(api, e.vendedor.token, id, {
+      conteos: [conteoCop(e, 2, 3)],
+      explicaciones: [{ moneda: 'COP', texto: 'No hacía falta' }],
+    });
+
+    expect(cierreDe(turnoDe(respuesta))?.explicacion).toBeNull();
+  });
+
+  it('el siguiente turno de esa caja espera como apertura lo que se contó al cerrar', async () => {
+    const e = await escenario();
+    const api = nuevaApp();
+    const id = await abierto(e, api);
+    await cerrar(api, e.vendedor.token, id, {
+      conteos: [conteoCop(e, 2, 2)],
+      explicaciones: [{ moneda: 'COP', texto: 'Faltó un billete' }],
+    });
+
+    const siguiente = await llamar(api, 'POST', '/turnos', {
+      token: e.vendedor.token,
+      cuerpo: cuerpoApertura(e, { conteos: [conteoCop(e, 2, 2)] }),
+    });
+
+    expect(turnoDe(siguiente).saldos[0]).toMatchObject({
+      momento: 'apertura',
+      esperado: '140004.00',
+      contado: '140004.00',
+      diferencia: '0.00',
+    });
+  });
+
+  describe('quién puede cerrar', () => {
+    it('el vendedor no cierra el turno de otra persona', async () => {
+      const e = await escenario();
+      const api = nuevaApp();
+      const id = await abierto(e, api);
+      const otro = await sesion('vendedor');
+
+      const respuesta = await cerrar(api, otro.token, id, { conteos: [conteoCop(e, 2, 3)] });
+
+      expect(respuesta.statusCode).toBe(403);
+      expect((await prisma.turno.findUniqueOrThrow({ where: { id } })).estado).toBe('abierto');
+    });
+
+    it('el administrador cierra un turno olvidado, con motivo; la diferencia sigue siendo del vendedor', async () => {
+      const e = await escenario();
+      const api = nuevaApp();
+      const id = await abierto(e, api);
+      const cuerpoCierre = {
+        conteos: [conteoCop(e, 2, 2)],
+        explicaciones: [{ moneda: 'COP', texto: 'Se contó al día siguiente' }],
+      };
+
+      const sinMotivo = await cerrar(api, e.admin.token, id, cuerpoCierre);
+      const conMotivo = await cerrar(api, e.admin.token, id, {
+        ...cuerpoCierre,
+        motivo: 'El vendedor se fue sin cerrar el turno',
+      });
+
+      expect(sinMotivo.statusCode).toBe(400);
+      expect(conMotivo.statusCode).toBe(200);
+      expect(turnoDe(conMotivo)).toMatchObject({
+        usuario: { id: e.vendedor.id },
+        cerradoPor: { id: e.admin.id },
+        motivoCierre: 'El vendedor se fue sin cerrar el turno',
+      });
+      expect(cierreDe(turnoDe(conMotivo))?.resultado).toBe('faltante');
+    });
+
+    it('el digitador y quien no tiene sesión no cierran nada', async () => {
+      const e = await escenario();
+      const api = nuevaApp();
+      const id = await abierto(e, api);
+      const digitador = await sesion('digitador');
+
+      const sinSesion = await llamar(api, 'POST', `/turnos/${id}/cerrar`, {
+        cuerpo: { conteos: [conteoCop(e, 2, 3)] },
+      });
+      const sinPermiso = await cerrar(api, digitador.token, id, { conteos: [conteoCop(e, 2, 3)] });
+
+      expect(sinSesion.statusCode).toBe(401);
+      expect(sinPermiso.statusCode).toBe(403);
+    });
+  });
+
+  describe('qué se rechaza', () => {
+    it('un turno ya cerrado, uno que no existe, y dos cierres a la vez', async () => {
+      const e = await escenario();
+      const api = nuevaApp();
+      const id = await abierto(e, api);
+      const cuerpoCierre = { conteos: [conteoCop(e, 2, 3)] };
+
+      const [a, b] = await Promise.all([
+        cerrar(api, e.vendedor.token, id, cuerpoCierre),
+        cerrar(api, e.vendedor.token, id, cuerpoCierre),
+      ]);
+      const otra = await cerrar(api, e.vendedor.token, id, cuerpoCierre);
+
+      expect([a.statusCode, b.statusCode].sort()).toEqual([200, 409]);
+      expect(otra.statusCode).toBe(409);
+      expect((await cerrar(api, e.vendedor.token, randomUUID(), cuerpoCierre)).statusCode).toBe(
+        404,
+      );
+      expect(await prisma.saldoTurno.count({ where: { turnoId: id, momento: 'cierre' } })).toBe(1);
+    });
+
+    it('un conteo que no cubre la moneda de la caja, o con denominaciones inválidas', async () => {
+      const e = await escenario();
+      const api = nuevaApp();
+      const id = await abierto(e, api);
+      const probar = (conteos: unknown[]) => cerrar(api, e.vendedor.token, id, { conteos });
+
+      const sinCop = await probar([{ moneda: 'USD', lineas: [] }]);
+      const deOtraMoneda = await probar([
+        { moneda: 'COP', lineas: [{ denominacionId: e.usdDe87, cantidad: 1 }] },
+      ]);
+      const repetida = await probar([
+        {
+          moneda: 'COP',
+          lineas: [
+            { denominacionId: e.de50000, cantidad: 1 },
+            { denominacionId: e.de50000, cantidad: 2 },
+          ],
+        },
+      ]);
+      const negativa = await probar([
+        { moneda: 'COP', lineas: [{ denominacionId: e.de50000, cantidad: -1 }] },
+      ]);
+
+      for (const respuesta of [sinCop, deOtraMoneda, repetida, negativa]) {
+        expect(respuesta.statusCode).toBe(400);
+      }
+      expect((await prisma.turno.findUniqueOrThrow({ where: { id } })).estado).toBe('abierto');
+    });
+
+    it('un conteo en cero es válido y es un faltante si había efectivo', async () => {
+      const e = await escenario();
+      const api = nuevaApp();
+      const id = await abierto(e, api);
+
+      const respuesta = await cerrar(api, e.vendedor.token, id, {
+        conteos: [conteoCop(e, 0, 0)],
+        explicaciones: [{ moneda: 'COP', texto: 'Se llevaron toda la caja al banco' }],
+      });
+
+      expect(cierreDe(turnoDe(respuesta))).toMatchObject({
+        contado: '0.00',
+        diferencia: '-160005.00',
+        resultado: 'faltante',
+      });
+    });
+  });
+
+  it('queda en la bitácora con lo esperado, lo contado y la explicación', async () => {
+    const e = await escenario();
+    const api = nuevaApp();
+    const id = await abierto(e, api);
+
+    await cerrar(api, e.vendedor.token, id, {
+      conteos: [conteoCop(e, 2, 2)],
+      explicaciones: [{ moneda: 'COP', texto: 'Faltó un billete de veinte' }],
+    });
+
+    const registro = await prisma.auditoria.findFirstOrThrow({
+      where: { accion: 'turno.cerrar', entidadId: id },
+    });
+    expect(registro.usuarioId).toBe(e.vendedor.id);
+    const texto = aTexto(registro.despues);
+    expect(texto).toContain('160005.00');
+    expect(texto).toContain('140004.00');
+    expect(texto).toContain('Faltó un billete de veinte');
   });
 });

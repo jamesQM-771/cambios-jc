@@ -38,7 +38,7 @@ Cada una termina con pruebas, `npm run check` en verde y commit.
 | 3.4 | Traslados entre cajas, bóveda y bancos | Hecha |
 | 3.5 | Gastos: operativos y retiros del dueño | Hecha |
 | 3.6 | Devoluciones de remesas | Hecha |
-| 3.7 | Cierre de turno con arqueo | Pendiente |
+| 3.7 | Cierre de turno con arqueo | Hecha |
 | 3.8 | Cierre de jornada, resumen y reapertura | Pendiente |
 | 3.9 | Pantallas | Pendiente |
 | 3.10 | Pruebas de extremo a extremo y cierre | Pendiente |

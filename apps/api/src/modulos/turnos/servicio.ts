@@ -1,4 +1,5 @@
 import {
+  comparar,
   fijarMonto,
   montoATexto,
   multiplicar,
@@ -13,7 +14,9 @@ import type { PrismaClient } from '../../lib/prisma.js';
 import { registrarAuditoria } from '../../lib/registrar-auditoria.js';
 import type { ContextoPeticion } from '../auth/servicio.js';
 
-import type { DatosAbrirTurno, TurnoPublico } from './esquemas.js';
+import { saldoDeCuenta } from '../../lib/libro.js';
+
+import type { DatosAbrirTurno, DatosCerrarTurno, TurnoPublico } from './esquemas.js';
 
 const SELECCION = {
   id: true,
@@ -22,6 +25,8 @@ const SELECCION = {
   estado: true,
   abiertoEn: true,
   cerradoEn: true,
+  cerradoPor: { select: { id: true, nombre: true } },
+  motivoCierre: true,
   jornada: { select: { id: true, fecha: true } },
   saldos: { orderBy: [{ momento: 'asc' }, { moneda: 'asc' }] },
   conteos: { orderBy: [{ momento: 'asc' }, { moneda: 'asc' }, { valor: 'desc' }] },
@@ -58,6 +63,8 @@ function aPublico(fila: FilaTurno): TurnoPublico {
     estado: fila.estado,
     abiertoEn: fila.abiertoEn,
     cerradoEn: fila.cerradoEn,
+    cerradoPor: fila.cerradoPor,
+    motivoCierre: fila.motivoCierre,
     jornada: { id: fila.jornada.id, fecha: fila.jornada.fecha.toISOString().slice(0, 10) },
     saldos: fila.saldos.map((saldo) => {
       const moneda = saldo.moneda as Moneda;
@@ -68,6 +75,14 @@ function aPublico(fila: FilaTurno): TurnoPublico {
         contado: montoATexto(saldo.contado.toString(), moneda),
         diferencia: saldo.diferencia ? montoATexto(saldo.diferencia.toString(), moneda) : null,
         explicacion: saldo.explicacion,
+        resultado:
+          saldo.momento === 'cierre' && saldo.diferencia
+            ? saldo.diferencia.isZero()
+              ? ('cuadrado' as const)
+              : saldo.diferencia.isPositive()
+                ? ('sobrante' as const)
+                : ('faltante' as const)
+            : null,
       };
     }),
     conteos: fila.conteos.map((conteo) => ({
@@ -84,6 +99,58 @@ export function crearServicioTurnos({ prisma }: { prisma: PrismaClient }) {
     const fila = await prisma.turno.findUnique({ where: { id }, select: SELECCION });
     if (!fila) throw errores.noEncontrado('El turno no existe.');
     return aPublico(fila);
+  }
+
+  /**
+   * Valida un conteo contra las cuentas de efectivo de la caja y calcula los totales: el servidor
+   * nunca recibe un total. Sirve igual para abrir que para cerrar un turno.
+   */
+  async function prepararConteos(
+    cuentas: { moneda: string }[],
+    contados: DatosAbrirTurno['conteos'],
+  ) {
+    // El conteo debe cubrir exactamente las monedas de esa caja: ni una menos ni una de más.
+    const monedasCaja = new Set(cuentas.map((cuenta) => cuenta.moneda));
+    const monedasContadas = contados.map((conteo) => conteo.moneda);
+    if (new Set(monedasContadas).size !== monedasContadas.length) {
+      throw errorConteo('conteos', 'Hay una moneda repetida en el conteo.');
+    }
+    for (const moneda of monedasContadas) {
+      if (!monedasCaja.has(moneda)) {
+        throw errorConteo('conteos', `Esta caja no maneja efectivo en ${moneda}.`);
+      }
+    }
+    for (const moneda of monedasCaja) {
+      if (!monedasContadas.includes(moneda as Moneda)) {
+        throw errorConteo('conteos', `Falta contar el efectivo en ${moneda}.`);
+      }
+    }
+
+    const denominaciones = await prisma.denominacion.findMany({
+      where: { moneda: { in: [...monedasCaja] }, activa: true },
+    });
+    return contados.map((conteo) => {
+      const vistas = new Set<string>();
+      let total = fijarMonto('0', conteo.moneda);
+      const lineas = conteo.lineas.map((linea) => {
+        const denominacion = denominaciones.find(
+          (d) => d.id === linea.denominacionId && d.moneda === conteo.moneda,
+        );
+        if (!denominacion) {
+          throw errorConteo(
+            'conteos',
+            `Una de las denominaciones no existe, está desactivada o no es de ${conteo.moneda}.`,
+          );
+        }
+        if (vistas.has(denominacion.id)) {
+          throw errorConteo('conteos', 'Hay una denominación repetida en el conteo.');
+        }
+        vistas.add(denominacion.id);
+        total = sumar(total, multiplicar(denominacion.valor.toString(), String(linea.cantidad)));
+        return { denominacion, cantidad: linea.cantidad };
+      });
+      return { moneda: conteo.moneda, lineas, total: fijarMonto(total, conteo.moneda) };
+    });
   }
 
   async function turnoAbiertoDe(usuarioId: string): Promise<TurnoPublico | null> {
@@ -161,6 +228,121 @@ export function crearServicioTurnos({ prisma }: { prisma: PrismaClient }) {
     },
 
     /**
+     * Cierra un turno (§5.16): se cuenta el efectivo por denominación y el servidor lo compara con lo
+     * esperado, que es el conteo de apertura más lo que entró y salió de la cuenta de efectivo
+     * mientras el turno estuvo abierto (§7.6). Sin tolerancia: cualquier diferencia es sobrante o
+     * faltante, lleva su explicación y queda atribuida a ese turno y a su vendedor (D127). Si lo cierra
+     * otra persona (turno olvidado), debe tener permiso para ello y dar el motivo.
+     */
+    async cerrar(
+      id: string,
+      datos: DatosCerrarTurno,
+      actor: Actor,
+      puedeCerrarElDeOtros: boolean,
+      contexto: ContextoPeticion,
+    ): Promise<TurnoPublico> {
+      const turno = await prisma.turno.findUnique({
+        where: { id },
+        include: {
+          caja: { include: { cuentas: { where: { activa: true, tipo: 'caja' } } } },
+          saldos: { where: { momento: 'apertura' } },
+        },
+      });
+      if (!turno) throw errores.noEncontrado('El turno no existe.');
+      if (turno.estado !== 'abierto') throw errores.estadoInvalido('Ese turno ya está cerrado.');
+      if (turno.usuarioId !== actor.id) {
+        if (!puedeCerrarElDeOtros) throw errores.sinPermiso();
+        if (!datos.motivo) {
+          throw errorConteo('motivo', 'Explica por qué cierras el turno de otra persona.');
+        }
+      }
+      const conteos = await prepararConteos(turno.caja.cuentas, datos.conteos);
+
+      await prisma.$transaction(async (tx) => {
+        const ahora = new Date();
+        // Cambio condicionado: dos cierres a la vez no pasan los dos, y desde aquí nadie vende en este turno.
+        const cambio = await tx.turno.updateMany({
+          where: { id, estado: 'abierto' },
+          data: {
+            estado: 'cerrado',
+            cerradoEn: ahora,
+            cajaEnUso: null,
+            usuarioEnUso: null,
+            cerradoPorId: actor.id,
+            motivoCierre: turno.usuarioId === actor.id ? null : (datos.motivo ?? null),
+          },
+        });
+        if (cambio.count === 0) throw errores.estadoInvalido('Ese turno ya está cerrado.');
+
+        const resumen: Record<string, unknown> = {};
+        for (const conteo of conteos) {
+          const moneda = conteo.moneda;
+          const cuenta = turno.caja.cuentas.find((c) => c.moneda === moneda);
+          if (!cuenta) throw new Error(`La caja no tiene cuenta de efectivo en ${moneda}.`);
+          const apertura = turno.saldos.find((saldo) => saldo.moneda === moneda);
+          // Todo lo movido desde que abrió el turno hasta este instante (no hay tope superior).
+          const movido = await saldoDeCuenta(tx, cuenta.id, { desde: turno.abiertoEn });
+          const esperado = fijarMonto(sumar(apertura?.contado.toString() ?? '0', movido), moneda);
+          const diferencia = restar(conteo.total, esperado);
+          const explicacion = datos.explicaciones.find((e) => e.moneda === moneda)?.texto ?? null;
+          const cuadra = comparar(diferencia, '0') === 0;
+          if (!cuadra && !explicacion) {
+            throw errorConteo(
+              'explicaciones',
+              `El efectivo en ${moneda} no cuadra: explica a qué se debe la diferencia.`,
+            );
+          }
+          await tx.saldoTurno.create({
+            data: {
+              turnoId: id,
+              momento: 'cierre',
+              moneda,
+              esperado: esperado.toString(),
+              contado: conteo.total.toString(),
+              diferencia: diferencia.toString(),
+              explicacion: cuadra ? null : explicacion,
+            },
+          });
+          const conCantidad = conteo.lineas.filter((linea) => linea.cantidad > 0);
+          if (conCantidad.length > 0) {
+            await tx.conteoTurno.createMany({
+              data: conCantidad.map((linea) => ({
+                turnoId: id,
+                momento: 'cierre' as const,
+                moneda,
+                denominacionId: linea.denominacion.id,
+                valor: linea.denominacion.valor,
+                cantidad: linea.cantidad,
+              })),
+            });
+          }
+          resumen[moneda] = {
+            esperado: montoATexto(esperado, moneda),
+            contado: montoATexto(conteo.total, moneda),
+            diferencia: montoATexto(diferencia, moneda),
+            explicacion: cuadra ? null : explicacion,
+          };
+        }
+
+        await registrarAuditoria(tx, {
+          usuarioId: actor.id,
+          accion: 'turno.cerrar',
+          entidad: 'turno',
+          entidadId: id,
+          ip: contexto.ip,
+          agenteUsuario: contexto.agenteUsuario,
+          despues: {
+            caja: turno.caja.nombre,
+            vendedorId: turno.usuarioId,
+            motivo: turno.usuarioId === actor.id ? null : datos.motivo,
+            cierre: resumen,
+          },
+        });
+      });
+      return cargar(id);
+    },
+
+    /**
      * Abre un turno: cuenta el efectivo de la caja por denominación y lo compara con el último
      * cierre de esa caja (la diferencia queda registrada, §5.16). Una caja y una persona solo pueden
      * tener un turno abierto a la vez (D117), y el día del local se abre solo con el primero (D118).
@@ -186,48 +368,7 @@ export function crearServicioTurnos({ prisma }: { prisma: PrismaClient }) {
         );
       }
 
-      // El conteo debe cubrir exactamente las monedas de esa caja: ni una menos ni una de más.
-      const monedasCaja = new Set(caja.cuentas.map((cuenta) => cuenta.moneda));
-      const monedasContadas = datos.conteos.map((conteo) => conteo.moneda);
-      if (new Set(monedasContadas).size !== monedasContadas.length) {
-        throw errorConteo('conteos', 'Hay una moneda repetida en el conteo.');
-      }
-      for (const moneda of monedasContadas) {
-        if (!monedasCaja.has(moneda)) {
-          throw errorConteo('conteos', `Esta caja no maneja efectivo en ${moneda}.`);
-        }
-      }
-      for (const moneda of monedasCaja) {
-        if (!monedasContadas.includes(moneda as Moneda)) {
-          throw errorConteo('conteos', `Falta contar el efectivo en ${moneda}.`);
-        }
-      }
-
-      const denominaciones = await prisma.denominacion.findMany({
-        where: { moneda: { in: [...monedasCaja] }, activa: true },
-      });
-      const conteos = datos.conteos.map((conteo) => {
-        const vistas = new Set<string>();
-        let total = fijarMonto('0', conteo.moneda);
-        const lineas = conteo.lineas.map((linea) => {
-          const denominacion = denominaciones.find(
-            (d) => d.id === linea.denominacionId && d.moneda === conteo.moneda,
-          );
-          if (!denominacion) {
-            throw errorConteo(
-              'conteos',
-              `Una de las denominaciones no existe, está desactivada o no es de ${conteo.moneda}.`,
-            );
-          }
-          if (vistas.has(denominacion.id)) {
-            throw errorConteo('conteos', 'Hay una denominación repetida en el conteo.');
-          }
-          vistas.add(denominacion.id);
-          total = sumar(total, multiplicar(denominacion.valor.toString(), String(linea.cantidad)));
-          return { denominacion, cantidad: linea.cantidad };
-        });
-        return { moneda: conteo.moneda, lineas, total: fijarMonto(total, conteo.moneda) };
-      });
+      const conteos = await prepararConteos(caja.cuentas, datos.conteos);
 
       const empresa = await prisma.empresa.findUnique({ where: { unica: true } });
       const zona = empresa?.zonaHoraria ?? 'America/Bogota';

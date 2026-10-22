@@ -29,6 +29,29 @@ export const esquemaAbrirTurno = z.object({
 
 export type DatosAbrirTurno = z.infer<typeof esquemaAbrirTurno>;
 
+/**
+ * Cierre de turno (§5.16): se cuenta el efectivo por denominación y el servidor lo compara con lo
+ * esperado. Si no cuadra, cada moneda con diferencia lleva su explicación (sin tolerancia, D127).
+ * Quien cierra el turno de otra persona (turno olvidado) debe dar el motivo.
+ */
+export const esquemaCerrarTurno = z
+  .object({
+    conteos: z.array(esquemaConteoMoneda).min(1).max(5),
+    explicaciones: z
+      .array(
+        z.object({
+          moneda: esquemaMoneda,
+          texto: z.string().trim().min(3, 'Explica a qué se debe la diferencia.').max(300),
+        }),
+      )
+      .max(5)
+      .default([]),
+    motivo: z.string().trim().min(3, 'Explica por qué cierras este turno.').max(300).optional(),
+  })
+  .strict();
+
+export type DatosCerrarTurno = z.infer<typeof esquemaCerrarTurno>;
+
 export const esquemaListarTurnos = z.object({
   estado: z.enum(['abierto', 'cerrado']).optional(),
   cajaId: z.uuid().optional(),
@@ -43,6 +66,8 @@ const esquemaSaldo = z.object({
   /** contado − esperado: positivo es sobrante, negativo es faltante. */
   diferencia: z.string().nullable(),
   explicacion: z.string().nullable(),
+  /** Solo al cerrar: cuadrado, sobrante (contó de más) o faltante (contó de menos). */
+  resultado: z.enum(['cuadrado', 'sobrante', 'faltante']).nullable(),
 });
 
 const esquemaConteo = z.object({
@@ -59,6 +84,9 @@ export const esquemaTurnoPublico = z.object({
   estado: z.enum(['abierto', 'cerrado']),
   abiertoEn: z.date(),
   cerradoEn: z.date().nullable(),
+  /** Quién lo cerró y, si no fue su dueño, por qué. */
+  cerradoPor: z.object({ id: z.string(), nombre: z.string() }).nullable(),
+  motivoCierre: z.string().nullable(),
   jornada: z.object({ id: z.string(), fecha: z.string() }),
   saldos: z.array(esquemaSaldo),
   conteos: z.array(esquemaConteo),
