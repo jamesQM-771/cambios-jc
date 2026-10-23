@@ -2351,3 +2351,23 @@ textarea.campo__entrada {
 .seguimiento__mensaje {
   font-size: var(--texto-grande);
 }
+
+/* Conteo del efectivo por denominación (abrir y cerrar turno). */
+.conteo {
+  margin-block: var(--espacio-5);
+}
+
+.conteo__titulo {
+  margin: 0 0 var(--espacio-3);
+  font-size: var(--texto-base);
+}
+
+.conteo__cantidad {
+  width: 7rem;
+  text-align: right;
+  font-family: var(--fuente-mono);
+}
+
+.conteo__total {
+  font-weight: 700;
+}

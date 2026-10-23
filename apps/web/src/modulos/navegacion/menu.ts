@@ -29,6 +29,14 @@ export const ENTRADAS_MENU: readonly EntradaMenu[] = [
     grupo: 'General',
   },
   {
+    ruta: '/turno',
+    grupo: 'Operación',
+    icono: 'panel',
+    etiqueta: 'Mi turno',
+    descripcion: 'Abrir y cerrar tu caja contando el efectivo',
+    permiso: 'turno.gestionar_propio',
+  },
+  {
     ruta: '/remesas',
     grupo: 'Operación',
     icono: 'flecha',

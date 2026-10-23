@@ -25,6 +25,7 @@ import { PaginaInicio } from './paginas/PaginaInicio.js';
 import { PaginaNoEncontrada } from './paginas/PaginaNoEncontrada.js';
 import { PaginaRemesas } from './paginas/remesas/PaginaRemesas.js';
 import { PaginaSeguimiento } from './paginas/seguimiento/PaginaSeguimiento.js';
+import { PaginaTurno } from './paginas/turno/PaginaTurno.js';
 import { PaginaUsuarios } from './paginas/usuarios/PaginaUsuarios.js';
 
 /** Rutas de la aplicación. El enrutador y los proveedores se montan en `main.tsx` (o en las pruebas). */
@@ -67,6 +68,14 @@ export function App() {
       <Route element={<RutaProtegida />}>
         <Route element={<Estructura />}>
           <Route index element={<PaginaInicio />} />
+          <Route
+            path="turno"
+            element={
+              <RutaConPermiso permiso="turno.gestionar_propio">
+                <PaginaTurno />
+              </RutaConPermiso>
+            }
+          />
           <Route
             path="remesas"
             element={

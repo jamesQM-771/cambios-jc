@@ -1,6 +1,7 @@
 import { bolivaresDesdePesos, formatearMoneda, multiplicar } from '@cambios-jc/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRef, useState, type SyntheticEvent } from 'react';
+import { Link } from 'react-router';
 
 import { Aviso } from '../../componentes/Aviso.js';
 import { Boton } from '../../componentes/Boton.js';
@@ -142,7 +143,8 @@ export function FormularioRemesa({
   if (!opciones.miTurno) {
     return (
       <Aviso tipo="advertencia">
-        No tienes un turno de caja abierto. Ábrelo antes de registrar una remesa.
+        No tienes un turno de caja abierto. <Link to="/turno">Ábrelo en Mi turno</Link> antes de
+        registrar una remesa.
       </Aviso>
     );
   }

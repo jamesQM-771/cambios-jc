@@ -11,6 +11,7 @@ describe('menú según permisos', () => {
     // El administrador no paga remesas (eso es del digitador), así que no ve la cola.
     expect(etiquetasDe('administrador')).toEqual([
       'Inicio',
+      'Mi turno',
       'Remesas',
       'Clientes',
       'Usuarios',
@@ -21,7 +22,7 @@ describe('menú según permisos', () => {
   });
 
   it('el vendedor vende y atiende clientes; el digitador solo paga', () => {
-    expect(etiquetasDe('vendedor')).toEqual(['Inicio', 'Remesas', 'Clientes']);
+    expect(etiquetasDe('vendedor')).toEqual(['Inicio', 'Mi turno', 'Remesas', 'Clientes']);
     expect(etiquetasDe('digitador')).toEqual(['Inicio', 'Cola de pagos']);
   });
 
