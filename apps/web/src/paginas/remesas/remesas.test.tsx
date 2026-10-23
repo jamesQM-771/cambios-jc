@@ -191,6 +191,9 @@ describe('detalle y acciones', () => {
       [`POST /remesas/${remesa.id}/anular`]: {
         cuerpo: { remesa: { ...remesa, estado: 'anulada' } },
       },
+      [`POST /remesas/${remesa.id}/devolver`]: {
+        cuerpo: { remesa: { ...remesa, estado: 'devuelta' } },
+      },
     });
     const pantalla = renderizarApp('/remesas');
     await pantalla.usuario.click(await screen.findByRole('button', { name: /Abrir remesa 128/ }));
@@ -223,6 +226,64 @@ describe('detalle y acciones', () => {
     expect(api.de('POST', '/remesas/r-1/anular')[0]?.cuerpo).toEqual({
       motivo: 'Error del vendedor',
     });
+  });
+
+  it('el administrador devuelve el dinero de una remesa con incidencia, con motivo', async () => {
+    const { api, usuario } = await abrirDetalle(
+      'administrador',
+      remesaFalsa({ estado: 'con_incidencia' }),
+    );
+
+    await usuario.click(await screen.findByRole('button', { name: 'Devolver el dinero' }));
+    const dialogo = within(await screen.findByRole('dialog', { name: /Devolver el dinero/ }));
+    // Explica cuánto y por dónde sale, antes de pedir nada.
+    expect(dialogo.getByText('COP 162.000')).toBeInTheDocument();
+    expect(dialogo.getByText('Caja principal')).toBeInTheDocument();
+    const confirmar = dialogo.getByRole('button', { name: 'Devolver el dinero' });
+    expect(confirmar).toBeDisabled();
+    await usuario.type(dialogo.getByLabelText('Motivo'), 'El beneficiario no existe');
+    await usuario.click(confirmar);
+
+    await waitFor(() => expect(api.de('POST', '/remesas/r-1/devolver')).toHaveLength(1));
+    expect(api.de('POST', '/remesas/r-1/devolver')[0]?.cuerpo).toEqual({
+      motivo: 'El beneficiario no existe',
+    });
+  });
+
+  it('solo se ofrece devolver en "con incidencia" y solo al administrador', async () => {
+    const vendedor = await abrirDetalle('vendedor', remesaFalsa({ estado: 'con_incidencia' }));
+    await screen.findByRole('heading', { name: /Comprobante N° 128/ });
+    expect(screen.queryByRole('button', { name: 'Devolver el dinero' })).not.toBeInTheDocument();
+    vendedor.unmount();
+    vi.unstubAllGlobals();
+
+    await abrirDetalle('administrador', remesaFalsa({ estado: 'en_cola' }));
+    await screen.findByRole('heading', { name: /Comprobante N° 128/ });
+    expect(screen.queryByRole('button', { name: 'Devolver el dinero' })).not.toBeInTheDocument();
+  });
+
+  it('si el servidor no deja devolver, lo dice dentro del cuadro y no pierde el motivo', async () => {
+    const remesa = remesaFalsa({ estado: 'con_incidencia' });
+    simularApi({
+      'GET /auth/yo': { cuerpo: sesionFalsa('administrador') },
+      'GET /remesas': { cuerpo: { remesas: [remesa] } },
+      'GET /remesas/r-1/historial': { cuerpo: { historial: [] } },
+      'POST /remesas/r-1/devolver': errorApi(
+        409,
+        'ESTADO_INVALIDO',
+        'Esta remesa no tiene un ingreso en el libro de caja.',
+      ),
+    });
+    const { usuario } = renderizarApp('/remesas');
+    await usuario.click(await screen.findByRole('button', { name: /Abrir remesa 128/ }));
+    await usuario.click(await screen.findByRole('button', { name: 'Devolver el dinero' }));
+    const dialogo = within(await screen.findByRole('dialog', { name: /Devolver el dinero/ }));
+    await usuario.type(dialogo.getByLabelText('Motivo'), 'Se cobró dos veces');
+
+    await usuario.click(dialogo.getByRole('button', { name: 'Devolver el dinero' }));
+
+    expect(await dialogo.findByText(/no tiene un ingreso en el libro/)).toBeInTheDocument();
+    expect(dialogo.getByLabelText('Motivo')).toHaveValue('Se cobró dos veces');
   });
 
   it('muestra el historial, el código de seguimiento y la captura cuando existe', async () => {

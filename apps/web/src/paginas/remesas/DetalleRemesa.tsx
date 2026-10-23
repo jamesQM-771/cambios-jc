@@ -6,6 +6,7 @@ import { Aviso } from '../../componentes/Aviso.js';
 import { Boton } from '../../componentes/Boton.js';
 import { BotonCopiar } from '../../componentes/BotonCopiar.js';
 import { Dialogo } from '../../componentes/Dialogo.js';
+import { useNotificar } from '../../componentes/Notificaciones.js';
 import { Esqueleto } from '../../componentes/Pagina.js';
 import { urlApi, mensajeDe } from '../../lib/api.js';
 import { formatearFechaHora, formatearTasa } from '../../lib/formato.js';
@@ -15,6 +16,7 @@ import { useBancosDisponibles, useCliente } from '../../modulos/clientes/consult
 import {
   anularRemesa,
   corregirRemesa,
+  devolverRemesa,
   liberarRemesa,
   verificarPago,
 } from '../../modulos/remesas/api.js';
@@ -35,11 +37,14 @@ const ESTADOS_ANULABLES = ['registrada', 'pago_verificado', 'en_cola'];
 /** Todo lo de una remesa y las acciones que su estado y los permisos de la persona permiten. */
 export function DetalleRemesa({ remesa, alCerrar }: PropiedadesDetalleRemesa) {
   const consultas = useQueryClient();
+  const notificar = useNotificar();
   const { permisos, empresa } = useSesionActual();
   const zona = empresa?.zonaHoraria ?? 'America/Bogota';
   const historial = useHistorialRemesa(remesa.id);
   const [anulando, setAnulando] = useState(false);
   const [motivo, setMotivo] = useState('');
+  const [devolviendo, setDevolviendo] = useState(false);
+  const [motivoDevolucion, setMotivoDevolucion] = useState('');
   const [corrigiendo, setCorrigiendo] = useState(false);
   const [recibo, setRecibo] = useState(false);
 
@@ -53,6 +58,18 @@ export function DetalleRemesa({ remesa, alCerrar }: PropiedadesDetalleRemesa) {
     mutationFn: () => anularRemesa(remesa.id, motivo.trim()),
     onSuccess: async () => {
       setAnulando(false);
+      await refrescar();
+    },
+  });
+
+  const devolver = useMutation({
+    mutationFn: () => devolverRemesa(remesa.id, motivoDevolucion.trim()),
+    onSuccess: async () => {
+      setDevolviendo(false);
+      setMotivoDevolucion('');
+      notificar(
+        `Remesa ${String(remesa.numeroComprobante)} devuelta: el dinero salió de la cuenta.`,
+      );
       await refrescar();
     },
   });
@@ -164,6 +181,11 @@ export function DetalleRemesa({ remesa, alCerrar }: PropiedadesDetalleRemesa) {
         {remesa.estado === 'con_incidencia' && puede('remesa.registrar') && (
           <Boton onClick={() => setCorrigiendo(true)}>Corregir datos de pago</Boton>
         )}
+        {remesa.estado === 'con_incidencia' && puede('remesa.devolver') && (
+          <Boton variante="peligro" onClick={() => setDevolviendo(true)}>
+            Devolver el dinero
+          </Boton>
+        )}
         {remesa.estado === 'tomada' && puede('remesa.liberar') && (
           <Boton
             variante="secundario"
@@ -225,6 +247,50 @@ export function DetalleRemesa({ remesa, alCerrar }: PropiedadesDetalleRemesa) {
             onClick={() => anular.mutate()}
           >
             Anular remesa
+          </Boton>
+        </div>
+      </Dialogo>
+
+      <Dialogo
+        abierto={devolviendo}
+        alCerrar={() => setDevolviendo(false)}
+        titulo="Devolver el dinero al cliente"
+      >
+        <p>
+          Se le devuelven al cliente{' '}
+          <strong className="mono">{formatearMoneda(remesa.montoPesos, 'COP')}</strong>, el monto
+          completo, por la misma cuenta por la que entraron:{' '}
+          <strong>{remesa.cuentaIngreso.nombre}</strong>. La remesa N° {remesa.numeroComprobante}{' '}
+          queda como devuelta y ya no se puede pagar ni anular.
+        </p>
+        {devolver.isError && <Aviso tipo="error">{mensajeDe(devolver.error)}</Aviso>}
+        <div className="campo">
+          <label className="campo__etiqueta" htmlFor="motivo-devolucion">
+            Motivo
+          </label>
+          <textarea
+            id="motivo-devolucion"
+            className="campo__entrada"
+            rows={3}
+            value={motivoDevolucion}
+            onChange={(evento) => setMotivoDevolucion(evento.target.value)}
+          />
+        </div>
+        <div className="acciones acciones--derecha">
+          <Boton
+            variante="secundario"
+            onClick={() => setDevolviendo(false)}
+            disabled={devolver.isPending}
+          >
+            Volver
+          </Boton>
+          <Boton
+            variante="peligro"
+            cargando={devolver.isPending}
+            disabled={motivoDevolucion.trim().length < 3}
+            onClick={() => devolver.mutate()}
+          >
+            Devolver el dinero
           </Boton>
         </div>
       </Dialogo>

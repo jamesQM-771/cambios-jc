@@ -28,6 +28,10 @@ export const verificarPago = (id: string) =>
 export const anularRemesa = (id: string, motivo: string) =>
   api.post<{ remesa: Remesa }>(`/remesas/${id}/anular`, { motivo });
 
+/** Devuelve al cliente el dinero de una remesa con incidencia, por la misma cuenta por la que entró. */
+export const devolverRemesa = (id: string, motivo: string) =>
+  api.post<{ remesa: Remesa }>(`/remesas/${id}/devolver`, { motivo });
+
 export const corregirRemesa = (id: string, medioPagoId: string, nota?: string) =>
   api.post<{ remesa: Remesa }>(`/remesas/${id}/corregir`, { medioPagoId, nota });
 
