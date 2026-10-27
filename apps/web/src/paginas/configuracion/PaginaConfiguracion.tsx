@@ -9,6 +9,7 @@ const SECCIONES = [
   { ruta: 'denominaciones', etiqueta: 'Denominaciones' },
   { ruta: 'lineas-negocio', etiqueta: 'Líneas de negocio' },
   { ruta: 'cuentas', etiqueta: 'Cuentas' },
+  { ruta: 'categorias-gasto', etiqueta: 'Categorías de gasto' },
   { ruta: 'tasas', etiqueta: 'Tasas' },
 ] as const;
 
@@ -23,7 +24,10 @@ export function PaginaConfiguracion() {
     <>
       <div className="cabecera-pagina">
         <h1>Configuración</h1>
-        <p>Sucursales, cajas, denominaciones, líneas de negocio, bancos, cuentas y tasas.</p>
+        <p>
+          Sucursales, cajas, denominaciones, líneas de negocio, bancos, cuentas, categorías de gasto
+          y tasas.
+        </p>
       </div>
       <nav className="subnav" aria-label="Secciones de configuración">
         <ul className="subnav__lista">

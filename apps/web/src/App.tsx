@@ -4,6 +4,7 @@ import { Estructura } from './componentes/Estructura.js';
 import { RutaConPermiso } from './componentes/RutaConPermiso.js';
 import { RutaProtegida } from './componentes/RutaProtegida.js';
 import { PaginaConfiguracion } from './paginas/configuracion/PaginaConfiguracion.js';
+import { PaginaCategoriasGasto } from './paginas/configuracion/categorias-gasto/PaginaCategoriasGasto.js';
 import { PaginaBancos } from './paginas/configuracion/bancos/PaginaBancos.js';
 import { PaginaSucursales } from './paginas/configuracion/sucursales/PaginaSucursales.js';
 import { PaginaCajas } from './paginas/configuracion/cajas/PaginaCajas.js';
@@ -158,6 +159,7 @@ export function App() {
             <Route path="denominaciones" element={<PaginaDenominaciones />} />
             <Route path="lineas-negocio" element={<PaginaLineasNegocio />} />
             <Route path="cuentas" element={<PaginaCuentas />} />
+            <Route path="categorias-gasto" element={<PaginaCategoriasGasto />} />
             <Route path="tasas" element={<PaginaTasas />} />
           </Route>
           <Route
