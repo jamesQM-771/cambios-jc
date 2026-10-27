@@ -22,6 +22,7 @@ import { PaginaClientes } from './paginas/clientes/PaginaClientes.js';
 import { PaginaCola } from './paginas/cola/PaginaCola.js';
 import { PaginaEmpresa } from './paginas/empresa/PaginaEmpresa.js';
 import { PaginaGastos } from './paginas/gastos/PaginaGastos.js';
+import { PaginaJornada } from './paginas/jornada/PaginaJornada.js';
 import { PaginaInicio } from './paginas/PaginaInicio.js';
 import { PaginaNoEncontrada } from './paginas/PaginaNoEncontrada.js';
 import { PaginaRemesas } from './paginas/remesas/PaginaRemesas.js';
@@ -99,6 +100,14 @@ export function App() {
             element={
               <RutaConPermiso permiso="gasto.registrar">
                 <PaginaGastos />
+              </RutaConPermiso>
+            }
+          />
+          <Route
+            path="jornada"
+            element={
+              <RutaConPermiso permiso="jornada.cerrar">
+                <PaginaJornada />
               </RutaConPermiso>
             }
           />

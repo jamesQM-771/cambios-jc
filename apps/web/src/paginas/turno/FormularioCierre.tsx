@@ -17,7 +17,9 @@ import {
 } from './ConteoPorDenominacion.js';
 
 interface Propiedades {
-  turno: Turno;
+  turno: Pick<Turno, 'id' | 'caja'>;
+  /** Se pide el motivo cuando se cierra el turno de otra persona (turno olvidado). */
+  pedirMotivo?: boolean;
   monedas: readonly MonedaDeCaja[];
   alCancelar: () => void;
   alCerrar: (turno: Turno) => void;
@@ -27,10 +29,17 @@ interface Propiedades {
  * Cerrar el turno: se cuenta el efectivo y el servidor lo compara con lo esperado (§5.16). Si no
  * cuadra exige una explicación por moneda; por eso el campo está a la vista desde el principio.
  */
-export function FormularioCierre({ turno, monedas, alCancelar, alCerrar }: Propiedades) {
+export function FormularioCierre({
+  turno,
+  pedirMotivo = false,
+  monedas,
+  alCancelar,
+  alCerrar,
+}: Propiedades) {
   const consultas = useQueryClient();
   const [cantidades, setCantidades] = useState<Cantidades>({});
   const [explicaciones, setExplicaciones] = useState<Record<string, string>>({});
+  const [motivo, setMotivo] = useState('');
 
   const cerrar = useMutation({
     mutationFn: () =>
@@ -42,6 +51,7 @@ export function FormularioCierre({ turno, monedas, alCancelar, alCerrar }: Propi
             texto: (explicaciones[moneda.moneda] ?? '').trim(),
           }))
           .filter((explicacion) => explicacion.texto !== ''),
+        ...(pedirMotivo ? { motivo: motivo.trim() } : {}),
       }),
     onSuccess: async ({ turno: cerrado }) => {
       await Promise.all([
@@ -67,6 +77,18 @@ export function FormularioCierre({ turno, monedas, alCancelar, alCerrar }: Propi
         explicar la diferencia, y quedará a tu nombre.
       </p>
 
+      {pedirMotivo && (
+        <Campo
+          etiqueta="Motivo del cierre"
+          ayuda="Estás cerrando el turno de otra persona. Explica por qué."
+          maxLength={300}
+          autoComplete="off"
+          value={motivo}
+          onChange={(evento) => setMotivo(evento.target.value)}
+          error={delServidor.motivo}
+        />
+      )}
+
       {monedas.map((moneda) => (
         <div key={moneda.moneda}>
           <ConteoPorDenominacion
@@ -89,15 +111,20 @@ export function FormularioCierre({ turno, monedas, alCancelar, alCerrar }: Propi
 
       {delServidor.explicaciones && <Aviso tipo="error">{delServidor.explicaciones}</Aviso>}
       {delServidor.conteos && <Aviso tipo="error">{delServidor.conteos}</Aviso>}
-      {cerrar.isError && !delServidor.explicaciones && !delServidor.conteos && (
-        <Aviso tipo="error">{mensajeDe(cerrar.error)}</Aviso>
-      )}
+      {cerrar.isError &&
+        !delServidor.explicaciones &&
+        !delServidor.conteos &&
+        !delServidor.motivo && <Aviso tipo="error">{mensajeDe(cerrar.error)}</Aviso>}
 
       <div className="acciones acciones--derecha">
         <Boton variante="secundario" onClick={alCancelar} disabled={cerrar.isPending}>
           Cancelar
         </Boton>
-        <Boton type="submit" cargando={cerrar.isPending}>
+        <Boton
+          type="submit"
+          cargando={cerrar.isPending}
+          disabled={pedirMotivo && motivo.trim().length < 3}
+        >
           Cerrar turno
         </Boton>
       </div>

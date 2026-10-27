@@ -61,6 +61,14 @@ export const ENTRADAS_MENU: readonly EntradaMenu[] = [
     permiso: 'gasto.registrar',
   },
   {
+    ruta: '/jornada',
+    grupo: 'Operación',
+    icono: 'panel',
+    etiqueta: 'Jornada',
+    descripcion: 'Cerrar el día: turnos, arqueo de cuentas y resumen',
+    permiso: 'jornada.cerrar',
+  },
+  {
     ruta: '/clientes',
     grupo: 'Operación',
     icono: 'usuarios',

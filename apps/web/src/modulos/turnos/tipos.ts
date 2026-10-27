@@ -72,6 +72,8 @@ export interface DatosAbrirTurno {
 export interface DatosCerrarTurno {
   conteos: ConteoEnviado[];
   explicaciones: { moneda: string; texto: string }[];
+  /** Obligatorio cuando el administrador cierra el turno de otra persona. */
+  motivo?: string;
 }
 
 export const ETIQUETAS_RESULTADO: Record<ResultadoArqueo, string> = {

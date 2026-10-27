@@ -40,5 +40,5 @@ Cada una termina con pruebas, `npm run check` en verde y commit.
 | 3.6 | Devoluciones de remesas | Hecha |
 | 3.7 | Cierre de turno con arqueo | Hecha |
 | 3.8 | Cierre de jornada, resumen y reapertura | Hecha |
-| 3.9 | Pantallas (por partes: Mi turno ✓ · devolver ✓ · traslados ✓ · gastos ✓ · jornada · categorías) | En curso |
+| 3.9 | Pantallas (por partes: Mi turno ✓ · devolver ✓ · traslados ✓ · gastos ✓ · jornada ✓ · categorías) | En curso |
 | 3.10 | Pruebas de extremo a extremo y cierre | Pendiente |
