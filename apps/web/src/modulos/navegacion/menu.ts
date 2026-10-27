@@ -45,6 +45,14 @@ export const ENTRADAS_MENU: readonly EntradaMenu[] = [
     permiso: 'remesa.registrar',
   },
   {
+    ruta: '/traslados',
+    grupo: 'Operación',
+    icono: 'flecha',
+    etiqueta: 'Traslados',
+    descripcion: 'Pasar dinero entre la caja, la bóveda y los bancos',
+    permiso: 'traslado.registrar',
+  },
+  {
     ruta: '/clientes',
     grupo: 'Operación',
     icono: 'usuarios',

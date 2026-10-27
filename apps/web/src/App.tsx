@@ -25,6 +25,7 @@ import { PaginaInicio } from './paginas/PaginaInicio.js';
 import { PaginaNoEncontrada } from './paginas/PaginaNoEncontrada.js';
 import { PaginaRemesas } from './paginas/remesas/PaginaRemesas.js';
 import { PaginaSeguimiento } from './paginas/seguimiento/PaginaSeguimiento.js';
+import { PaginaTraslados } from './paginas/traslados/PaginaTraslados.js';
 import { PaginaTurno } from './paginas/turno/PaginaTurno.js';
 import { PaginaUsuarios } from './paginas/usuarios/PaginaUsuarios.js';
 
@@ -81,6 +82,14 @@ export function App() {
             element={
               <RutaConPermiso permiso="remesa.registrar">
                 <PaginaRemesas />
+              </RutaConPermiso>
+            }
+          />
+          <Route
+            path="traslados"
+            element={
+              <RutaConPermiso permiso="traslado.registrar">
+                <PaginaTraslados />
               </RutaConPermiso>
             }
           />

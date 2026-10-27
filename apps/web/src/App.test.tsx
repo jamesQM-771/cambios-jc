@@ -112,6 +112,7 @@ describe('menús por rol', () => {
       'Inicio',
       'Mi turno',
       'Remesas',
+      'Traslados',
       'Clientes',
       'Usuarios',
       'Empresa',
@@ -136,7 +137,7 @@ describe('menús por rol', () => {
       within(menu)
         .getAllByRole('link')
         .map((enlace) => enlace.textContent),
-    ).toEqual(['Inicio', 'Mi turno', 'Remesas', 'Clientes']);
+    ).toEqual(['Inicio', 'Mi turno', 'Remesas', 'Traslados', 'Clientes']);
   });
 
   it('el digitador no ve menú: entra directo a su cola, en estructura mínima', async () => {
@@ -166,7 +167,7 @@ describe('menús por rol', () => {
       unmount();
     }
 
-    expect(vistos).toEqual({ administrador: 8, vendedor: 4, digitador: 0 });
+    expect(vistos).toEqual({ administrador: 9, vendedor: 5, digitador: 0 });
   });
 
   it('el encabezado muestra la empresa, el nombre y el rol de la persona', async () => {

@@ -13,6 +13,7 @@ describe('menú según permisos', () => {
       'Inicio',
       'Mi turno',
       'Remesas',
+      'Traslados',
       'Clientes',
       'Usuarios',
       'Empresa',
@@ -22,7 +23,13 @@ describe('menú según permisos', () => {
   });
 
   it('el vendedor vende y atiende clientes; el digitador solo paga', () => {
-    expect(etiquetasDe('vendedor')).toEqual(['Inicio', 'Mi turno', 'Remesas', 'Clientes']);
+    expect(etiquetasDe('vendedor')).toEqual([
+      'Inicio',
+      'Mi turno',
+      'Remesas',
+      'Traslados',
+      'Clientes',
+    ]);
     expect(etiquetasDe('digitador')).toEqual(['Inicio', 'Cola de pagos']);
   });
 
