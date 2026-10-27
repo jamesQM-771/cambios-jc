@@ -138,26 +138,28 @@ teléfono solo necesita la dirección de la web. Si Windows pregunta por el Fire
 
 ## Comandos
 
-| Comando                            | Qué hace                                                                       |
-| ---------------------------------- | ------------------------------------------------------------------------------ |
-| `npm run iniciar`                  | API compilada + web, para usar y probar el sistema (antes: `npm run compilar`) |
-| `npm run dev`                      | API y web en modo desarrollo                                                   |
-| `npm run db:migrate`               | Aplica migraciones (desde la tarea 0.4)                                        |
-| `npm run db:seed`                  | Datos ficticios y administrador inicial (desde la tarea 0.4)                   |
-| `npm run test`                     | Pruebas                                                                        |
-| `npm run e2e`                      | Recorrido de una remesa en un navegador real (compila antes; ver abajo)        |
-| `npm run lint`                     | ESLint + formato con Prettier                                                  |
-| `npm run typecheck`                | Verificación de tipos                                                          |
-| `npm run check`                    | lint + typecheck + pruebas (obligatorio antes de cada commit)                  |
-| `npm run build`                    | Compila todos los paquetes (`shared` primero)                                  |
-| `npm run start -w @cambios-jc/api` | Arranca la API ya compilada (tras `npm run build`)                             |
-| `npm run format`                   | Aplica el formato de Prettier                                                  |
+| Comando                            | Qué hace                                                                                     |
+| ---------------------------------- | -------------------------------------------------------------------------------------------- |
+| `npm run iniciar`                  | API compilada + web, para usar y probar el sistema (antes: `npm run compilar`)               |
+| `npm run dev`                      | API y web en modo desarrollo                                                                 |
+| `npm run db:migrate`               | Aplica migraciones (desde la tarea 0.4)                                                      |
+| `npm run db:seed`                  | Datos ficticios y administrador inicial (desde la tarea 0.4)                                 |
+| `npm run test`                     | Pruebas                                                                                      |
+| `npm run e2e`                      | Recorrido de una remesa y del cierre del día en un navegador real (compila antes; ver abajo) |
+| `npm run lint`                     | ESLint + formato con Prettier                                                                |
+| `npm run typecheck`                | Verificación de tipos                                                                        |
+| `npm run check`                    | lint + typecheck + pruebas (obligatorio antes de cada commit)                                |
+| `npm run build`                    | Compila todos los paquetes (`shared` primero)                                                |
+| `npm run start -w @cambios-jc/api` | Arranca la API ya compilada (tras `npm run build`)                                           |
+| `npm run format`                   | Aplica el formato de Prettier                                                                |
 
 ## Pruebas de extremo a extremo
 
 `npm run e2e` abre un navegador real (Chromium) y recorre una remesa completa: el vendedor la
 registra y emite el recibo, el digitador la paga desde un teléfono, el vendedor recibe el aviso en
-vivo y el cliente la consulta con su código. Usa la API compilada y la base `*_pruebas`, nunca la de
+vivo y el cliente la consulta con su código. Antes, el vendedor abre su turno en Mi turno; después
+registra un gasto y un traslado, cierra el turno con arqueo y el administrador cierra la jornada.
+Usa la API compilada y la base `*_pruebas` (que rehace desde cero en cada corrida), nunca la de
 desarrollo. No forma parte de `npm run check` porque necesita compilar y un navegador.
 
 La primera vez: `npm run navegadores -w @cambios-jc/e2e` (descarga Chromium, unos 120 MB). Si falla,

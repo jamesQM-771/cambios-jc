@@ -64,6 +64,23 @@ test.describe.serial('recorrido de una remesa', () => {
     await vendedor.close();
   });
 
+  test('sin turno abierto el vendedor no registra remesas; abre su turno desde Mi turno', async () => {
+    await paginaVendedor.goto('/remesas');
+    await paginaVendedor.getByRole('button', { name: 'Nueva remesa' }).click();
+    await expect(paginaVendedor.getByText(/No tienes un turno de caja abierto/)).toBeVisible();
+    await paginaVendedor.goto('/turno');
+
+    await paginaVendedor
+      .getByLabel('Caja', { exact: true })
+      .selectOption({ label: `${datos.caja.puesto} · ${datos.caja.sucursal}` });
+    // La caja arranca vacía: se cuenta cero y se abre.
+    await paginaVendedor.getByRole('button', { name: 'Abrir turno' }).click();
+
+    await expect(
+      paginaVendedor.getByRole('heading', { name: `Turno abierto en ${datos.caja.puesto}` }),
+    ).toBeVisible();
+  });
+
   test('el vendedor registra la remesa y se emite el recibo', async () => {
     await paginaVendedor.goto('/remesas');
     await expect(paginaVendedor.getByRole('heading', { name: 'Remesas' })).toBeVisible();
@@ -166,6 +183,85 @@ test.describe.serial('recorrido de una remesa', () => {
     await detalle.getByRole('button', { name: 'Recibo' }).click();
     await paginaVendedor.getByRole('button', { name: 'Emitir e imprimir' }).click();
     await expect(paginaVendedor.getByRole('article', { name: /copia/ })).toContainText('COPIA');
+  });
+
+  test('el vendedor registra un gasto y un traslado a la bóveda, y el libro los descuenta de su caja', async () => {
+    await paginaVendedor.goto('/gastos');
+    await paginaVendedor.getByRole('button', { name: 'Nuevo gasto' }).click();
+    const gasto = paginaVendedor.getByRole('dialog', { name: 'Nuevo gasto' });
+    await gasto.getByLabel('Categoría').selectOption({ label: datos.categoriaGasto });
+    await gasto.getByLabel('Descripción').fill('Taxi al banco');
+    await gasto.getByLabel('Monto (COP)').fill('10000');
+    await gasto.getByRole('button', { name: 'Registrar gasto' }).click();
+    await expect(paginaVendedor.getByText('Gasto registrado.')).toBeVisible();
+
+    await paginaVendedor.goto('/traslados');
+    await paginaVendedor.getByRole('button', { name: 'Nuevo traslado' }).click();
+    const traslado = paginaVendedor.getByRole('dialog', { name: 'Nuevo traslado' });
+    await traslado
+      .getByLabel('Sale de')
+      .selectOption({ label: `${datos.caja.cuentaEfectivo} · efectivo (COP)` });
+    await traslado
+      .getByLabel('Entra a')
+      .selectOption({ label: `${datos.caja.boveda} · efectivo (COP)` });
+    await traslado.getByLabel('Monto (COP)').fill('20000');
+    await traslado.getByRole('button', { name: 'Trasladar' }).click();
+    await expect(paginaVendedor.getByText('Traslado registrado.')).toBeVisible();
+  });
+
+  test('el vendedor cierra su turno contando el efectivo y el arqueo cuadra', async () => {
+    // Entró 50.000 de la remesa en efectivo, salieron 10.000 de gasto y 20.000 al trasladar: 20.000.
+    await paginaVendedor.goto('/turno');
+    await paginaVendedor.getByRole('button', { name: 'Cerrar turno' }).click();
+    const cierre = paginaVendedor.getByRole('dialog', { name: 'Cerrar turno' });
+    await cierre.getByLabel('Cantidad de COP 10.000').fill('2');
+    await cierre.getByRole('button', { name: 'Cerrar turno' }).click();
+
+    await expect(paginaVendedor.getByRole('heading', { name: 'Turno cerrado' })).toBeVisible();
+    await expect(
+      paginaVendedor.getByRole('table', { name: 'Arqueo del cierre' }).getByText('Cuadrado'),
+    ).toBeVisible();
+  });
+
+  test('el administrador cierra la jornada y ve el resumen del día', async () => {
+    const admin = await contexto(browser, datos.tokens.administrador);
+    const pagina = await admin.newPage();
+    await pagina.goto('/jornada');
+    const fila = pagina.locator('tr', { hasText: datos.caja.sucursal });
+    await expect(fila).toContainText('Abierta');
+    await fila.getByRole('button', { name: /Abrir la jornada/ }).click();
+
+    const jornada = pagina.getByRole('dialog', { name: 'Jornada' });
+    // Sin turnos abiertos: ya se puede cerrar. Se reporta el saldo de cada cuenta sin caja; la
+    // explicación solo cuenta cuando hay diferencia, y si cuadra el servidor la ignora.
+    await expect(jornada.getByText('No hay turnos abiertos ni pagos a medias.')).toBeVisible();
+    await jornada
+      .getByLabel(/^Saldo real de /)
+      .first()
+      .waitFor();
+    const campos = jornada.getByLabel(/^Saldo real de /);
+    for (let i = 0; i < (await campos.count()); i += 1) {
+      const campo = campos.nth(i);
+      const nombre = await campo.evaluate(
+        (el) => (el as HTMLInputElement).labels?.[0]?.textContent ?? '',
+      );
+      await campo.fill(nombre.includes(datos.caja.boveda) ? '20000' : '0');
+    }
+    const explicaciones = jornada.getByLabel(/^Explicación de la diferencia en /);
+    for (let i = 0; i < (await explicaciones.count()); i += 1) {
+      await explicaciones.nth(i).fill('Cierre de la prueba E2E');
+    }
+    await jornada.getByRole('button', { name: 'Cerrar jornada' }).click();
+
+    await expect(pagina.getByText('Jornada cerrada.')).toBeVisible();
+    await expect(jornada.getByRole('button', { name: 'Reabrir la jornada' })).toBeVisible();
+    await expect(
+      jornada.locator('.resumen-dia > div', { hasText: 'Gastos operativos' }),
+    ).toContainText('COP 10.000');
+    await expect(jornada.locator('.resumen-dia > div', { hasText: 'Traslados' })).toContainText(
+      '1',
+    );
+    await admin.close();
   });
 
   test('el cliente consulta su envío con el código, sin iniciar sesión y sin ver datos de nadie', async () => {

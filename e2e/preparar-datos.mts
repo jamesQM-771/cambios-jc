@@ -9,7 +9,6 @@ import { fileURLToPath } from 'node:url';
 
 import { crearPrisma } from '../apps/api/src/lib/prisma.js';
 import { abrirSesion, asegurarEmpresa, crearUsuarioDePrueba } from '../apps/api/test/auth.js';
-import { abrirTurnoDePrueba } from '../apps/api/test/turnos.js';
 
 import { leerEnv } from './lanzar.mjs';
 
@@ -20,6 +19,9 @@ export interface DatosE2e {
   cuentaOrigen: string;
   /** Tasa de venta publicada para la línea (la usa la prueba para calcular lo esperado). */
   tasa: string;
+  /** Lo que el recorrido de caja busca en pantalla (fase 3): sucursal, caja, bóveda y categoría. */
+  caja: { sucursal: string; puesto: string; cuentaEfectivo: string; boveda: string };
+  categoriaGasto: string;
 }
 
 const env = leerEnv();
@@ -68,11 +70,39 @@ try {
   await prisma.tasa.create({
     data: { lineaNegocioId: linea.id, tasaVenta: '3.760000', publicadaPorId: administrador.id },
   });
-  const caja = await prisma.cuentaDinero.create({
-    data: { nombre: `Caja E2E ${unico}`, tipo: 'caja', moneda: 'COP', sucursalId: sucursal.id },
+  // La caja (el puesto) y su cuenta de efectivo. El turno NO se abre aquí: lo abre el vendedor desde
+  // la pantalla Mi turno, como parte del recorrido (fase 3, tarea 3.10).
+  const puesto = await prisma.caja.create({
+    data: { nombre: `Puesto E2E ${unico}`, sucursalId: sucursal.id },
   });
-  // Desde la tarea 3.3 se vende dentro de un turno; la pantalla para abrirlo llega en la 3.9.
-  await abrirTurnoDePrueba(prisma, { usuarioId: vendedor.id, cuentaCajaId: caja.id });
+  const cuentaEfectivo = `Efectivo E2E ${unico}`;
+  await prisma.cuentaDinero.create({
+    data: {
+      nombre: cuentaEfectivo,
+      tipo: 'caja',
+      moneda: 'COP',
+      sucursalId: sucursal.id,
+      cajaId: puesto.id,
+    },
+  });
+  // La bóveda: efectivo de la sucursal sin puesto.
+  const boveda = `Bóveda E2E ${unico}`;
+  await prisma.cuentaDinero.create({
+    data: { nombre: boveda, tipo: 'caja', moneda: 'COP', sucursalId: sucursal.id },
+  });
+  // Para contar 2 billetes de 10.000 al cerrar el turno, esa denominación tiene que existir activa.
+  const hayDiezMil = await prisma.denominacion.findFirst({
+    where: { moneda: 'COP', valor: '10000', activa: true },
+  });
+  if (!hayDiezMil) {
+    await prisma.denominacion.create({ data: { moneda: 'COP', valor: '10000' } });
+  }
+  const categoriaGasto = 'Transporte E2E';
+  await prisma.categoriaGasto.upsert({
+    where: { nombre: categoriaGasto },
+    update: { activa: true },
+    create: { nombre: categoriaGasto },
+  });
   const cuentaOrigen = `Banco VES E2E ${unico}`;
   await prisma.cuentaDinero.create({
     data: {
@@ -131,6 +161,8 @@ try {
     },
     cuentaOrigen,
     tasa: '3.76',
+    caja: { sucursal: sucursal.nombre, puesto: puesto.nombre, cuentaEfectivo, boveda },
+    categoriaGasto,
   };
   writeFileSync(fileURLToPath(new URL('./.datos.json', import.meta.url)), JSON.stringify(datos));
   console.log('Datos de extremo a extremo listos.');

@@ -14,7 +14,9 @@ export default function preparar(): void {
   // En Windows los .cmd solo se ejecutan con shell; los argumentos son fijos, no vienen de nadie.
   const opciones = { env: entorno, stdio: 'inherit', shell: true } as const;
 
-  execFileSync('npx', ['prisma', 'migrate', 'deploy'], {
+  // La base de pruebas se rehace desde cero: las pruebas de integración dejan operaciones sueltas
+  // (sin transferencia) que romperían el listado de remesas. Solo toca la base *_pruebas.
+  execFileSync('npx', ['prisma', 'migrate', 'reset', '--force'], {
     ...opciones,
     cwd: join(raiz, 'apps', 'api'),
   });

@@ -41,4 +41,34 @@ Cada una termina con pruebas, `npm run check` en verde y commit.
 | 3.7 | Cierre de turno con arqueo | Hecha |
 | 3.8 | Cierre de jornada, resumen y reapertura | Hecha |
 | 3.9 | Pantallas (Mi turno, devolver, traslados, gastos, jornada y categorías) | Hecha |
-| 3.10 | Pruebas de extremo a extremo y cierre | Pendiente |
+| 3.10 | Pruebas de extremo a extremo y cierre | Hecha |
+
+## Cierre de la fase
+
+**Qué se hizo.** Cada vendedor abre su turno contando el efectivo por denominación, vende (la remesa
+queda ligada a su turno), registra gastos y traslados, y cierra el turno con arqueo sin tolerancia;
+el administrador cierra la jornada contando bóveda, bancos y billeteras, ve el resumen del día y puede
+reabrirla con motivo. Todo el dinero pasa por un libro de movimientos de solo inserción (D120) del que
+salen los saldos y los esperados. Hay pantallas para todo: Mi turno, Remesas (con devolución), Traslados,
+Gastos, Jornada y Categorías de gasto (decisiones D116 a D134).
+
+**Cómo probarla.**
+
+- `npm run check` (lint, tipos y 1196 pruebas) debe quedar en verde.
+- `npm run e2e` recorre en un navegador real: abrir turno desde Mi turno, remesa con recibo, pago del
+  digitador en un teléfono, reimpresión, gasto de 10.000, traslado de 20.000 a la bóveda, cierre de
+  turno (arqueo cuadrado en 20.000) y cierre de jornada con su resumen, más los permisos por rol.
+  9 pasos, todos en verde. La primera vez: `npm run navegadores -w @cambios-jc/e2e`.
+- A mano: `npm run compilar` y `npm run iniciar` (con `npm run iniciar:red` se ve desde el celular).
+
+**Pendiente y límites conocidos.**
+
+- Las pantallas nuevas se probaron con pruebas automáticas y con el e2e, pero nadie las ha usado todavía
+  a mano en el celular ni en la impresora térmica.
+- Un movimiento del administrador sin turno después de cerrar la jornada no se bloquea (D128).
+- Un movimiento justo en el instante de cerrar un turno puede aparecer como diferencia en la siguiente
+  apertura (D127).
+- La decisión 10 (cuántas cajas y vendedores a la vez) sigue sin respuesta; el diseño admite las que sean.
+- La nota de Obsidian del proyecto no se pudo actualizar (el servidor local no conectaba): pendiente.
+- Fuera de alcance, para la fase 4: ganancia neta por remesa (costo promedio de los bolívares) y
+  contrapartes.
