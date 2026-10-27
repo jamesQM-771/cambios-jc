@@ -53,6 +53,14 @@ export const ENTRADAS_MENU: readonly EntradaMenu[] = [
     permiso: 'traslado.registrar',
   },
   {
+    ruta: '/gastos',
+    grupo: 'Operación',
+    icono: 'flecha',
+    etiqueta: 'Gastos',
+    descripcion: 'Registrar lo que se paga con el dinero del negocio',
+    permiso: 'gasto.registrar',
+  },
+  {
     ruta: '/clientes',
     grupo: 'Operación',
     icono: 'usuarios',

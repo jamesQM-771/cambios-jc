@@ -14,6 +14,7 @@ describe('menú según permisos', () => {
       'Mi turno',
       'Remesas',
       'Traslados',
+      'Gastos',
       'Clientes',
       'Usuarios',
       'Empresa',
@@ -28,6 +29,7 @@ describe('menú según permisos', () => {
       'Mi turno',
       'Remesas',
       'Traslados',
+      'Gastos',
       'Clientes',
     ]);
     expect(etiquetasDe('digitador')).toEqual(['Inicio', 'Cola de pagos']);
