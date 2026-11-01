@@ -28,6 +28,7 @@ El proyecto se entrega en 14 fases agrupadas en 4 versiones (detalle en `docs/PR
 | 4. Inventario    | Completa: contrapartes con cuenta corriente, compras de bolívares, costo promedio, ganancia por remesa y posición del día |
 | 5. Divisas       | Completa: compra y venta de dólares en caja con billetes, inventario, ganancia y recibo                                   |
 | 6. Facturación   | Omitida: opcional y desactivada en Cambios JC (D149)                                                                      |
+| 7. Cumplimiento  | Completa con umbrales apagados hasta definirlos: ficha, nivel de riesgo, lista restrictiva, alertas y exporte CSV         |
 
 Cada fase vive en su propia rama (`fase-0-base`, `fase-1-configuracion`…) y se fusiona a `main` al cerrarla.
 
