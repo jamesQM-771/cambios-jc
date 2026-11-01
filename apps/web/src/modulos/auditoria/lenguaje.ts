@@ -80,6 +80,13 @@ export const FRASES_ACCION: Record<string, string> = {
   'medio_pago.crear': 'agregó un medio de pago a un cliente',
   'medio_pago.desactivar': 'desactivó un medio de pago',
   'medio_pago.reactivar': 'reactivó un medio de pago',
+  'contraparte.crear': 'registró una contraparte',
+  'contraparte.editar': 'editó una contraparte',
+  'contraparte.movimiento': 'anotó un movimiento en la cuenta corriente de una contraparte',
+  'contraparte.anular_movimiento': 'anuló un movimiento de la cuenta corriente de una contraparte',
+  'compra.registrar': 'registró una compra de divisa a una contraparte',
+  'compra.anular': 'anuló una compra de divisa',
+  'inventario.ajustar': 'ajustó el inventario de una divisa',
   'seed.crear': 'creó los datos iniciales del sistema',
   'usuario.restablecer_acceso_emergencia':
     'restableció el acceso de un administrador desde el servidor',
@@ -105,6 +112,9 @@ export const ETIQUETAS_ENTIDAD: Record<string, string> = {
   categoria_gasto: 'Categorías de gasto',
   cliente: 'Clientes',
   medio_pago: 'Medios de pago',
+  contraparte: 'Contrapartes',
+  compra: 'Compras de divisa',
+  inventario: 'Inventario de divisas',
 };
 
 /** Nombre legible de los campos que aparecen en el antes y el después. */

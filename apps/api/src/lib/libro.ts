@@ -24,6 +24,8 @@ export interface DatosMovimiento {
   trasladoId?: string | undefined;
   /** Gasto o retiro del dueño que lo causó. */
   gastoId?: string | undefined;
+  /** Movimiento de cuenta corriente con una contraparte que movió este dinero. */
+  movimientoContraparteId?: string | undefined;
   turnoId?: string | null | undefined;
   /** El movimiento que este deshace (anulaciones y correcciones): se revierte una sola vez. */
   revierteId?: string | undefined;
@@ -49,6 +51,7 @@ export async function registrarMovimiento(
       operacionId: datos.operacionId ?? null,
       trasladoId: datos.trasladoId ?? null,
       gastoId: datos.gastoId ?? null,
+      movimientoContraparteId: datos.movimientoContraparteId ?? null,
       turnoId: datos.turnoId ?? null,
       revierteId: datos.revierteId ?? null,
       usuarioId: datos.usuarioId,

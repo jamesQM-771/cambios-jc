@@ -129,6 +129,12 @@ model CuentaDinero {
 
   saldosJornada SaldoCuentaJornada[]
 
+  /// Persona a cuyo nombre está la cuenta, cuando es una contraparte del negocio (§5.9, D137).
+  contraparteTitularId String?      @map("contraparte_titular_id") @db.Uuid
+  contraparteTitular   Contraparte? @relation(fields: [contraparteTitularId], references: [id], onDelete: Restrict)
+
+  movimientosContraparte MovimientoContraparte[]
+
   @@map("cuenta_dinero")
 }
 
@@ -252,6 +258,9 @@ model Usuario {
 
   jornadasCerradas Jornada[]       @relation("JornadaCerradaPor")
   eventosJornada   EventoJornada[] @relation("EventoJornadaUsuario")
+
+  contrapartesCreadas    Contraparte[]
+  movimientosContraparte MovimientoContraparte[]
 
   @@map("usuario")
 }
@@ -576,6 +585,8 @@ model Turno {
   traslados   Traslado[]
   gastos      Gasto[]
 
+  movimientosContraparte MovimientoContraparte[]
+
   @@index([jornadaId])
   @@index([cajaId, abiertoEn])
   @@map("turno")
@@ -647,6 +658,10 @@ enum OrigenMovimiento {
   retiro_dueno
   /// Deshace un gasto o retiro anulado.
   gasto_anulacion
+  /// Dinero que entra o sale por un movimiento de cuenta corriente con una contraparte.
+  contraparte
+  /// Deshace el dinero de un movimiento de contraparte anulado.
+  contraparte_anulacion
 
   @@map("origen_movimiento")
 }
@@ -655,35 +670,39 @@ enum OrigenMovimiento {
 /// cuenta es la suma de sus entradas menos sus salidas. Es de solo inserción: un error se corrige con
 /// un movimiento contrario que apunta al original (`revierteId`), nunca editando ni borrando.
 model MovimientoCuenta {
-  id          String            @id @default(uuid(7)) @db.Uuid
-  cuentaId    String            @map("cuenta_id") @db.Uuid
-  cuenta      CuentaDinero      @relation(fields: [cuentaId], references: [id], onDelete: Restrict)
-  sentido     SentidoMovimiento
+  id                      String                 @id @default(uuid(7)) @db.Uuid
+  cuentaId                String                 @map("cuenta_id") @db.Uuid
+  cuenta                  CuentaDinero           @relation(fields: [cuentaId], references: [id], onDelete: Restrict)
+  sentido                 SentidoMovimiento
   /// Siempre positivo; el sentido dice si entra o sale. En la moneda de la cuenta.
-  monto       Decimal           @db.Decimal(18, 3)
-  origen      OrigenMovimiento
-  operacionId String?           @map("operacion_id") @db.Uuid
-  operacion   Operacion?        @relation(fields: [operacionId], references: [id], onDelete: Restrict)
+  monto                   Decimal                @db.Decimal(18, 3)
+  origen                  OrigenMovimiento
+  operacionId             String?                @map("operacion_id") @db.Uuid
+  operacion               Operacion?             @relation(fields: [operacionId], references: [id], onDelete: Restrict)
   /// Turno en el que ocurrió, si lo hay (se llena desde la tarea 3.3).
-  turnoId     String?           @map("turno_id") @db.Uuid
-  turno       Turno?            @relation(fields: [turnoId], references: [id], onDelete: Restrict)
+  turnoId                 String?                @map("turno_id") @db.Uuid
+  turno                   Turno?                 @relation(fields: [turnoId], references: [id], onDelete: Restrict)
   /// El movimiento que este deshace; cada movimiento se revierte, como mucho, una vez.
-  revierteId  String?           @unique @map("revierte_id") @db.Uuid
+  revierteId              String?                @unique @map("revierte_id") @db.Uuid
   /// Traslado del que forma parte (cada traslado tiene dos movimientos: una salida y una entrada).
-  gastoId     String?           @map("gasto_id") @db.Uuid
-  gasto       Gasto?            @relation(fields: [gastoId], references: [id], onDelete: Restrict)
-  trasladoId  String?           @map("traslado_id") @db.Uuid
-  traslado    Traslado?         @relation(fields: [trasladoId], references: [id], onDelete: Restrict)
-  revierte    MovimientoCuenta? @relation("Reversion", fields: [revierteId], references: [id], onDelete: Restrict)
-  reversion   MovimientoCuenta? @relation("Reversion")
-  usuarioId   String            @map("usuario_id") @db.Uuid
-  usuario     Usuario           @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
-  creadoEn    DateTime          @default(now()) @map("creado_en") @db.Timestamptz(6)
+  gastoId                 String?                @map("gasto_id") @db.Uuid
+  gasto                   Gasto?                 @relation(fields: [gastoId], references: [id], onDelete: Restrict)
+  trasladoId              String?                @map("traslado_id") @db.Uuid
+  traslado                Traslado?              @relation(fields: [trasladoId], references: [id], onDelete: Restrict)
+  /// Movimiento de cuenta corriente que movió dinero físico (préstamo, abono, anticipo…).
+  movimientoContraparteId String?                @map("movimiento_contraparte_id") @db.Uuid
+  movimientoContraparte   MovimientoContraparte? @relation(fields: [movimientoContraparteId], references: [id], onDelete: Restrict)
+  revierte                MovimientoCuenta?      @relation("Reversion", fields: [revierteId], references: [id], onDelete: Restrict)
+  reversion               MovimientoCuenta?      @relation("Reversion")
+  usuarioId               String                 @map("usuario_id") @db.Uuid
+  usuario                 Usuario                @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+  creadoEn                DateTime               @default(now()) @map("creado_en") @db.Timestamptz(6)
 
   @@index([cuentaId, creadoEn])
   @@index([operacionId])
   @@index([trasladoId])
   @@index([gastoId])
+  @@index([movimientoContraparteId])
   @@map("movimiento_cuenta")
 }
 
@@ -812,4 +831,83 @@ model SaldoCuentaJornada {
   @@unique([jornadaId, ciclo, cuentaId])
   @@index([cuentaId])
   @@map("saldo_cuenta_jornada")
+}
+
+// ---------------------------------------------------------------------------
+// Fase 4: contrapartes y cuentas corrientes (§5.8, D137)
+// ---------------------------------------------------------------------------
+
+enum TipoContraparte {
+  proveedor
+  familiar
+  socio
+  tercero
+  otro
+
+  @@map("tipo_contraparte")
+}
+
+enum TipoMovimientoContraparte {
+  prestamo_otorgado
+  prestamo_recibido
+  abono_recibido
+  abono_entregado
+  anticipo_proveedor
+  compra_credito
+  ajuste
+  otro
+
+  @@map("tipo_movimiento_contraparte")
+}
+
+model Contraparte {
+  id          String          @id @default(uuid(7)) @db.Uuid
+  /// Único sin distinguir mayúsculas (índice sobre lower(nombre) en la migración): evita "Sara Castro" y "SARA CASTRO".
+  nombre      String
+  documento   String?
+  telefono    String?
+  tipo        TipoContraparte
+  notas       String?
+  activa      Boolean         @default(true)
+  creadoPorId String          @map("creado_por_id") @db.Uuid
+  creadoPor   Usuario         @relation(fields: [creadoPorId], references: [id], onDelete: Restrict)
+  creadoEn    DateTime        @default(now()) @map("creado_en") @db.Timestamptz(6)
+
+  movimientos    MovimientoContraparte[]
+  cuentasTitular CuentaDinero[]
+
+  @@map("contraparte")
+}
+
+/// Cuenta corriente de solo inserción: anular es agregar el movimiento contrario (`revierteId`).
+model MovimientoContraparte {
+  id                String                    @id @default(uuid(7)) @db.Uuid
+  contraparteId     String                    @map("contraparte_id") @db.Uuid
+  contraparte       Contraparte               @relation(fields: [contraparteId], references: [id], onDelete: Restrict)
+  tipo              TipoMovimientoContraparte
+  moneda            String                    @db.Char(3)
+  /// Siempre positivo; `signo` dice hacia dónde mueve el saldo.
+  monto             Decimal                   @db.Decimal(18, 3)
+  /// 1: me debe más (o le debo menos). -1: le debo más (o me debe menos).
+  signo             Int                       @db.SmallInt
+  /// Cuenta del negocio por la que se movió el dinero; null si es solo reconocimiento de deuda.
+  cuentaId          String?                   @map("cuenta_id") @db.Uuid
+  cuenta            CuentaDinero?             @relation(fields: [cuentaId], references: [id], onDelete: Restrict)
+  nota              String?
+  /// El movimiento que este anula; cada uno se anula una sola vez.
+  revierteId        String?                   @unique @map("revierte_id") @db.Uuid
+  revierte          MovimientoContraparte?    @relation("ReversionContraparte", fields: [revierteId], references: [id], onDelete: Restrict)
+  reversion         MovimientoContraparte?    @relation("ReversionContraparte")
+  turnoId           String?                   @map("turno_id") @db.Uuid
+  turno             Turno?                    @relation(fields: [turnoId], references: [id], onDelete: Restrict)
+  claveIdempotencia String                    @unique @map("clave_idempotencia") @db.VarChar(64)
+  usuarioId         String                    @map("usuario_id") @db.Uuid
+  usuario           Usuario                   @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+  creadoEn          DateTime                  @default(now()) @map("creado_en") @db.Timestamptz(6)
+
+  movimientosCuenta MovimientoCuenta[]
+
+  @@index([contraparteId, creadoEn])
+  @@index([creadoEn])
+  @@map("movimiento_contraparte")
 }

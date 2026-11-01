@@ -29,6 +29,8 @@ export const esquemaMovimiento = z.object({
     'gasto',
     'retiro_dueno',
     'gasto_anulacion',
+    'contraparte',
+    'contraparte_anulacion',
   ]),
   operacion: z.object({ id: z.string(), numeroComprobante: z.number().int() }).nullable(),
   /** Traslado del que forma parte, si lo hay. */
