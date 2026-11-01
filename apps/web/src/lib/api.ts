@@ -71,7 +71,7 @@ interface OpcionesPeticion {
 }
 
 async function pedir<T>(
-  metodo: 'GET' | 'POST' | 'PATCH',
+  metodo: 'GET' | 'POST' | 'PATCH' | 'PUT',
   ruta: string,
   { cuerpo, formulario, consulta }: OpcionesPeticion = {},
 ): Promise<T> {
@@ -104,6 +104,7 @@ export const api = {
   post: <T>(ruta: string, cuerpo?: unknown) =>
     pedir<T>('POST', ruta, cuerpo === undefined ? {} : { cuerpo }),
   patch: <T>(ruta: string, cuerpo: unknown) => pedir<T>('PATCH', ruta, { cuerpo }),
+  put: <T>(ruta: string, cuerpo: unknown) => pedir<T>('PUT', ruta, { cuerpo }),
   /** Envía un formulario con archivo (multipart); el navegador pone el tipo de contenido. */
   subir: <T>(ruta: string, formulario: FormData) => pedir<T>('POST', ruta, { formulario }),
 };

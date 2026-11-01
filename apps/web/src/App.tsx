@@ -24,6 +24,7 @@ import { PaginaCompras } from './paginas/compras/PaginaCompras.js';
 import { PaginaContrapartes } from './paginas/contrapartes/PaginaContrapartes.js';
 import { PaginaInventario } from './paginas/inventario/PaginaInventario.js';
 import { PaginaCola } from './paginas/cola/PaginaCola.js';
+import { PaginaCumplimiento } from './paginas/cumplimiento/PaginaCumplimiento.js';
 import { PaginaDivisas } from './paginas/divisas/PaginaDivisas.js';
 import { PaginaEmpresa } from './paginas/empresa/PaginaEmpresa.js';
 import { PaginaGastos } from './paginas/gastos/PaginaGastos.js';
@@ -113,6 +114,14 @@ export function App() {
             element={
               <RutaConPermiso permiso="jornada.cerrar">
                 <PaginaJornada />
+              </RutaConPermiso>
+            }
+          />
+          <Route
+            path="cumplimiento"
+            element={
+              <RutaConPermiso permiso="cumplimiento.gestionar_alertas">
+                <PaginaCumplimiento />
               </RutaConPermiso>
             }
           />

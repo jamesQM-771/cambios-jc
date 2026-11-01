@@ -90,6 +90,14 @@ export const FRASES_ACCION: Record<string, string> = {
   'divisa.compra': 'le compró divisa a un cliente en caja',
   'divisa.venta': 'le vendió divisa a un cliente en caja',
   'divisa.anular': 'anuló una compra o venta de divisa en caja',
+  'cumplimiento.parametros': 'cambió los parámetros de cumplimiento',
+  'cumplimiento.lista_agregar': 'agregó a alguien a la lista restrictiva',
+  'cumplimiento.lista_desactivar': 'desactivó una entrada de la lista restrictiva',
+  'cumplimiento.lista_reactivar': 'reactivó una entrada de la lista restrictiva',
+  'cumplimiento.alerta_escalar': 'escaló una alerta de cumplimiento',
+  'cumplimiento.alerta_descartar': 'descartó una alerta de cumplimiento',
+  'cumplimiento.ficha': 'actualizó la ficha de cumplimiento de un cliente',
+  'cumplimiento.nivel': 'cambió el nivel de riesgo de un cliente',
   'seed.crear': 'creó los datos iniciales del sistema',
   'usuario.restablecer_acceso_emergencia':
     'restableció el acceso de un administrador desde el servidor',
@@ -119,6 +127,7 @@ export const ETIQUETAS_ENTIDAD: Record<string, string> = {
   compra: 'Compras de divisa',
   inventario: 'Inventario de divisas',
   operacion_divisa: 'Divisas en caja',
+  cumplimiento: 'Cumplimiento',
 };
 
 /** Nombre legible de los campos que aparecen en el antes y el después. */

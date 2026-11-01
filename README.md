@@ -4,7 +4,7 @@ Sistema de operación y contabilidad para Cambios JC: remesas COP → VES, compr
 
 - Especificación: [`docs/PROYECTO.md`](docs/PROYECTO.md)
 - Reglas de trabajo: [`CLAUDE.md`](CLAUDE.md)
-- Fase actual: [`docs/fases/FASE-4.md`](docs/fases/FASE-4.md) (cerrada; la siguiente es la 5)
+- Fase actual: [`docs/fases/FASE-4.md`](docs/fases/FASE-4.md) (ver también FASE-5 a FASE-7)
 - Decisiones: [`docs/DECISIONES.md`](docs/DECISIONES.md)
 
 ## Estado y plan de fases
@@ -26,6 +26,8 @@ El proyecto se entrega en 14 fases agrupadas en 4 versiones (detalle en `docs/PR
 | 2. Remesas       | Completa en la rama `fase-2-remesas`: clientes, remesas, cola del digitador, recibo, seguimiento público y avisos en vivo |
 | 3. Caja          | Completa: turnos con arqueo por denominación, libro de movimientos, traslados, gastos, devoluciones y cierre de jornada   |
 | 4. Inventario    | Completa: contrapartes con cuenta corriente, compras de bolívares, costo promedio, ganancia por remesa y posición del día |
+| 5. Divisas       | Completa: compra y venta de dólares en caja con billetes, inventario, ganancia y recibo                                   |
+| 6. Facturación   | Omitida: opcional y desactivada en Cambios JC (D149)                                                                      |
 
 Cada fase vive en su propia rama (`fase-0-base`, `fase-1-configuracion`…) y se fusiona a `main` al cerrarla.
 

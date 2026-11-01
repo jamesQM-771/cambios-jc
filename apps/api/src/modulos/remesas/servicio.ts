@@ -9,6 +9,7 @@ import {
 
 import { Prisma, type EstadoOperacion } from '../../generated/prisma/client.js';
 import { generarCodigoSeguimiento } from '../../lib/codigo-seguimiento.js';
+import { alertasDespuesDeRegistrar, verificarAntesDeRegistrar } from '../../lib/cumplimiento.js';
 import { errores } from '../../lib/errores.js';
 import type { PrismaClient } from '../../lib/prisma.js';
 import { registrarAuditoria } from '../../lib/registrar-auditoria.js';
@@ -481,6 +482,13 @@ export function crearServicioRemesas({
         : new Decimal(tasaVigente.tasaVenta.toString());
       const montos = calcularMontos(datos, tasaUsada);
 
+      // Cumplimiento (§5.13): la lista restrictiva bloquea; el umbral de la ficha la exige (D151).
+      await verificarAntesDeRegistrar(prisma, {
+        remitente,
+        beneficiario: medio.cliente,
+        montoPesos: montos.pesos,
+      });
+
       const crear = () =>
         prisma.$transaction(async (tx) => {
           const filas = await tx.$queryRaw<{ valor: number }[]>`
@@ -527,6 +535,12 @@ export function crearServicioRemesas({
             });
             anterior = estado;
           }
+
+          await alertasDespuesDeRegistrar(tx, {
+            operacionId: creada.id,
+            remitenteId: remitente.id,
+            beneficiarioId: medio.cliente.id,
+          });
 
           // El efectivo ya está en la caja; la transferencia entra cuando se verifica (D121).
           if (datos.formaPago === 'efectivo') await ingresarPorRemesa(tx, creada.id, actor.id);

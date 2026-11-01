@@ -124,6 +124,7 @@ describe('menús por rol', () => {
       'Empresa',
       'Configuración',
       'Actividad',
+      'Cumplimiento',
     ]);
     expect(within(menu).getByRole('link', { name: 'Inicio' })).toHaveAttribute(
       'aria-current',
@@ -173,7 +174,7 @@ describe('menús por rol', () => {
       unmount();
     }
 
-    expect(vistos).toEqual({ administrador: 15, vendedor: 7, digitador: 0 });
+    expect(vistos).toEqual({ administrador: 16, vendedor: 7, digitador: 0 });
   });
 
   it('el encabezado muestra la empresa, el nombre y el rol de la persona', async () => {

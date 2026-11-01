@@ -148,6 +148,14 @@ export const ENTRADAS_MENU: readonly EntradaMenu[] = [
     descripcion: 'Quién hizo qué y cuándo, con el antes y el después',
     permiso: 'auditoria.ver',
   },
+  {
+    ruta: '/cumplimiento',
+    grupo: 'Seguridad',
+    icono: 'bitacora',
+    etiqueta: 'Cumplimiento',
+    descripcion: 'Alertas SARLAFT, lista restrictiva y exportes',
+    permiso: 'cumplimiento.gestionar_alertas',
+  },
 ];
 
 export const entradasVisibles = (permisos: readonly Permiso[]): EntradaMenu[] =>

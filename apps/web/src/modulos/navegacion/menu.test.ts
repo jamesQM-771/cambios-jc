@@ -25,6 +25,7 @@ describe('menú según permisos', () => {
       'Empresa',
       'Configuración',
       'Actividad',
+      'Cumplimiento',
     ]);
   });
 
