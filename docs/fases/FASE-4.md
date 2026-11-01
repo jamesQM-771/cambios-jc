@@ -36,9 +36,9 @@ Cada una termina con pruebas, `npm run check` en verde y commit.
 |---|---|---|
 | 4.1 | Contrapartes: catálogo y contraparte titular de una cuenta | Hecha |
 | 4.2 | Cuenta corriente: movimientos por tipo, saldo por moneda y anulación | Hecha |
-| 4.3 | Inventario de bolívares con costo promedio ponderado móvil, inventario inicial y ajuste | Pendiente |
-| 4.4 | Compras de bolívares a contrapartes: de contado, a crédito o contra anticipo (fondeo) | Pendiente |
-| 4.5 | Ganancia neta por remesa al pagarse, con su costo bancario | Pendiente |
-| 4.6 | Jornada: ganancia del día, contrapartes y posición total | Pendiente |
+| 4.3 | Inventario de bolívares con costo promedio ponderado móvil, inventario inicial y ajuste | Hecha |
+| 4.4 | Compras de bolívares a contrapartes: de contado, a crédito o contra anticipo (fondeo) | Hecha |
+| 4.5 | Ganancia neta por remesa al pagarse, con su costo bancario | Hecha |
+| 4.6 | Jornada: ganancia del día, contrapartes y posición total | Hecha |
 | 4.7 | Pantallas (contrapartes, compras, inventario, ganancia y titular de cuenta) | Pendiente |
 | 4.8 | Pruebas de extremo a extremo y cierre | Pendiente |

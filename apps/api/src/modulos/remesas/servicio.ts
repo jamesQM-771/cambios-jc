@@ -161,6 +161,27 @@ export function crearServicioRemesas({
   }
 
   return {
+    /** Costo y ganancia fijados al pagarse (D140). Solo para quien tiene `ganancia.ver`. */
+    async ganancia(id: string) {
+      const fila = await prisma.operacion.findUnique({
+        where: { id },
+        select: {
+          costoPromedio: true,
+          gananciaBruta: true,
+          costoBancarioPesos: true,
+          gananciaNeta: true,
+        },
+      });
+      if (!fila) throw errores.noEncontrado('La remesa no existe.');
+      if (!fila.costoPromedio || !fila.gananciaBruta || !fila.gananciaNeta) return null;
+      return {
+        costoPromedio: fila.costoPromedio.toFixed(DECIMALES_TASA),
+        bruta: fila.gananciaBruta.toFixed(2),
+        costoBancarioPesos: fila.costoBancarioPesos?.toFixed(2) ?? '0.00',
+        neta: fila.gananciaNeta.toFixed(2),
+      };
+    },
+
     obtener: cargar,
 
     async opciones(actor: Actor): Promise<OpcionesRemesa> {

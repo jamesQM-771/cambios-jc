@@ -134,6 +134,8 @@ model CuentaDinero {
   contraparteTitular   Contraparte? @relation(fields: [contraparteTitularId], references: [id], onDelete: Restrict)
 
   movimientosContraparte MovimientoContraparte[]
+  comprasDestino         CompraDivisa[]          @relation("CompraDestino")
+  comprasPago            CompraDivisa[]          @relation("CompraPago")
 
   @@map("cuenta_dinero")
 }
@@ -261,6 +263,9 @@ model Usuario {
 
   contrapartesCreadas    Contraparte[]
   movimientosContraparte MovimientoContraparte[]
+  movimientosInventario  MovimientoInventario[]
+  comprasCreadas         CompraDivisa[]          @relation("CompraCreadaPor")
+  comprasAnuladas        CompraDivisa[]          @relation("CompraAnuladaPor")
 
   @@map("usuario")
 }
@@ -440,6 +445,16 @@ model Operacion {
 
   movimientos MovimientoCuenta[]
 
+  /// Costo promedio de la divisa con que se pagó (§7.3, D140). Null hasta que se completa, o si no había costo conocido.
+  costoPromedio         Decimal?               @map("costo_promedio") @db.Decimal(18, 6)
+  /// (tasa usada − costo promedio) × bolívares enviados, en pesos.
+  gananciaBruta         Decimal?               @map("ganancia_bruta") @db.Decimal(18, 2)
+  /// Costo bancario del pago llevado a pesos al costo promedio.
+  costoBancarioPesos    Decimal?               @map("costo_bancario_pesos") @db.Decimal(18, 2)
+  /// Ganancia bruta − costo bancario en pesos.
+  gananciaNeta          Decimal?               @map("ganancia_neta") @db.Decimal(18, 2)
+  movimientosInventario MovimientoInventario[]
+
   @@index([estado, creadoEn])
   @@index([turnoId])
   @@map("operacion")
@@ -586,6 +601,7 @@ model Turno {
   gastos      Gasto[]
 
   movimientosContraparte MovimientoContraparte[]
+  compras                CompraDivisa[]
 
   @@index([jornadaId])
   @@index([cajaId, abiertoEn])
@@ -662,6 +678,12 @@ enum OrigenMovimiento {
   contraparte
   /// Deshace el dinero de un movimiento de contraparte anulado.
   contraparte_anulacion
+  /// Entra a la cuenta de destino la divisa comprada a una contraparte.
+  compra_ingreso
+  /// Sale de la cuenta en pesos el pago de una compra de contado.
+  compra_pago
+  /// Deshace un movimiento de una compra anulada.
+  compra_anulacion
 
   @@map("origen_movimiento")
 }
@@ -692,6 +714,9 @@ model MovimientoCuenta {
   /// Movimiento de cuenta corriente que movió dinero físico (préstamo, abono, anticipo…).
   movimientoContraparteId String?                @map("movimiento_contraparte_id") @db.Uuid
   movimientoContraparte   MovimientoContraparte? @relation(fields: [movimientoContraparteId], references: [id], onDelete: Restrict)
+  /// Compra de divisa que movió este dinero (la divisa que entra o el pago que sale).
+  compraId                String?                @map("compra_id") @db.Uuid
+  compra                  CompraDivisa?          @relation(fields: [compraId], references: [id], onDelete: Restrict)
   revierte                MovimientoCuenta?      @relation("Reversion", fields: [revierteId], references: [id], onDelete: Restrict)
   reversion               MovimientoCuenta?      @relation("Reversion")
   usuarioId               String                 @map("usuario_id") @db.Uuid
@@ -703,6 +728,7 @@ model MovimientoCuenta {
   @@index([trasladoId])
   @@index([gastoId])
   @@index([movimientoContraparteId])
+  @@index([compraId])
   @@map("movimiento_cuenta")
 }
 
@@ -875,6 +901,7 @@ model Contraparte {
 
   movimientos    MovimientoContraparte[]
   cuentasTitular CuentaDinero[]
+  compras        CompraDivisa[]
 
   @@map("contraparte")
 }
@@ -906,8 +933,120 @@ model MovimientoContraparte {
   creadoEn          DateTime                  @default(now()) @map("creado_en") @db.Timestamptz(6)
 
   movimientosCuenta MovimientoCuenta[]
+  compra            CompraDivisa?
 
   @@index([contraparteId, creadoEn])
   @@index([creadoEn])
   @@map("movimiento_contraparte")
+}
+
+// ---------------------------------------------------------------------------
+// Fase 4: inventario de divisas, compras a contrapartes y ganancia (§5.6, §7.3, D138 a D141)
+// ---------------------------------------------------------------------------
+
+/// Estado vivo del inventario de una divisa. Se bloquea la fila en cada movimiento (SELECT … FOR UPDATE).
+model InventarioDivisa {
+  moneda        String   @id @db.Char(3)
+  /// Unidades compradas y aún no pagadas; puede quedar negativa (se paga más de lo registrado como comprado).
+  cantidad      Decimal  @default(0) @db.Decimal(18, 3)
+  /// Pesos por unidad; null mientras no haya compras ni inventario inicial.
+  costoPromedio Decimal? @map("costo_promedio") @db.Decimal(18, 6)
+  actualizadoEn DateTime @default(now()) @map("actualizado_en") @db.Timestamptz(6)
+
+  movimientos MovimientoInventario[]
+
+  @@map("inventario_divisa")
+}
+
+enum OrigenInventario {
+  /// Inventario inicial o corrección del administrador, con motivo.
+  ajuste
+  /// Bolívares (o la divisa) comprados a una contraparte.
+  compra
+  /// Deshace una compra anulada.
+  compra_anulacion
+  /// Salen al pagar una remesa (bolívares enviados + costo bancario).
+  remesa_pago
+
+  @@map("origen_inventario")
+}
+
+/// Historial de solo inserción del inventario: cada fila guarda el antes y el después.
+model MovimientoInventario {
+  id              String            @id @default(uuid(7)) @db.Uuid
+  moneda          String            @db.Char(3)
+  inventario      InventarioDivisa  @relation(fields: [moneda], references: [moneda], onDelete: Restrict)
+  origen          OrigenInventario
+  sentido         SentidoMovimiento
+  /// Siempre positiva; el sentido dice si entra o sale.
+  cantidad        Decimal           @db.Decimal(18, 3)
+  /// Tasa de la entrada (compra o ajuste); en una salida, el costo unitario con que salió.
+  tasa            Decimal?          @db.Decimal(18, 6)
+  cantidadAntes   Decimal           @map("cantidad_antes") @db.Decimal(18, 3)
+  costoAntes      Decimal?          @map("costo_antes") @db.Decimal(18, 6)
+  cantidadDespues Decimal           @map("cantidad_despues") @db.Decimal(18, 3)
+  costoDespues    Decimal?          @map("costo_despues") @db.Decimal(18, 6)
+  compraId        String?           @map("compra_id") @db.Uuid
+  compra          CompraDivisa?     @relation(fields: [compraId], references: [id], onDelete: Restrict)
+  operacionId     String?           @map("operacion_id") @db.Uuid
+  operacion       Operacion?        @relation(fields: [operacionId], references: [id], onDelete: Restrict)
+  nota            String?
+  usuarioId       String            @map("usuario_id") @db.Uuid
+  usuario         Usuario           @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+  creadoEn        DateTime          @default(now()) @map("creado_en") @db.Timestamptz(6)
+
+  @@index([moneda, creadoEn])
+  @@index([compraId])
+  @@index([operacionId])
+  @@map("movimiento_inventario")
+}
+
+enum FormaPagoCompra {
+  /// Sale de una cuenta del negocio en pesos.
+  contado
+  /// Queda en la cuenta corriente de la contraparte (le debo); si había anticipo, lo descuenta.
+  credito
+
+  @@map("forma_pago_compra")
+}
+
+/// Compra de bolívares (u otra divisa) a una contraparte (§5.6).
+model CompraDivisa {
+  id                      String                 @id @default(uuid(7)) @db.Uuid
+  contraparteId           String                 @map("contraparte_id") @db.Uuid
+  contraparte             Contraparte            @relation(fields: [contraparteId], references: [id], onDelete: Restrict)
+  moneda                  String                 @db.Char(3)
+  /// Divisa recibida, en la cuenta de destino.
+  cantidad                Decimal                @db.Decimal(18, 3)
+  /// Punto de compra: pesos por unidad.
+  tasa                    Decimal                @db.Decimal(18, 6)
+  /// cantidad × tasa, fijado en pesos.
+  montoPesos              Decimal                @map("monto_pesos") @db.Decimal(18, 2)
+  cuentaDestinoId         String                 @map("cuenta_destino_id") @db.Uuid
+  cuentaDestino           CuentaDinero           @relation("CompraDestino", fields: [cuentaDestinoId], references: [id], onDelete: Restrict)
+  formaPago               FormaPagoCompra        @map("forma_pago")
+  /// Cuenta en pesos de la que salió el pago (solo de contado).
+  cuentaPagoId            String?                @map("cuenta_pago_id") @db.Uuid
+  cuentaPago              CuentaDinero?          @relation("CompraPago", fields: [cuentaPagoId], references: [id], onDelete: Restrict)
+  /// Movimiento de cuenta corriente de una compra a crédito.
+  movimientoContraparteId String?                @unique @map("movimiento_contraparte_id") @db.Uuid
+  movimientoContraparte   MovimientoContraparte? @relation(fields: [movimientoContraparteId], references: [id], onDelete: Restrict)
+  nota                    String?
+  turnoId                 String?                @map("turno_id") @db.Uuid
+  turno                   Turno?                 @relation(fields: [turnoId], references: [id], onDelete: Restrict)
+  claveIdempotencia       String                 @unique @map("clave_idempotencia") @db.VarChar(64)
+  creadoPorId             String                 @map("creado_por_id") @db.Uuid
+  creadoPor               Usuario                @relation("CompraCreadaPor", fields: [creadoPorId], references: [id], onDelete: Restrict)
+  creadoEn                DateTime               @default(now()) @map("creado_en") @db.Timestamptz(6)
+  anuladoEn               DateTime?              @map("anulado_en") @db.Timestamptz(6)
+  anuladoPorId            String?                @map("anulado_por_id") @db.Uuid
+  anuladoPor              Usuario?               @relation("CompraAnuladaPor", fields: [anuladoPorId], references: [id], onDelete: Restrict)
+  motivoAnulacion         String?                @map("motivo_anulacion")
+
+  movimientosCuenta     MovimientoCuenta[]
+  movimientosInventario MovimientoInventario[]
+
+  @@index([contraparteId, creadoEn])
+  @@index([creadoEn])
+  @@map("compra_divisa")
 }

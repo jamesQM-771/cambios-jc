@@ -58,6 +58,7 @@ const SELECCION_MOVIMIENTO = {
       usuario: { select: { id: true, nombre: true } },
     },
   },
+  compra: { select: { id: true } },
   usuario: { select: { id: true, nombre: true } },
   creadoEn: true,
   contraparteId: true,
@@ -98,7 +99,7 @@ function aMovimientoPublico(fila: FilaMovimiento): MovimientoPublico {
           en: fila.reversion.creadoEn,
         }
       : null,
-    compraId: null,
+    compraId: fila.compra?.id ?? null,
     usuario: fila.usuario,
     creadoEn: fila.creadoEn,
   };

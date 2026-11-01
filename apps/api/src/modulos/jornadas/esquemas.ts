@@ -85,6 +85,33 @@ export const esquemaResumen = z.object({
       explicacion: z.string().nullable(),
     }),
   ),
+  /**
+   * Desde la fase 4 (D141). Opcionales: las jornadas cerradas antes guardaron su foto sin ellos.
+   * Ganancia de las remesas pagadas en el día (en moneda local) menos los gastos operativos en moneda local.
+   */
+  ganancia: z
+    .object({
+      moneda: z.string(),
+      remesasCosteadas: z.number().int(),
+      /** Pagadas sin costo conocido (sin compras ni inventario inicial): no suman ganancia. */
+      remesasSinCosto: z.number().int(),
+      gananciaRemesas: z.string(),
+      costosBancarios: z.string(),
+      gastosOperativos: z.string(),
+      gananciaDelDia: z.string(),
+    })
+    .optional(),
+  /** B. Contrapartes (de todo el negocio, no son de una sucursal). */
+  contrapartes: z
+    .object({
+      saldos: z.array(z.object({ moneda: z.string(), meDeben: z.string(), lesDebo: z.string() })),
+      movimientosDelDia: z.number().int(),
+    })
+    .optional(),
+  /** Pesos de remesas con incidencia: se le deben al cliente hasta que se paguen o devuelvan. */
+  devolucionesPendientes: porMoneda.optional(),
+  /** Posición total = disponible + me deben − le debo − devoluciones pendientes, por moneda (§7.6). */
+  posicion: porMoneda.optional(),
 });
 
 export type ResumenJornada = z.infer<typeof esquemaResumen>;
