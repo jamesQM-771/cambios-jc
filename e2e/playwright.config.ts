@@ -26,6 +26,10 @@ export default defineConfig({
     locale: 'es-CO',
     timezoneId: 'America/Bogota',
     trace: 'retain-on-failure',
+    // Opcional: un Chromium ya instalado en el equipo (por ejemplo, en un contenedor sin descargas).
+    ...(process.env.CHROMIUM_RUTA
+      ? { launchOptions: { executablePath: process.env.CHROMIUM_RUTA } }
+      : {}),
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   globalSetup: './preparar-entorno.ts',

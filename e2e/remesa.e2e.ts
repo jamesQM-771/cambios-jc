@@ -13,6 +13,12 @@ const datos = JSON.parse(
 const PESOS = '50000';
 const BOLIVARES = 'VES 13.297,872';
 
+// Fase 4: el administrador compra 100.000 Bs a 3,70 a crédito antes del pago. Con el inventario vacío
+// (la base se rehace), el costo es 3,70: bruta = (3,76 − 3,70) × 13.297,872 = 797,87; costo bancario
+// por defecto de la cuenta 1,5 Bs × 3,70 = 5,55; neta = 792,32 (D140).
+const GANANCIA_NETA = 'COP 792';
+const PROVEEDOR = `Proveedor E2E ${String(Date.now()).slice(-6)}`;
+
 /** Un PNG con firma y cabecera válidas: el servidor revisa el contenido, no el nombre. */
 const CAPTURA = Buffer.concat([
   Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d]),
@@ -116,6 +122,35 @@ test.describe.serial('recorrido de una remesa', () => {
     await paginaVendedor.getByRole('button', { name: 'Cerrar', exact: true }).click();
   });
 
+  test('el administrador registra un proveedor y le compra bolívares a crédito; el inventario toma su costo', async () => {
+    const admin = await contexto(browser, datos.tokens.administrador);
+    const pagina = await admin.newPage();
+    await pagina.goto('/contrapartes');
+    await pagina.getByRole('button', { name: 'Nueva contraparte' }).click();
+    const nueva = pagina.getByRole('dialog', { name: 'Nueva contraparte' });
+    await nueva.getByLabel('Nombre').fill(PROVEEDOR);
+    await nueva.getByRole('button', { name: 'Crear contraparte' }).click();
+    await expect(pagina.getByText('Contraparte creada.')).toBeVisible();
+
+    await pagina.goto('/compras');
+    await pagina.getByRole('button', { name: 'Nueva compra' }).click();
+    const compra = pagina.getByRole('dialog', { name: 'Nueva compra' });
+    await compra.getByLabel('Contraparte').selectOption({ label: PROVEEDOR });
+    await compra.getByLabel('Entran a').selectOption({ label: `${datos.cuentaOrigen} (VES)` });
+    await compra.getByLabel(/^Cantidad recibida/).fill('100000');
+    await compra.getByLabel(/^Tasa de compra/).fill('3,70');
+    await expect(compra.getByText('COP 370.000')).toBeVisible();
+    await compra.getByLabel('Forma de pago').selectOption('credito');
+    await compra.getByRole('button', { name: 'Registrar compra' }).click();
+    await expect(pagina.getByText('Compra registrada.')).toBeVisible();
+
+    await pagina.goto('/inventario');
+    const tarjeta = pagina.getByLabel('Inventario en VES');
+    await expect(tarjeta).toContainText('VES 100.000,000');
+    await expect(tarjeta).toContainText('3,70');
+    await admin.close();
+  });
+
   test('el digitador toma la transferencia, la paga con su captura y el vendedor se entera sin recargar', async () => {
     await paginaVendedor.goto('/remesas');
     await expect(
@@ -183,6 +218,34 @@ test.describe.serial('recorrido de una remesa', () => {
     await detalle.getByRole('button', { name: 'Recibo' }).click();
     await paginaVendedor.getByRole('button', { name: 'Emitir e imprimir' }).click();
     await expect(paginaVendedor.getByRole('article', { name: /copia/ })).toContainText('COPIA');
+  });
+
+  test('el administrador ve la ganancia neta de la remesa y la deuda con el proveedor', async () => {
+    const admin = await contexto(browser, datos.tokens.administrador);
+    const pagina = await admin.newPage();
+    await pagina.goto('/remesas');
+    const fila = pagina.locator('tr', { hasText: datos.remitente.nombre }).first();
+    await fila.getByRole('button', { name: /Abrir remesa/ }).click();
+    const detalle = pagina.getByRole('dialog', { name: 'Remesa' });
+    await expect(detalle).toContainText('Ganancia neta');
+    await expect(detalle).toContainText(GANANCIA_NETA);
+
+    // El vendedor no la ve.
+    await paginaVendedor.goto('/remesas');
+    await paginaVendedor
+      .locator('tr', { hasText: datos.remitente.nombre })
+      .first()
+      .getByRole('button', { name: /Abrir remesa/ })
+      .click();
+    await expect(paginaVendedor.getByRole('dialog', { name: 'Remesa' })).toContainText(codigo);
+    await expect(paginaVendedor.getByRole('dialog', { name: 'Remesa' })).not.toContainText(
+      'Ganancia',
+    );
+    await paginaVendedor.keyboard.press('Escape');
+
+    await pagina.goto('/contrapartes');
+    await expect(pagina.locator('tr', { hasText: PROVEEDOR })).toContainText('Le debo COP 370.000');
+    await admin.close();
   });
 
   test('el vendedor registra un gasto y un traslado a la bóveda, y el libro los descuenta de su caja', async () => {
@@ -256,11 +319,18 @@ test.describe.serial('recorrido de una remesa', () => {
     await expect(pagina.getByText('Jornada cerrada.')).toBeVisible();
     await expect(jornada.getByRole('button', { name: 'Reabrir la jornada' })).toBeVisible();
     await expect(
-      jornada.locator('.resumen-dia > div', { hasText: 'Gastos operativos' }),
+      jornada.locator('.resumen-dia > div', { hasText: 'Gastos operativos' }).first(),
     ).toContainText('COP 10.000');
     await expect(jornada.locator('.resumen-dia > div', { hasText: 'Traslados' })).toContainText(
       '1',
     );
+    // Fase 4: la ganancia de la remesa pagada y la deuda con el proveedor entran al resumen.
+    await expect(
+      jornada.locator('.resumen-dia > div', { hasText: 'Ganancia de remesas' }),
+    ).toContainText(GANANCIA_NETA);
+    await expect(
+      jornada.locator('.resumen-dia > div', { hasText: 'Contrapartes en COP' }),
+    ).toContainText('Les debo COP 370.000');
     await admin.close();
   });
 

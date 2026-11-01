@@ -16,9 +16,16 @@ export default function preparar(): void {
 
   // La base de pruebas se rehace desde cero: las pruebas de integración dejan operaciones sueltas
   // (sin transferencia) que romperían el listado de remesas. Solo toca la base *_pruebas.
-  execFileSync('npx', ['prisma', 'migrate', 'reset', '--force'], {
-    ...opciones,
-    cwd: join(raiz, 'apps', 'api'),
-  });
+  // Con CONSERVAR_BASE_PRUEBAS=1 no se borra nada: solo se aplican las migraciones. Sirve con una
+  // base *_pruebas recién creada y vacía (D136).
+  const conservar = process.env.CONSERVAR_BASE_PRUEBAS === '1';
+  execFileSync(
+    'npx',
+    ['prisma', 'migrate', conservar ? 'deploy' : 'reset', ...(conservar ? [] : ['--force'])],
+    {
+      ...opciones,
+      cwd: join(raiz, 'apps', 'api'),
+    },
+  );
   execFileSync('npx', ['tsx', 'e2e/preparar-datos.mts'], { ...opciones, cwd: raiz });
 }
