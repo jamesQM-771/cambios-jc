@@ -117,6 +117,14 @@ export const ENTRADAS_MENU: readonly EntradaMenu[] = [
     permiso: 'remesa.tomar_completar',
   },
   {
+    ruta: '/reportes',
+    grupo: 'Administración',
+    icono: 'panel',
+    etiqueta: 'Reportes',
+    descripcion: 'Tablero del dueño, reportes, histórico y datos del negocio',
+    permiso: 'reporte.ver',
+  },
+  {
     ruta: '/usuarios',
     grupo: 'Administración',
     icono: 'usuarios',

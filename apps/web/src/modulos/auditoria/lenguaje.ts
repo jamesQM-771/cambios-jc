@@ -98,6 +98,8 @@ export const FRASES_ACCION: Record<string, string> = {
   'cumplimiento.alerta_descartar': 'descartó una alerta de cumplimiento',
   'cumplimiento.ficha': 'actualizó la ficha de cumplimiento de un cliente',
   'cumplimiento.nivel': 'cambió el nivel de riesgo de un cliente',
+  'datos.exportar': 'descargó la exportación completa de los datos',
+  'migracion.saldos_contrapartes': 'cargó saldos iniciales de contrapartes desde el Excel',
   'seed.crear': 'creó los datos iniciales del sistema',
   'usuario.restablecer_acceso_emergencia':
     'restableció el acceso de un administrador desde el servidor',

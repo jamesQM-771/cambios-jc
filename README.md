@@ -18,17 +18,18 @@ El proyecto se entrega en 14 fases agrupadas en 4 versiones (detalle en `docs/PR
 | **v1.5** — control y comodidad        | 9. Liquidez · 10. Doble control · 11. Tasa asistida · 12. WhatsApp · 12b. Comprobante (OCR) · 13. Permisos                     |
 | **v2** — otros negocios               | Solo después de varios meses estables en Cambios JC                                                                            |
 
-| Fase             | Estado                                                                                                                    |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| 0. Base          | Completa                                                                                                                  |
-| 1. Configuración | Completa en la rama `fase-1-configuracion`: bancos, sucursales, cajas, denominaciones, líneas de negocio, tasas y cuentas |
-| Rediseño         | Interfaz nueva en la rama `rediseno-interfaz` (fuera de las fases numeradas; no cambia backend, rutas ni permisos)        |
-| 2. Remesas       | Completa en la rama `fase-2-remesas`: clientes, remesas, cola del digitador, recibo, seguimiento público y avisos en vivo |
-| 3. Caja          | Completa: turnos con arqueo por denominación, libro de movimientos, traslados, gastos, devoluciones y cierre de jornada   |
-| 4. Inventario    | Completa: contrapartes con cuenta corriente, compras de bolívares, costo promedio, ganancia por remesa y posición del día |
-| 5. Divisas       | Completa: compra y venta de dólares en caja con billetes, inventario, ganancia y recibo                                   |
-| 6. Facturación   | Omitida: opcional y desactivada en Cambios JC (D149)                                                                      |
-| 7. Cumplimiento  | Completa con umbrales apagados hasta definirlos: ficha, nivel de riesgo, lista restrictiva, alertas y exporte CSV         |
+| Fase             | Estado                                                                                                                                              |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0. Base          | Completa                                                                                                                                            |
+| 1. Configuración | Completa en la rama `fase-1-configuracion`: bancos, sucursales, cajas, denominaciones, líneas de negocio, tasas y cuentas                           |
+| Rediseño         | Interfaz nueva en la rama `rediseno-interfaz` (fuera de las fases numeradas; no cambia backend, rutas ni permisos)                                  |
+| 2. Remesas       | Completa en la rama `fase-2-remesas`: clientes, remesas, cola del digitador, recibo, seguimiento público y avisos en vivo                           |
+| 3. Caja          | Completa: turnos con arqueo por denominación, libro de movimientos, traslados, gastos, devoluciones y cierre de jornada                             |
+| 4. Inventario    | Completa: contrapartes con cuenta corriente, compras de bolívares, costo promedio, ganancia por remesa y posición del día                           |
+| 5. Divisas       | Completa: compra y venta de dólares en caja con billetes, inventario, ganancia y recibo                                                             |
+| 6. Facturación   | Omitida: opcional y desactivada en Cambios JC (D149)                                                                                                |
+| 7. Cumplimiento  | Completa con umbrales apagados hasta definirlos: ficha, nivel de riesgo, lista restrictiva, alertas y exporte CSV                                   |
+| 8. Reportes      | Completa salvo la carga histórica de los .xlsx (bloqueada, ver FASE-8): reportes, histórico, tablero, exportación de datos y saldos de contrapartes |
 
 Cada fase vive en su propia rama (`fase-0-base`, `fase-1-configuracion`…) y se fusiona a `main` al cerrarla.
 

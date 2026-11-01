@@ -21,6 +21,7 @@ describe('menú según permisos', () => {
       'Compras',
       'Inventario',
       'Clientes',
+      'Reportes',
       'Usuarios',
       'Empresa',
       'Configuración',

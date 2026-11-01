@@ -39,6 +39,10 @@ export const PERMISOS = [
   // Control
   'aprobacion.aprobar',
   'cumplimiento.gestionar_alertas',
+  // Reportes y migración (fase 8)
+  'reporte.ver',
+  'datos.exportar',
+  'migracion.cargar',
 ] as const;
 
 export type Permiso = (typeof PERMISOS)[number];

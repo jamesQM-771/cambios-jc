@@ -2073,6 +2073,19 @@ textarea.campo__entrada {
     visibility: visible;
   }
 
+  /* Reportes (fase 8): la tabla del reporte también se imprime. */
+  .imprimible,
+  .imprimible * {
+    visibility: visible;
+  }
+
+  .imprimible {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+  }
+
   .recibo {
     position: absolute;
     top: 0;

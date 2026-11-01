@@ -32,6 +32,7 @@ import { PaginaJornada } from './paginas/jornada/PaginaJornada.js';
 import { PaginaInicio } from './paginas/PaginaInicio.js';
 import { PaginaNoEncontrada } from './paginas/PaginaNoEncontrada.js';
 import { PaginaRemesas } from './paginas/remesas/PaginaRemesas.js';
+import { PaginaReportes } from './paginas/reportes/PaginaReportes.js';
 import { PaginaSeguimiento } from './paginas/seguimiento/PaginaSeguimiento.js';
 import { PaginaTraslados } from './paginas/traslados/PaginaTraslados.js';
 import { PaginaTurno } from './paginas/turno/PaginaTurno.js';
@@ -114,6 +115,14 @@ export function App() {
             element={
               <RutaConPermiso permiso="jornada.cerrar">
                 <PaginaJornada />
+              </RutaConPermiso>
+            }
+          />
+          <Route
+            path="reportes"
+            element={
+              <RutaConPermiso permiso="reporte.ver">
+                <PaginaReportes />
               </RutaConPermiso>
             }
           />
