@@ -268,6 +268,20 @@ export function crearServicioJornadas({ prisma }: { prisma: PrismaClient }) {
       gananciaRemesas = sumar(gananciaRemesas, p.gananciaNeta?.toString() ?? '0');
       costosEnPesos = sumar(costosEnPesos, p.costoBancarioPesos?.toString() ?? '0');
     }
+    const divisas = await cliente.operacionDivisa.findMany({
+      where: { creadoEn: rango, anuladoEn: null, cuentaPesos: { sucursalId } },
+      select: { tipo: true, moneda: true, montoDivisa: true, ganancia: true },
+    });
+    let gananciaDivisas = sumar('0', '0');
+    for (const d of divisas) {
+      if (d.ganancia) gananciaDivisas = sumar(gananciaDivisas, d.ganancia.toString());
+    }
+    const deTipoDivisa = (tipo: 'compra' | 'venta') =>
+      totalesPorMoneda(
+        divisas
+          .filter((d) => d.tipo === tipo)
+          .map((d) => ({ moneda: d.moneda, monto: d.montoDivisa.toString() })),
+      );
     let gastosLocales = sumar('0', '0');
     for (const g of gastos) {
       if (g.tipo === 'operativo' && g.cuenta.moneda === local) {
@@ -279,9 +293,13 @@ export function crearServicioJornadas({ prisma }: { prisma: PrismaClient }) {
       remesasCosteadas: costeadas.length,
       remesasSinCosto: pagadas.length - costeadas.length,
       gananciaRemesas: montoATexto(gananciaRemesas, local),
+      gananciaDivisas: montoATexto(gananciaDivisas, local),
       costosBancarios: montoATexto(costosEnPesos, local),
       gastosOperativos: montoATexto(gastosLocales, local),
-      gananciaDelDia: montoATexto(restar(gananciaRemesas, gastosLocales), local),
+      gananciaDelDia: montoATexto(
+        restar(sumar(gananciaRemesas, gananciaDivisas), gastosLocales),
+        local,
+      ),
     };
 
     // B. Contrapartes y posición total (§5.16, §7.6).
@@ -341,6 +359,12 @@ export function crearServicioJornadas({ prisma }: { prisma: PrismaClient }) {
       traslados,
       diferenciasDeArqueo,
       ganancia,
+      divisas: {
+        compras: divisas.filter((d) => d.tipo === 'compra').length,
+        ventas: divisas.filter((d) => d.tipo === 'venta').length,
+        comprado: deTipoDivisa('compra'),
+        vendido: deTipoDivisa('venta'),
+      },
       contrapartes: { saldos: saldosContrapartes, movimientosDelDia },
       devolucionesPendientes,
       posicion,

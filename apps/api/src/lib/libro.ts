@@ -28,6 +28,8 @@ export interface DatosMovimiento {
   movimientoContraparteId?: string | undefined;
   /** Compra de divisa que lo causó. */
   compraId?: string | undefined;
+  /** Compra o venta de divisas en caja que lo causó. */
+  operacionDivisaId?: string | undefined;
   turnoId?: string | null | undefined;
   /** El movimiento que este deshace (anulaciones y correcciones): se revierte una sola vez. */
   revierteId?: string | undefined;
@@ -55,6 +57,7 @@ export async function registrarMovimiento(
       gastoId: datos.gastoId ?? null,
       movimientoContraparteId: datos.movimientoContraparteId ?? null,
       compraId: datos.compraId ?? null,
+      operacionDivisaId: datos.operacionDivisaId ?? null,
       turnoId: datos.turnoId ?? null,
       revierteId: datos.revierteId ?? null,
       usuarioId: datos.usuarioId,

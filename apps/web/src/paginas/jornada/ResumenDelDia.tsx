@@ -113,6 +113,14 @@ export function ResumenDelDia({ resumen }: { resumen: ResumenJornada }) {
                 {dinero(resumen.ganancia.gananciaRemesas, resumen.ganancia.moneda)}
               </dd>
             </div>
+            {resumen.ganancia.gananciaDivisas !== undefined && (
+              <div>
+                <dt>Ganancia de divisas en caja</dt>
+                <dd className="mono">
+                  {dinero(resumen.ganancia.gananciaDivisas, resumen.ganancia.moneda)}
+                </dd>
+              </div>
+            )}
             <div>
               <dt>Costos bancarios descontados</dt>
               <dd className="mono">
@@ -131,6 +139,22 @@ export function ResumenDelDia({ resumen }: { resumen: ResumenJornada }) {
                 <strong>{dinero(resumen.ganancia.gananciaDelDia, resumen.ganancia.moneda)}</strong>
               </dd>
             </div>
+          </dl>
+        </>
+      )}
+
+      {resumen.divisas && resumen.divisas.compras + resumen.divisas.ventas > 0 && (
+        <>
+          <h3>Divisas en caja</h3>
+          <dl className="resumen-dia">
+            <div>
+              <dt>Operaciones</dt>
+              <dd>
+                {resumen.divisas.compras} compras · {resumen.divisas.ventas} ventas
+              </dd>
+            </div>
+            <Totales titulo="Divisa comprada" filas={resumen.divisas.comprado} />
+            <Totales titulo="Divisa vendida" filas={resumen.divisas.vendido} />
           </dl>
         </>
       )}

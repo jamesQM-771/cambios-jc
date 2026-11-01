@@ -96,9 +96,20 @@ export const esquemaResumen = z.object({
       /** Pagadas sin costo conocido (sin compras ni inventario inicial): no suman ganancia. */
       remesasSinCosto: z.number().int(),
       gananciaRemesas: z.string(),
+      /** Ganancia de las ventas de divisa en caja del día (fase 5, D146). */
+      gananciaDivisas: z.string().optional(),
       costosBancarios: z.string(),
       gastosOperativos: z.string(),
       gananciaDelDia: z.string(),
+    })
+    .optional(),
+  /** Compras y ventas de divisa en caja del día, sin las anuladas (fase 5). */
+  divisas: z
+    .object({
+      compras: z.number().int(),
+      ventas: z.number().int(),
+      comprado: porMoneda,
+      vendido: porMoneda,
     })
     .optional(),
   /** B. Contrapartes (de todo el negocio, no son de una sucursal). */

@@ -33,6 +33,7 @@ export const PERMISOS = [
   'divisa_caja.operar',
   'compra_contraparte.registrar',
   'contraparte.registrar_movimiento',
+  'divisa_caja.anular',
   // Ver la ganancia y el costo de cada remesa (fase 4): información del dueño.
   'ganancia.ver',
   // Control

@@ -45,6 +45,14 @@ export const ENTRADAS_MENU: readonly EntradaMenu[] = [
     permiso: 'remesa.registrar',
   },
   {
+    ruta: '/divisas',
+    grupo: 'Operación',
+    icono: 'flecha',
+    etiqueta: 'Divisas',
+    descripcion: 'Comprar y vender dólares en efectivo, contando los billetes',
+    permiso: 'divisa_caja.operar',
+  },
+  {
     ruta: '/traslados',
     grupo: 'Operación',
     icono: 'flecha',

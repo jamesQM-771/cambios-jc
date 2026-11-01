@@ -7,6 +7,8 @@ import {
   entrarAlInventario,
   fijarCosto,
   gananciaDeRemesa,
+  gananciaDeVentaDivisa,
+  totalDeDenominaciones,
   revertirEntrada,
   salirDelInventario,
   type EstadoInventario,
@@ -186,5 +188,47 @@ describe('fijarCosto', () => {
   it('6 decimales con ROUND_HALF_UP', () => {
     expect(fijarCosto('3.7777775').toFixed(6)).toBe('3.777778');
     expect(fijarCosto('3.7777774').toFixed(6)).toBe('3.777777');
+  });
+});
+
+describe('gananciaDeVentaDivisa', () => {
+  it('(venta − costo) × dólares, en pesos', () => {
+    expect(
+      gananciaDeVentaDivisa({
+        montoDivisa: '150',
+        tasaUsada: '4100',
+        costoPromedio: '3950.5',
+      }).toFixed(2),
+    ).toBe('22425.00');
+  });
+
+  it('redondea medio peso hacia arriba y puede ser negativa', () => {
+    expect(
+      gananciaDeVentaDivisa({
+        montoDivisa: '0.01',
+        tasaUsada: '4000.5',
+        costoPromedio: '4000',
+      }).toFixed(2),
+    ).toBe('0.01');
+    expect(
+      gananciaDeVentaDivisa({
+        montoDivisa: '100',
+        tasaUsada: '3900',
+        costoPromedio: '4000',
+      }).toFixed(2),
+    ).toBe('-10000.00');
+  });
+});
+
+describe('totalDeDenominaciones', () => {
+  it('suma valor × cantidad; vacío es cero', () => {
+    expect(
+      totalDeDenominaciones([
+        { valor: '100', cantidad: 2 },
+        { valor: '20', cantidad: 3 },
+        { valor: '0.25', cantidad: 4 },
+      ]).toFixed(2),
+    ).toBe('261.00');
+    expect(totalDeDenominaciones([]).toFixed(2)).toBe('0.00');
   });
 });

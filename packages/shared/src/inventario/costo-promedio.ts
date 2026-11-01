@@ -120,3 +120,28 @@ export function gananciaDeRemesa(datos: {
       : fijarMonto(multiplicar(datos.costoBancario, costo), 'COP');
   return { bruta, costoBancarioPesos, neta: fijarMonto(restar(bruta, costoBancarioPesos), 'COP') };
 }
+
+/**
+ * Ganancia de una venta de divisa en caja (§7.3, D146): `(tasa de venta − costo promedio) × divisa`,
+ * fijada en pesos con ROUND_HALF_UP. No hay costo bancario: es efectivo en la caja.
+ */
+export function gananciaDeVentaDivisa(datos: {
+  montoDivisa: ValorDecimal;
+  tasaUsada: ValorDecimal;
+  costoPromedio: ValorDecimal;
+}): Decimal {
+  return fijarMonto(
+    multiplicar(restar(datos.tasaUsada, datos.costoPromedio), datos.montoDivisa),
+    'COP',
+  );
+}
+
+/** Total de un conteo de billetes: Σ valor × cantidad, sin redondear. */
+export function totalDeDenominaciones(
+  items: readonly { valor: ValorDecimal; cantidad: number }[],
+): Decimal {
+  return items.reduce<Decimal>(
+    (total, item) => sumar(total, multiplicar(item.valor, String(item.cantidad))),
+    new Decimal(0),
+  );
+}

@@ -39,6 +39,8 @@ import { rutasContrapartes } from './modulos/contrapartes/rutas.js';
 import { crearServicioContrapartes } from './modulos/contrapartes/servicio.js';
 import { rutasCompras } from './modulos/compras/rutas.js';
 import { crearServicioCompras } from './modulos/compras/servicio.js';
+import { rutasDivisas } from './modulos/divisas/rutas.js';
+import { crearServicioDivisas } from './modulos/divisas/servicio.js';
 import { rutasInventario } from './modulos/inventario/rutas.js';
 import { crearServicioInventario } from './modulos/inventario/servicio.js';
 import { rutasTraslados } from './modulos/traslados/rutas.js';
@@ -143,6 +145,7 @@ export function construirApp({
     rutasContrapartes(rutas, crearServicioContrapartes({ prisma }));
     rutasCompras(rutas, crearServicioCompras({ prisma }));
     rutasInventario(rutas, crearServicioInventario({ prisma }));
+    rutasDivisas(rutas, crearServicioDivisas({ prisma }));
     listo();
   });
 

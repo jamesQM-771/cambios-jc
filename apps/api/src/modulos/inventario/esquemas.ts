@@ -39,7 +39,15 @@ export const esquemaInventarioPublico = z.object({
 
 export const esquemaMovimientoInventario = z.object({
   id: z.string(),
-  origen: z.enum(['ajuste', 'compra', 'compra_anulacion', 'remesa_pago']),
+  origen: z.enum([
+    'ajuste',
+    'compra',
+    'compra_anulacion',
+    'remesa_pago',
+    'divisa_compra',
+    'divisa_venta',
+    'divisa_anulacion',
+  ]),
   sentido: z.enum(['entrada', 'salida']),
   cantidad: z.string(),
   tasa: z.string().nullable(),

@@ -2,6 +2,8 @@ export {
   entrarAlInventario,
   fijarCosto,
   gananciaDeRemesa,
+  gananciaDeVentaDivisa,
+  totalDeDenominaciones,
   revertirEntrada,
   salirDelInventario,
   type EstadoInventario,

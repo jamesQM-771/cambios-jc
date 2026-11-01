@@ -63,9 +63,16 @@ export interface ResumenJornada {
     remesasCosteadas: number;
     remesasSinCosto: number;
     gananciaRemesas: string;
+    gananciaDivisas?: string;
     costosBancarios: string;
     gastosOperativos: string;
     gananciaDelDia: string;
+  };
+  divisas?: {
+    compras: number;
+    ventas: number;
+    comprado: TotalPorMoneda[];
+    vendido: TotalPorMoneda[];
   };
   contrapartes?: {
     saldos: { moneda: string; meDeben: string; lesDebo: string }[];

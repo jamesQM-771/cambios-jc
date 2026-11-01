@@ -87,6 +87,9 @@ export const FRASES_ACCION: Record<string, string> = {
   'compra.registrar': 'registró una compra de divisa a una contraparte',
   'compra.anular': 'anuló una compra de divisa',
   'inventario.ajustar': 'ajustó el inventario de una divisa',
+  'divisa.compra': 'le compró divisa a un cliente en caja',
+  'divisa.venta': 'le vendió divisa a un cliente en caja',
+  'divisa.anular': 'anuló una compra o venta de divisa en caja',
   'seed.crear': 'creó los datos iniciales del sistema',
   'usuario.restablecer_acceso_emergencia':
     'restableció el acceso de un administrador desde el servidor',
@@ -115,6 +118,7 @@ export const ETIQUETAS_ENTIDAD: Record<string, string> = {
   contraparte: 'Contrapartes',
   compra: 'Compras de divisa',
   inventario: 'Inventario de divisas',
+  operacion_divisa: 'Divisas en caja',
 };
 
 /** Nombre legible de los campos que aparecen en el antes y el después. */

@@ -8,7 +8,14 @@ export interface Inventario {
 
 export interface MovimientoInventario {
   id: string;
-  origen: 'ajuste' | 'compra' | 'compra_anulacion' | 'remesa_pago';
+  origen:
+    | 'ajuste'
+    | 'compra'
+    | 'compra_anulacion'
+    | 'remesa_pago'
+    | 'divisa_compra'
+    | 'divisa_venta'
+    | 'divisa_anulacion';
   sentido: 'entrada' | 'salida';
   cantidad: string;
   tasa: string | null;
@@ -33,4 +40,7 @@ export const ETIQUETAS_ORIGEN_INVENTARIO: Record<MovimientoInventario['origen'],
   compra: 'Compra',
   compra_anulacion: 'Compra anulada',
   remesa_pago: 'Pago de remesa',
+  divisa_compra: 'Compra en caja',
+  divisa_venta: 'Venta en caja',
+  divisa_anulacion: 'Operación en caja anulada',
 };

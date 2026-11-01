@@ -221,6 +221,7 @@ interface DetalleJson {
       remesasCosteadas: number;
       remesasSinCosto: number;
       gananciaRemesas: string;
+      gananciaDivisas?: string;
       costosBancarios: string;
       gastosOperativos: string;
       gananciaDelDia: string;
@@ -442,6 +443,7 @@ describe('ganancia, contrapartes y posición (fase 4)', () => {
       remesasCosteadas: 2,
       remesasSinCosto: 1,
       gananciaRemesas: '3585.61',
+      gananciaDivisas: '0.00',
       costosBancarios: '46.25',
       gastosOperativos: '500.00',
       gananciaDelDia: '3085.61',

@@ -37,6 +37,7 @@ async function bloquear(tx: Prisma.TransactionClient, moneda: Moneda): Promise<E
 interface Referencias {
   compraId?: string | undefined;
   operacionId?: string | undefined;
+  operacionDivisaId?: string | undefined;
   nota?: string | null | undefined;
   usuarioId: string;
 }
@@ -74,6 +75,7 @@ async function guardar(
       costoDespues: despues.costoPromedio?.toString() ?? null,
       compraId: movimiento.compraId ?? null,
       operacionId: movimiento.operacionId ?? null,
+      operacionDivisaId: movimiento.operacionDivisaId ?? null,
       nota: movimiento.nota ?? null,
       usuarioId: movimiento.usuarioId,
     },
@@ -87,7 +89,7 @@ export async function entrarInventario(
     moneda: Moneda;
     cantidad: ValorDecimal;
     tasa: ValorDecimal;
-    origen: 'compra' | 'ajuste';
+    origen: 'compra' | 'ajuste' | 'divisa_compra' | 'divisa_anulacion';
   } & Referencias,
 ): Promise<EstadoInventario> {
   const antes = await bloquear(tx, datos.moneda);
@@ -109,7 +111,7 @@ export async function salirInventario(
   datos: {
     moneda: Moneda;
     cantidad: ValorDecimal;
-    origen: 'remesa_pago' | 'ajuste';
+    origen: 'remesa_pago' | 'ajuste' | 'divisa_venta' | 'divisa_anulacion';
   } & Referencias,
 ): Promise<Decimal | null> {
   const antes = await bloquear(tx, datos.moneda);
@@ -129,13 +131,18 @@ export async function salirInventario(
 /** Deshace la entrada de una compra anulada (D139). */
 export async function revertirCompraEnInventario(
   tx: Prisma.TransactionClient,
-  datos: { moneda: Moneda; cantidad: ValorDecimal; tasa: ValorDecimal } & Referencias,
+  datos: {
+    moneda: Moneda;
+    cantidad: ValorDecimal;
+    tasa: ValorDecimal;
+    origen?: 'compra_anulacion' | 'divisa_anulacion';
+  } & Referencias,
 ): Promise<void> {
   const antes = await bloquear(tx, datos.moneda);
   const despues = revertirEntrada(antes, datos.cantidad, datos.tasa, datos.moneda);
   await guardar(tx, datos.moneda, antes, despues, {
     ...datos,
-    origen: 'compra_anulacion',
+    origen: datos.origen ?? 'compra_anulacion',
     sentido: 'salida',
     tasa: aDecimal(datos.tasa),
   });
