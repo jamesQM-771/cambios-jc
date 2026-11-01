@@ -13,6 +13,17 @@ export const listarRemesas = (estado?: EstadoRemesa) =>
 
 export const obtenerRemesa = (id: string) => api.get<{ remesa: Remesa }>(`/remesas/${id}`);
 
+/** Costo y ganancia de una remesa pagada; solo con el permiso `ganancia.ver` (D140). */
+export interface GananciaRemesa {
+  costoPromedio: string;
+  bruta: string;
+  costoBancarioPesos: string;
+  neta: string;
+}
+
+export const gananciaRemesa = (id: string) =>
+  api.get<{ ganancia: GananciaRemesa | null }>(`/remesas/${id}/ganancia`);
+
 export const historialRemesa = (id: string) =>
   api.get<{ historial: EventoRemesa[] }>(`/remesas/${id}/historial`);
 

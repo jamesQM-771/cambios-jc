@@ -40,5 +40,5 @@ Cada una termina con pruebas, `npm run check` en verde y commit.
 | 4.4 | Compras de bolívares a contrapartes: de contado, a crédito o contra anticipo (fondeo) | Hecha |
 | 4.5 | Ganancia neta por remesa al pagarse, con su costo bancario | Hecha |
 | 4.6 | Jornada: ganancia del día, contrapartes y posición total | Hecha |
-| 4.7 | Pantallas (contrapartes, compras, inventario, ganancia y titular de cuenta) | Pendiente |
+| 4.7 | Pantallas (contrapartes, compras, inventario, ganancia y titular de cuenta) | Hecha |
 | 4.8 | Pruebas de extremo a extremo y cierre | Pendiente |

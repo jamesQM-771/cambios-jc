@@ -13,6 +13,8 @@ export interface CuentaDinero {
   sucursalId: string;
   sucursalNombre: string;
   titular: string | null;
+  contraparteTitularId: string | null;
+  contraparteTitularNombre: string | null;
   responsableId: string | null;
   responsableNombre: string | null;
   activa: boolean;
@@ -30,6 +32,7 @@ export type DatosCuentaNueva =
       moneda: Moneda;
       sucursalId: string;
       titular?: string | null;
+      contraparteTitularId?: string | null;
       responsableId?: string | null;
       limiteDiario?: string | null;
       comisionPorDefecto?: string | null;
@@ -40,6 +43,7 @@ export type DatosCuentaNueva =
       moneda: Moneda;
       sucursalId: string;
       titular?: string | null;
+      contraparteTitularId?: string | null;
       responsableId?: string | null;
       limiteDiario?: string | null;
       comisionPorDefecto?: string | null;
@@ -49,6 +53,7 @@ export interface CambiosCuenta {
   nombre?: string;
   ultimos4Digitos?: string;
   titular?: string | null;
+  contraparteTitularId?: string | null;
   responsableId?: string | null;
   limiteDiario?: string | null;
   comisionPorDefecto?: string | null;

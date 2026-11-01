@@ -95,6 +95,71 @@ export function ResumenDelDia({ resumen }: { resumen: ResumenJornada }) {
         </div>
       </dl>
 
+      {resumen.ganancia && (
+        <>
+          <h3>Ganancia del día</h3>
+          <dl className="resumen-dia">
+            <div>
+              <dt>Remesas pagadas</dt>
+              <dd>
+                {resumen.ganancia.remesasCosteadas} con costo
+                {resumen.ganancia.remesasSinCosto > 0 &&
+                  ` · ${String(resumen.ganancia.remesasSinCosto)} sin costo conocido (no suman)`}
+              </dd>
+            </div>
+            <div>
+              <dt>Ganancia de remesas (neta de costos bancarios)</dt>
+              <dd className="mono">
+                {dinero(resumen.ganancia.gananciaRemesas, resumen.ganancia.moneda)}
+              </dd>
+            </div>
+            <div>
+              <dt>Costos bancarios descontados</dt>
+              <dd className="mono">
+                {dinero(resumen.ganancia.costosBancarios, resumen.ganancia.moneda)}
+              </dd>
+            </div>
+            <div>
+              <dt>Gastos operativos</dt>
+              <dd className="mono">
+                {dinero(resumen.ganancia.gastosOperativos, resumen.ganancia.moneda)}
+              </dd>
+            </div>
+            <div>
+              <dt>Ganancia del día</dt>
+              <dd className="mono">
+                <strong>{dinero(resumen.ganancia.gananciaDelDia, resumen.ganancia.moneda)}</strong>
+              </dd>
+            </div>
+          </dl>
+        </>
+      )}
+
+      {resumen.contrapartes && (
+        <>
+          <h3>Contrapartes y posición</h3>
+          <dl className="resumen-dia">
+            {resumen.contrapartes.saldos.map((fila) => (
+              <div key={fila.moneda}>
+                <dt>Contrapartes en {fila.moneda}</dt>
+                <dd className="mono">
+                  Me deben {dinero(fila.meDeben, fila.moneda)} · Les debo{' '}
+                  {dinero(fila.lesDebo, fila.moneda)}
+                </dd>
+              </div>
+            ))}
+            <div>
+              <dt>Movimientos de contrapartes hoy</dt>
+              <dd>{resumen.contrapartes.movimientosDelDia}</dd>
+            </div>
+            {resumen.devolucionesPendientes && (
+              <Totales titulo="Devoluciones pendientes" filas={resumen.devolucionesPendientes} />
+            )}
+            {resumen.posicion && <Totales titulo="Posición total" filas={resumen.posicion} />}
+          </dl>
+        </>
+      )}
+
       {resumen.diferenciasDeArqueo.length > 0 && (
         <>
           <h3>Diferencias de arqueo</h3>

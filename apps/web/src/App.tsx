@@ -20,6 +20,9 @@ import { PaginaLogin } from './paginas/acceso/PaginaLogin.js';
 import { PaginaVerificar2fa } from './paginas/acceso/PaginaVerificar2fa.js';
 import { PaginaBitacora } from './paginas/bitacora/PaginaBitacora.js';
 import { PaginaClientes } from './paginas/clientes/PaginaClientes.js';
+import { PaginaCompras } from './paginas/compras/PaginaCompras.js';
+import { PaginaContrapartes } from './paginas/contrapartes/PaginaContrapartes.js';
+import { PaginaInventario } from './paginas/inventario/PaginaInventario.js';
 import { PaginaCola } from './paginas/cola/PaginaCola.js';
 import { PaginaEmpresa } from './paginas/empresa/PaginaEmpresa.js';
 import { PaginaGastos } from './paginas/gastos/PaginaGastos.js';
@@ -109,6 +112,30 @@ export function App() {
             element={
               <RutaConPermiso permiso="jornada.cerrar">
                 <PaginaJornada />
+              </RutaConPermiso>
+            }
+          />
+          <Route
+            path="contrapartes"
+            element={
+              <RutaConPermiso permiso="contraparte.registrar_movimiento">
+                <PaginaContrapartes />
+              </RutaConPermiso>
+            }
+          />
+          <Route
+            path="compras"
+            element={
+              <RutaConPermiso permiso="compra_contraparte.registrar">
+                <PaginaCompras />
+              </RutaConPermiso>
+            }
+          />
+          <Route
+            path="inventario"
+            element={
+              <RutaConPermiso permiso="compra_contraparte.registrar">
+                <PaginaInventario />
               </RutaConPermiso>
             }
           />
