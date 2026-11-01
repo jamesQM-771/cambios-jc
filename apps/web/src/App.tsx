@@ -18,6 +18,7 @@ import { PaginaCambiarContrasena } from './paginas/acceso/PaginaCambiarContrasen
 import { PaginaConfigurar2fa } from './paginas/acceso/PaginaConfigurar2fa.js';
 import { PaginaLogin } from './paginas/acceso/PaginaLogin.js';
 import { PaginaVerificar2fa } from './paginas/acceso/PaginaVerificar2fa.js';
+import { PaginaAprobaciones } from './paginas/aprobaciones/PaginaAprobaciones.js';
 import { PaginaBitacora } from './paginas/bitacora/PaginaBitacora.js';
 import { PaginaClientes } from './paginas/clientes/PaginaClientes.js';
 import { PaginaCompras } from './paginas/compras/PaginaCompras.js';
@@ -116,6 +117,14 @@ export function App() {
             element={
               <RutaConPermiso permiso="jornada.cerrar">
                 <PaginaJornada />
+              </RutaConPermiso>
+            }
+          />
+          <Route
+            path="aprobaciones"
+            element={
+              <RutaConPermiso permiso="aprobacion.aprobar">
+                <PaginaAprobaciones />
               </RutaConPermiso>
             }
           />

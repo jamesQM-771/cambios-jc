@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, type SyntheticEvent } from 'react';
 
 import { Aviso } from '../../componentes/Aviso.js';
+import { MENSAJE_PENDIENTE, quedoPendiente } from '../../lib/aprobacion.js';
 import { Boton } from '../../componentes/Boton.js';
 import { Campo } from '../../componentes/Campo.js';
 import { CampoAreaTexto } from '../../componentes/CampoAreaTexto.js';
@@ -150,9 +151,9 @@ export function PaginaInventario() {
           <FormularioAjuste
             moneda={moneda}
             alCancelar={() => setAjustando(false)}
-            alGuardar={() => {
+            alGuardar={(pendiente) => {
               setAjustando(false);
-              notificar('Inventario ajustado.');
+              notificar(pendiente ? MENSAJE_PENDIENTE : 'Inventario ajustado.');
             }}
           />
         )}
@@ -167,7 +168,7 @@ function FormularioAjuste({
   alCancelar,
 }: {
   moneda: string;
-  alGuardar: () => void;
+  alGuardar: (pendiente: boolean) => void;
   alCancelar: () => void;
 }) {
   const consultas = useQueryClient();
@@ -185,9 +186,9 @@ function FormularioAjuste({
         ...(sentido === 'entrada' ? { tasa: normalizarDecimal(tasa) } : {}),
         motivo: motivo.trim(),
       }),
-    onSuccess: async () => {
+    onSuccess: async (respuesta) => {
       await consultas.invalidateQueries({ queryKey: CLAVE_INVENTARIO });
-      alGuardar();
+      alGuardar(quedoPendiente(respuesta));
     },
   });
   const delServidor = erroresPorCampo(ajustar.error);

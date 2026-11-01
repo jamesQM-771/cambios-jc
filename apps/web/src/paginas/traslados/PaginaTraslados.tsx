@@ -8,6 +8,7 @@ import { CampoAreaTexto } from '../../componentes/CampoAreaTexto.js';
 import { Dialogo } from '../../componentes/Dialogo.js';
 import { useNotificar } from '../../componentes/Notificaciones.js';
 import { EncabezadoPagina, EstadoVacio, Esqueleto } from '../../componentes/Pagina.js';
+import { MENSAJE_PENDIENTE, quedoPendiente } from '../../lib/aprobacion.js';
 import { mensajeDe } from '../../lib/api.js';
 import { formatearFechaHora } from '../../lib/formato.js';
 import { useTitulo } from '../../lib/titulo.js';
@@ -43,10 +44,14 @@ export function PaginaTraslados() {
       if (!anulando) throw new Error('Elige un traslado.');
       return anularTraslado(anulando.id, motivo.trim());
     },
-    onSuccess: async () => {
+    onSuccess: async (respuesta) => {
       setAnulando(null);
       setMotivo('');
-      notificar('Traslado anulado: el dinero volvió a su cuenta de origen.');
+      notificar(
+        quedoPendiente(respuesta)
+          ? MENSAJE_PENDIENTE
+          : 'Traslado anulado: el dinero volvió a su cuenta de origen.',
+      );
       await consultas.invalidateQueries({ queryKey: CLAVE_TRASLADOS });
     },
   });

@@ -14,6 +14,7 @@ import {
   EstadoVacio,
   Esqueleto,
 } from '../../componentes/Pagina.js';
+import { MENSAJE_PENDIENTE } from '../../lib/aprobacion.js';
 import { mensajeDe } from '../../lib/api.js';
 import { formatearFechaHora } from '../../lib/formato.js';
 import { useTitulo } from '../../lib/titulo.js';
@@ -224,9 +225,9 @@ function DetalleContraparte({ id }: { id: string }) {
         contraparteId={contraparte.id}
         opciones={opciones.data}
         alCancelar={() => setVista('historial')}
-        alRegistrar={() => {
+        alRegistrar={(pendiente) => {
           setVista('historial');
-          notificar('Movimiento registrado.');
+          notificar(pendiente ? MENSAJE_PENDIENTE : 'Movimiento registrado.');
         }}
       />
     );

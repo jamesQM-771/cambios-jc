@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 
 import { errores } from '../../lib/errores.js';
 import type { ProveedorZod } from '../../plugins/validacion-zod.js';
+import { respuestaSolicitud, type ServicioAprobaciones } from '../aprobaciones/servicio.js';
 import type { ContextoPeticion } from '../auth/servicio.js';
 
 import {
@@ -29,8 +30,15 @@ const CERRAR = { permiso: 'jornada.cerrar' } as const;
 /** Reabrir un cierre solo lo puede el administrador, sin importar cómo se configuren los demás roles. */
 const REABRIR = { permiso: 'caja.reabrir' } as const;
 
-export function rutasJornadas(app: FastifyInstance, servicio: ServicioJornadas): void {
+export function rutasJornadas(
+  app: FastifyInstance,
+  servicio: ServicioJornadas,
+  aprobaciones?: ServicioAprobaciones,
+): void {
   const rutas = app.withTypeProvider<ProveedorZod>();
+  aprobaciones?.registrarEjecutor('reabrir_jornada', (id, datos, actor, contexto) =>
+    servicio.reabrir(id, String(datos.motivo), actor, contexto),
+  );
 
   rutas.get(
     '/jornadas',
@@ -74,16 +82,27 @@ export function rutasJornadas(app: FastifyInstance, servicio: ServicioJornadas):
       schema: {
         params: esquemaId,
         body: esquemaReabrirJornada,
-        response: { 200: respuestaDetalleJornada },
+        response: { 200: respuestaDetalleJornada, 202: respuestaSolicitud },
       },
     },
-    async (request) => ({
-      detalle: await servicio.reabrir(
+    async (request, respuesta) => {
+      const solicitud = await aprobaciones?.interceptar(
+        'reabrir_jornada',
         request.params.id,
-        request.body.motivo,
+        { motivo: request.body.motivo },
+        `Reabrir una jornada: ${request.body.motivo}`,
         actorDe(request),
         contextoDe(request),
-      ),
-    }),
+      );
+      if (solicitud) return respuesta.status(202).send({ solicitud });
+      return {
+        detalle: await servicio.reabrir(
+          request.params.id,
+          request.body.motivo,
+          actorDe(request),
+          contextoDe(request),
+        ),
+      };
+    },
   );
 }

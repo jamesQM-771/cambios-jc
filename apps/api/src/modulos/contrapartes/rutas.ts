@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 
 import { errores } from '../../lib/errores.js';
 import type { ProveedorZod } from '../../plugins/validacion-zod.js';
+import { respuestaSolicitud, type ServicioAprobaciones } from '../aprobaciones/servicio.js';
 import type { ContextoPeticion } from '../auth/servicio.js';
 
 import {
@@ -33,8 +34,15 @@ const actorDe = (request: FastifyRequest) => {
 /** Catálogo y cuenta corriente de las contrapartes: solo el administrador (§6.2). */
 const CONTRAPARTES = { permiso: 'contraparte.registrar_movimiento' } as const;
 
-export function rutasContrapartes(app: FastifyInstance, servicio: ServicioContrapartes): void {
+export function rutasContrapartes(
+  app: FastifyInstance,
+  servicio: ServicioContrapartes,
+  aprobaciones?: ServicioAprobaciones,
+): void {
   const rutas = app.withTypeProvider<ProveedorZod>();
+  aprobaciones?.registrarEjecutor('ajuste_contraparte', (id, datos, actor, contexto) =>
+    servicio.registrarMovimiento(id, esquemaRegistrarMovimiento.parse(datos), actor, contexto),
+  );
 
   rutas.get(
     '/contrapartes',
@@ -108,10 +116,21 @@ export function rutasContrapartes(app: FastifyInstance, servicio: ServicioContra
       schema: {
         params: esquemaId,
         body: esquemaRegistrarMovimiento,
-        response: { 200: respuestaMovimiento, 201: respuestaMovimiento },
+        response: { 200: respuestaMovimiento, 201: respuestaMovimiento, 202: respuestaSolicitud },
       },
     },
     async (request, respuesta) => {
+      if (request.body.tipo === 'ajuste') {
+        const solicitud = await aprobaciones?.interceptar(
+          'ajuste_contraparte',
+          request.params.id,
+          { ...request.body },
+          `Ajuste de ${request.body.monto} ${request.body.moneda} en una contraparte: ${request.body.nota ?? ''}`,
+          actorDe(request),
+          contextoDe(request),
+        );
+        if (solicitud) return respuesta.status(202).send({ solicitud });
+      }
       const resultado = await servicio.registrarMovimiento(
         request.params.id,
         request.body,

@@ -16,6 +16,7 @@ El proyecto se entrega en 14 fases agrupadas en 4 versiones (detalle en `docs/PR
 | **MVP** — primer uso real             | 0. Base · 1. Configuración · 2. Remesas · 3. Caja                                                                              |
 | **v1** — reemplazo completo del Excel | 4. Inventario y contrapartes · 5. Divisas en caja · 6. Facturación DIAN (opcional) · 7. Cumplimiento · 8. Reportes y migración |
 | **v1.5** — control y comodidad        | 9. Liquidez · 10. Doble control · 11. Tasa asistida · 12. WhatsApp · 12b. Comprobante (OCR) · 13. Permisos                     |
+| 10. Doble control                     | Completa salvo monto y tasa fuera de rango (D166): solicitudes, bandeja, nadie aprueba lo propio, apagado por defecto          |
 | **v2** — otros negocios               | Solo después de varios meses estables en Cambios JC                                                                            |
 
 | Fase             | Estado                                                                                                                                              |

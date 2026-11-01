@@ -41,6 +41,8 @@ import { rutasCompras } from './modulos/compras/rutas.js';
 import { crearServicioCompras } from './modulos/compras/servicio.js';
 import { rutasCumplimiento } from './modulos/cumplimiento/rutas.js';
 import { crearServicioCumplimiento } from './modulos/cumplimiento/servicio.js';
+import { rutasAprobaciones } from './modulos/aprobaciones/rutas.js';
+import { crearServicioAprobaciones } from './modulos/aprobaciones/servicio.js';
 import { rutasDatos } from './modulos/datos/rutas.js';
 import { crearServicioDatos } from './modulos/datos/servicio.js';
 import { rutasDivisas } from './modulos/divisas/rutas.js';
@@ -118,6 +120,7 @@ export function construirApp({
   // seguridad. El límite de peticiones se engancha con onRoute y solo alcanza a las rutas declaradas
   // una vez cargado; una ruta declarada aquí, fuera de un plugin, quedaría sin límite.
   app.register((rutas, _opciones, listo) => {
+    const aprobaciones = crearServicioAprobaciones({ prisma });
     rutasSalud(rutas, prisma);
     rutasAuth(rutas, { servicio: servicioAuth, prisma, config });
     rutasUsuarios(rutas, crearServicioUsuarios({ prisma, auth: servicioAuth }));
@@ -136,7 +139,11 @@ export function construirApp({
     rutasLineasNegocio(rutas, crearServicioLineasNegocio({ prisma }));
     const almacenamiento = crearAlmacenamiento(config.CARPETA_SUBIDAS);
     const { notificador } = tiempoReal;
-    rutasRemesas(rutas, crearServicioRemesas({ prisma, almacenamiento, notificador }));
+    rutasRemesas(
+      rutas,
+      crearServicioRemesas({ prisma, almacenamiento, notificador }),
+      aprobaciones,
+    );
     rutasCola(rutas, crearServicioCola({ prisma, almacenamiento, notificador }));
     rutasRecibos(rutas, crearServicioRecibos({ prisma, origenWeb: config.ORIGEN_WEB }));
     rutasSeguimiento(rutas, crearServicioSeguimiento({ prisma }));
@@ -144,15 +151,16 @@ export function construirApp({
     rutasClientes(rutas, crearServicioClientes({ prisma }));
     rutasTurnos(rutas, crearServicioTurnos({ prisma }));
     rutasLibro(rutas, crearServicioLibro({ prisma }));
-    rutasTraslados(rutas, crearServicioTraslados({ prisma }));
+    rutasTraslados(rutas, crearServicioTraslados({ prisma }), aprobaciones);
     rutasCategoriasGasto(rutas, crearServicioCategoriasGasto({ prisma }));
-    rutasGastos(rutas, crearServicioGastos({ prisma }));
-    rutasJornadas(rutas, crearServicioJornadas({ prisma }));
+    rutasGastos(rutas, crearServicioGastos({ prisma }), aprobaciones);
+    rutasJornadas(rutas, crearServicioJornadas({ prisma }), aprobaciones);
     rutasCuentasDinero(rutas, crearServicioCuentasDinero({ prisma }));
-    rutasContrapartes(rutas, crearServicioContrapartes({ prisma }));
-    rutasCompras(rutas, crearServicioCompras({ prisma }));
-    rutasInventario(rutas, crearServicioInventario({ prisma }));
-    rutasDivisas(rutas, crearServicioDivisas({ prisma }));
+    rutasContrapartes(rutas, crearServicioContrapartes({ prisma }), aprobaciones);
+    rutasCompras(rutas, crearServicioCompras({ prisma }), aprobaciones);
+    rutasInventario(rutas, crearServicioInventario({ prisma }), aprobaciones);
+    rutasDivisas(rutas, crearServicioDivisas({ prisma }), aprobaciones);
+    rutasAprobaciones(rutas, aprobaciones);
     rutasCumplimiento(rutas, crearServicioCumplimiento({ prisma }));
     rutasReportes(rutas, crearServicioReportes({ prisma }));
     rutasDatos(rutas, crearServicioDatos({ prisma }));

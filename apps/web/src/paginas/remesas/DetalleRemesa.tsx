@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 
 import { Aviso } from '../../componentes/Aviso.js';
+import { MENSAJE_PENDIENTE, quedoPendiente } from '../../lib/aprobacion.js';
 import { Boton } from '../../componentes/Boton.js';
 import { BotonCopiar } from '../../componentes/BotonCopiar.js';
 import { Dialogo } from '../../componentes/Dialogo.js';
@@ -64,19 +65,22 @@ export function DetalleRemesa({ remesa, alCerrar }: PropiedadesDetalleRemesa) {
   const liberar = useMutation({ mutationFn: () => liberarRemesa(remesa.id), onSuccess: refrescar });
   const anular = useMutation({
     mutationFn: () => anularRemesa(remesa.id, motivo.trim()),
-    onSuccess: async () => {
+    onSuccess: async (respuesta) => {
       setAnulando(false);
+      if (quedoPendiente(respuesta)) notificar(MENSAJE_PENDIENTE);
       await refrescar();
     },
   });
 
   const devolver = useMutation({
     mutationFn: () => devolverRemesa(remesa.id, motivoDevolucion.trim()),
-    onSuccess: async () => {
+    onSuccess: async (respuesta) => {
       setDevolviendo(false);
       setMotivoDevolucion('');
       notificar(
-        `Remesa ${String(remesa.numeroComprobante)} devuelta: el dinero salió de la cuenta.`,
+        quedoPendiente(respuesta)
+          ? MENSAJE_PENDIENTE
+          : `Remesa ${String(remesa.numeroComprobante)} devuelta: el dinero salió de la cuenta.`,
       );
       await refrescar();
     },

@@ -8,6 +8,7 @@ import { CampoAreaTexto } from '../../componentes/CampoAreaTexto.js';
 import { Dialogo } from '../../componentes/Dialogo.js';
 import { useNotificar } from '../../componentes/Notificaciones.js';
 import { EncabezadoPagina, EstadoVacio, Esqueleto } from '../../componentes/Pagina.js';
+import { MENSAJE_PENDIENTE, quedoPendiente } from '../../lib/aprobacion.js';
 import { mensajeDe } from '../../lib/api.js';
 import { formatearFechaHora, formatearTasa } from '../../lib/formato.js';
 import { useTitulo } from '../../lib/titulo.js';
@@ -39,10 +40,10 @@ export function PaginaCompras() {
       if (!anulando) throw new Error('Elige una compra.');
       return anularCompra(anulando.id, motivo.trim());
     },
-    onSuccess: async () => {
+    onSuccess: async (respuesta) => {
       setAnulando(null);
       setMotivo('');
-      notificar('Compra anulada.');
+      notificar(quedoPendiente(respuesta) ? MENSAJE_PENDIENTE : 'Compra anulada.');
       await Promise.all([
         consultas.invalidateQueries({ queryKey: CLAVE_COMPRAS }),
         consultas.invalidateQueries({ queryKey: CLAVE_CONTRAPARTES }),

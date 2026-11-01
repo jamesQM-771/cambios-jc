@@ -7,6 +7,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRef, useState, type SyntheticEvent } from 'react';
 
 import { Aviso } from '../../componentes/Aviso.js';
+import { quedoPendiente } from '../../lib/aprobacion.js';
 import { Boton } from '../../componentes/Boton.js';
 import { Campo } from '../../componentes/Campo.js';
 import { CampoSelector } from '../../componentes/CampoSelector.js';
@@ -29,7 +30,7 @@ const MONEDAS = ['COP', 'VES', 'USD'] as const;
 interface Propiedades {
   contraparteId: string;
   opciones: OpcionesContraparte;
-  alRegistrar: () => void;
+  alRegistrar: (pendiente: boolean) => void;
   alCancelar: () => void;
 }
 
@@ -67,9 +68,9 @@ export function FormularioMovimiento({
         ...(efecto.admiteCuenta && cuentaId !== '' ? { cuentaId } : {}),
         ...(nota.trim() === '' ? {} : { nota: nota.trim() }),
       }),
-    onSuccess: async () => {
+    onSuccess: async (respuesta) => {
       await consultas.invalidateQueries({ queryKey: CLAVE_CONTRAPARTES });
-      alRegistrar();
+      alRegistrar(quedoPendiente(respuesta));
     },
   });
   const delServidor = erroresPorCampo(registrar.error);

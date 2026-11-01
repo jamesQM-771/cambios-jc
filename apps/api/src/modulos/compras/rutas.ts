@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 
 import { errores } from '../../lib/errores.js';
 import type { ProveedorZod } from '../../plugins/validacion-zod.js';
+import { respuestaSolicitud, type ServicioAprobaciones } from '../aprobaciones/servicio.js';
 import type { ContextoPeticion } from '../auth/servicio.js';
 
 import {
@@ -28,8 +29,15 @@ const actorDe = (request: FastifyRequest) => {
 /** Comprar divisa a contrapartes es del administrador (§6.2). */
 const COMPRAS = { permiso: 'compra_contraparte.registrar' } as const;
 
-export function rutasCompras(app: FastifyInstance, servicio: ServicioCompras): void {
+export function rutasCompras(
+  app: FastifyInstance,
+  servicio: ServicioCompras,
+  aprobaciones?: ServicioAprobaciones,
+): void {
   const rutas = app.withTypeProvider<ProveedorZod>();
+  aprobaciones?.registrarEjecutor('anular_compra', (id, datos, actor, contexto) =>
+    servicio.anular(id, String(datos.motivo), actor, contexto),
+  );
 
   rutas.get(
     '/compras/opciones',
@@ -75,15 +83,30 @@ export function rutasCompras(app: FastifyInstance, servicio: ServicioCompras): v
     '/compras/:id/anular',
     {
       config: COMPRAS,
-      schema: { params: esquemaId, body: esquemaAnularCompra, response: { 200: respuestaCompra } },
+      schema: {
+        params: esquemaId,
+        body: esquemaAnularCompra,
+        response: { 200: respuestaCompra, 202: respuestaSolicitud },
+      },
     },
-    async (request) => ({
-      compra: await servicio.anular(
+    async (request, respuesta) => {
+      const solicitud = await aprobaciones?.interceptar(
+        'anular_compra',
         request.params.id,
-        request.body.motivo,
+        { motivo: request.body.motivo },
+        `Anular una compra de divisa: ${request.body.motivo}`,
         actorDe(request),
         contextoDe(request),
-      ),
-    }),
+      );
+      if (solicitud) return respuesta.status(202).send({ solicitud });
+      return {
+        compra: await servicio.anular(
+          request.params.id,
+          request.body.motivo,
+          actorDe(request),
+          contextoDe(request),
+        ),
+      };
+    },
   );
 }

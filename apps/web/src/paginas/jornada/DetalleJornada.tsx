@@ -8,6 +8,7 @@ import { CampoAreaTexto } from '../../componentes/CampoAreaTexto.js';
 import { Dialogo } from '../../componentes/Dialogo.js';
 import { useNotificar } from '../../componentes/Notificaciones.js';
 import { Esqueleto } from '../../componentes/Pagina.js';
+import { MENSAJE_PENDIENTE, quedoPendiente } from '../../lib/aprobacion.js';
 import { mensajeDe } from '../../lib/api.js';
 import { formatearFechaHora } from '../../lib/formato.js';
 import { useSesionActual } from '../../modulos/auth/ContextoSesion.js';
@@ -37,10 +38,10 @@ export function DetalleJornada({ id }: { id: string }) {
 
   const reabrir = useMutation({
     mutationFn: () => reabrirJornada(id, motivo.trim()),
-    onSuccess: async () => {
+    onSuccess: async (respuesta) => {
       setReabriendo(false);
       setMotivo('');
-      notificar('Jornada reabierta.');
+      notificar(quedoPendiente(respuesta) ? MENSAJE_PENDIENTE : 'Jornada reabierta.');
       await consultas.invalidateQueries({ queryKey: CLAVE_JORNADAS });
     },
   });

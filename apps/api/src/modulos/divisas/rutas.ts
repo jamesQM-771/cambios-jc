@@ -3,6 +3,7 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 
 import { errores } from '../../lib/errores.js';
 import type { ProveedorZod } from '../../plugins/validacion-zod.js';
+import { respuestaSolicitud, type ServicioAprobaciones } from '../aprobaciones/servicio.js';
 import type { ContextoPeticion } from '../auth/servicio.js';
 
 import {
@@ -40,8 +41,22 @@ const OPERAR = { permiso: 'divisa_caja.operar' } as const;
 /** Anular y ver las de todos: solo el administrador. */
 const ANULAR = { permiso: 'divisa_caja.anular' } as const;
 
-export function rutasDivisas(app: FastifyInstance, servicio: ServicioDivisas): void {
+export function rutasDivisas(
+  app: FastifyInstance,
+  servicio: ServicioDivisas,
+  aprobaciones?: ServicioAprobaciones,
+): void {
   const rutas = app.withTypeProvider<ProveedorZod>();
+  // Al aprobar, anula quien aprueba: es el administrador, que ve todas las operaciones.
+  aprobaciones?.registrarEjecutor('anular_divisa', (id, datos, actor, contexto) =>
+    servicio.anular(
+      id,
+      String(datos.motivo),
+      actor,
+      { verGanancia: false, verTodas: true, cambiarTasa: false },
+      contexto,
+    ),
+  );
 
   rutas.get(
     '/divisas/opciones',
@@ -95,10 +110,23 @@ export function rutasDivisas(app: FastifyInstance, servicio: ServicioDivisas): v
     '/divisas/:id/anular',
     {
       config: ANULAR,
-      schema: { params: esquemaId, body: esquemaAnularDivisa, response: { 200: respuestaDivisa } },
+      schema: {
+        params: esquemaId,
+        body: esquemaAnularDivisa,
+        response: { 200: respuestaDivisa, 202: respuestaSolicitud },
+      },
     },
-    async (request) => {
+    async (request, respuesta) => {
       const { actor, alcance } = quien(request);
+      const solicitud = await aprobaciones?.interceptar(
+        'anular_divisa',
+        request.params.id,
+        { motivo: request.body.motivo },
+        `Anular una operación de divisas: ${request.body.motivo}`,
+        actor,
+        contextoDe(request),
+      );
+      if (solicitud) return respuesta.status(202).send({ solicitud });
       return {
         operacion: await servicio.anular(
           request.params.id,

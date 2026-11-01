@@ -3,6 +3,7 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 
 import { errores } from '../../lib/errores.js';
 import type { ProveedorZod } from '../../plugins/validacion-zod.js';
+import { respuestaSolicitud, type ServicioAprobaciones } from '../aprobaciones/servicio.js';
 import type { ContextoPeticion } from '../auth/servicio.js';
 
 import {
@@ -30,8 +31,15 @@ const REGISTRAR = { permiso: 'traslado.registrar' } as const;
 /** Ver todos los traslados, mover entre cualesquiera cuentas y anular es del administrador. */
 const GESTIONAR = { permiso: 'traslado.gestionar' } as const;
 
-export function rutasTraslados(app: FastifyInstance, servicio: ServicioTraslados): void {
+export function rutasTraslados(
+  app: FastifyInstance,
+  servicio: ServicioTraslados,
+  aprobaciones?: ServicioAprobaciones,
+): void {
   const rutas = app.withTypeProvider<ProveedorZod>();
+  aprobaciones?.registrarEjecutor('anular_traslado', (id, datos, actor, contexto) =>
+    servicio.anular(id, String(datos.motivo), actor, contexto),
+  );
 
   rutas.get(
     '/traslados/opciones',
@@ -88,16 +96,27 @@ export function rutasTraslados(app: FastifyInstance, servicio: ServicioTraslados
       schema: {
         params: esquemaId,
         body: esquemaAnularTraslado,
-        response: { 200: respuestaTraslado },
+        response: { 200: respuestaTraslado, 202: respuestaSolicitud },
       },
     },
-    async (request) => ({
-      traslado: await servicio.anular(
+    async (request, respuesta) => {
+      const solicitud = await aprobaciones?.interceptar(
+        'anular_traslado',
         request.params.id,
-        request.body.motivo,
+        { motivo: request.body.motivo },
+        `Anular un traslado: ${request.body.motivo}`,
         { id: usuarioDe(request).id },
         contextoDe(request),
-      ),
-    }),
+      );
+      if (solicitud) return respuesta.status(202).send({ solicitud });
+      return {
+        traslado: await servicio.anular(
+          request.params.id,
+          request.body.motivo,
+          { id: usuarioDe(request).id },
+          contextoDe(request),
+        ),
+      };
+    },
   );
 }

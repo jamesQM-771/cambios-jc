@@ -28,6 +28,7 @@ describe('menú según permisos', () => {
       'Configuración',
       'Actividad',
       'Cumplimiento',
+      'Aprobaciones',
     ]);
   });
 

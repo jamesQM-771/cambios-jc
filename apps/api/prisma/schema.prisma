@@ -276,6 +276,8 @@ model Usuario {
   perfilesActualizados   PerfilRiesgo[]
   listaRestrictivaCreada EntradaListaRestrictiva[]
   alertasResueltas       AlertaCumplimiento[]      @relation("AlertaResueltaPor")
+  solicitudesHechas      SolicitudAprobacion[]     @relation("SolicitudSolicitante")
+  solicitudesResueltas   SolicitudAprobacion[]     @relation("SolicitudAprobador")
 
   @@map("usuario")
 }
@@ -1285,4 +1287,66 @@ model ParametrosLiquidez {
   actualizadoEn    DateTime @default(now()) @map("actualizado_en") @db.Timestamptz(6)
 
   @@map("parametros_liquidez")
+}
+
+// ---------------------------------------------------------------------------
+// Fase 10: doble control (§5.12, D163 a D166)
+// ---------------------------------------------------------------------------
+
+/// Qué acciones pasan por aprobación. Todo apagado al instalar.
+model ParametrosDobleControl {
+  id                String   @id @default(uuid(7)) @db.Uuid
+  unica             Boolean  @unique @default(true)
+  reaperturaJornada Boolean  @default(false) @map("reapertura_jornada")
+  devoluciones      Boolean  @default(false)
+  anulaciones       Boolean  @default(false)
+  ajustes           Boolean  @default(false)
+  actualizadoEn     DateTime @default(now()) @map("actualizado_en") @db.Timestamptz(6)
+
+  @@map("parametros_doble_control")
+}
+
+enum AccionAprobacion {
+  reabrir_jornada
+  devolver_remesa
+  anular_remesa
+  anular_divisa
+  anular_compra
+  anular_gasto
+  anular_traslado
+  ajuste_contraparte
+  ajuste_inventario
+
+  @@map("accion_aprobacion")
+}
+
+enum EstadoSolicitud {
+  pendiente
+  aprobada
+  rechazada
+
+  @@map("estado_solicitud")
+}
+
+/// Solicitud de doble control: la acción queda guardada y la ejecuta otra persona al aprobarla.
+model SolicitudAprobacion {
+  id            String           @id @default(uuid(7)) @db.Uuid
+  accion        AccionAprobacion
+  /// Registro sobre el que actúa (jornada, remesa, contraparte, moneda del inventario…).
+  entidadId     String           @map("entidad_id")
+  /// Lo necesario para ejecutar la acción al aprobarla (el cuerpo de la petición original).
+  datos         Json
+  /// Resumen legible para la bandeja.
+  descripcion   String
+  estado        EstadoSolicitud  @default(pendiente)
+  solicitanteId String           @map("solicitante_id") @db.Uuid
+  solicitante   Usuario          @relation("SolicitudSolicitante", fields: [solicitanteId], references: [id], onDelete: Restrict)
+  aprobadorId   String?          @map("aprobador_id") @db.Uuid
+  aprobador     Usuario?         @relation("SolicitudAprobador", fields: [aprobadorId], references: [id], onDelete: Restrict)
+  comentario    String?
+  resueltaEn    DateTime?        @map("resuelta_en") @db.Timestamptz(6)
+  creadoEn      DateTime         @default(now()) @map("creado_en") @db.Timestamptz(6)
+
+  @@index([estado, creadoEn])
+  @@map("solicitud_aprobacion")
 }

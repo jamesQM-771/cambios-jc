@@ -172,6 +172,14 @@ export const ENTRADAS_MENU: readonly EntradaMenu[] = [
     descripcion: 'Alertas SARLAFT, lista restrictiva y exportes',
     permiso: 'cumplimiento.gestionar_alertas',
   },
+  {
+    ruta: '/aprobaciones',
+    grupo: 'Seguridad',
+    icono: 'bitacora',
+    etiqueta: 'Aprobaciones',
+    descripcion: 'Doble control: aprobar o rechazar lo que pidió otra persona',
+    permiso: 'aprobacion.aprobar',
+  },
 ];
 
 export const entradasVisibles = (permisos: readonly Permiso[]): EntradaMenu[] =>

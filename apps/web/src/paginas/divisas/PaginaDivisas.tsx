@@ -8,6 +8,7 @@ import { CampoAreaTexto } from '../../componentes/CampoAreaTexto.js';
 import { Dialogo } from '../../componentes/Dialogo.js';
 import { useNotificar } from '../../componentes/Notificaciones.js';
 import { EncabezadoPagina, EstadoVacio, Esqueleto } from '../../componentes/Pagina.js';
+import { MENSAJE_PENDIENTE, quedoPendiente } from '../../lib/aprobacion.js';
 import { mensajeDe } from '../../lib/api.js';
 import { formatearFechaHora, formatearTasa } from '../../lib/formato.js';
 import { useTitulo } from '../../lib/titulo.js';
@@ -49,10 +50,14 @@ export function PaginaDivisas() {
       if (!anulando) throw new Error('Elige una operación.');
       return anularDivisa(anulando.id, motivo.trim());
     },
-    onSuccess: async () => {
+    onSuccess: async (respuesta) => {
       setAnulando(null);
       setMotivo('');
-      notificar('Operación anulada: el dinero volvió a la caja.');
+      notificar(
+        quedoPendiente(respuesta)
+          ? MENSAJE_PENDIENTE
+          : 'Operación anulada: el dinero volvió a la caja.',
+      );
       await consultas.invalidateQueries({ queryKey: CLAVE_DIVISAS });
     },
   });

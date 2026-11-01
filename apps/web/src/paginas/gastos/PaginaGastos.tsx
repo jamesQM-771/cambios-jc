@@ -13,6 +13,7 @@ import {
   EstadoVacio,
   Esqueleto,
 } from '../../componentes/Pagina.js';
+import { MENSAJE_PENDIENTE, quedoPendiente } from '../../lib/aprobacion.js';
 import { mensajeDe } from '../../lib/api.js';
 import { formatearFechaHora } from '../../lib/formato.js';
 import { useTitulo } from '../../lib/titulo.js';
@@ -45,10 +46,14 @@ export function PaginaGastos() {
       if (!anulando) throw new Error('Elige un gasto.');
       return anularGasto(anulando.id, motivo.trim());
     },
-    onSuccess: async () => {
+    onSuccess: async (respuesta) => {
       setAnulando(null);
       setMotivo('');
-      notificar('Gasto anulado: el dinero volvió a la cuenta.');
+      notificar(
+        quedoPendiente(respuesta)
+          ? MENSAJE_PENDIENTE
+          : 'Gasto anulado: el dinero volvió a la cuenta.',
+      );
       await consultas.invalidateQueries({ queryKey: CLAVE_GASTOS });
     },
   });
