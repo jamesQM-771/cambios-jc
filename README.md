@@ -30,6 +30,7 @@ El proyecto se entrega en 14 fases agrupadas en 4 versiones (detalle en `docs/PR
 | 6. Facturación   | Omitida: opcional y desactivada en Cambios JC (D149)                                                                                                |
 | 7. Cumplimiento  | Completa con umbrales apagados hasta definirlos: ficha, nivel de riesgo, lista restrictiva, alertas y exporte CSV                                   |
 | 8. Reportes      | Completa salvo la carga histórica de los .xlsx (bloqueada, ver FASE-8): reportes, histórico, tablero, exportación de datos y saldos de contrapartes |
+| 9. Liquidez      | Completa: disponible, comprometido y libre, límites diarios, anticipos en tránsito, alertas y aviso al registrar                                    |
 
 Cada fase vive en su propia rama (`fase-0-base`, `fase-1-configuracion`…) y se fusiona a `main` al cerrarla.
 

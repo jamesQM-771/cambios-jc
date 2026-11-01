@@ -38,6 +38,7 @@ const MATRIZ: Record<Permiso, readonly [boolean, boolean, boolean]> = {
   'reporte.ver': [true, false, false],
   'datos.exportar': [true, false, false],
   'migracion.cargar': [true, false, false],
+  'liquidez.ver': [true, false, false],
   'aprobacion.aprobar': [true, false, false],
   'cumplimiento.gestionar_alertas': [true, false, false],
 };

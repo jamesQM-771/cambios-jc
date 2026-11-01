@@ -1269,3 +1269,20 @@ model AlertaCumplimiento {
   @@index([clienteId])
   @@map("alerta_cumplimiento")
 }
+
+// ---------------------------------------------------------------------------
+// Fase 9: liquidez (§5.10, §7.4, D160 a D162)
+// ---------------------------------------------------------------------------
+
+/// Umbrales de las alertas de liquidez. Null = alerta apagada.
+model ParametrosLiquidez {
+  id               String   @id @default(uuid(7)) @db.Uuid
+  unica            Boolean  @unique @default(true)
+  /// Bolívares libres (en la moneda destino) por debajo de los cuales se alerta.
+  umbralLibre      Decimal? @map("umbral_libre") @db.Decimal(18, 3)
+  /// Porcentaje del límite diario de una cuenta a partir del cual se alerta (ej. 80).
+  porcentajeLimite Int?     @map("porcentaje_limite")
+  actualizadoEn    DateTime @default(now()) @map("actualizado_en") @db.Timestamptz(6)
+
+  @@map("parametros_liquidez")
+}

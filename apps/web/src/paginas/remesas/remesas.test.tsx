@@ -364,6 +364,8 @@ describe('nueva remesa', () => {
       }),
       'GET /clientes/c-2': { cuerpo: { cliente: beneficiarioConMedios } },
       'GET /clientes/bancos': { cuerpo: { bancos: [] } },
+      // Fase 9: la liquidez no alcanza; se avisa pero se deja registrar.
+      'GET /liquidez/alcanza': { cuerpo: { alcanza: false } },
       'POST /remesas': { estado: 201, cuerpo: { remesa: creada } },
       'POST /remesas/r-1/recibo': {
         cuerpo: {
@@ -416,6 +418,7 @@ describe('nueva remesa', () => {
 
     await usuario.type(screen.getByLabelText('Pesos entregados (COP)'), '162000');
     expect(await screen.findByText('VES 43.085,106')).toBeInTheDocument();
+    expect(await screen.findByText(/Los bolívares libres no alcanzan/)).toBeInTheDocument();
     await usuario.click(screen.getByRole('button', { name: 'Registrar remesa' }));
 
     await waitFor(() => expect(api.de('POST', '/remesas')).toHaveLength(1));

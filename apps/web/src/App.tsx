@@ -31,6 +31,7 @@ import { PaginaGastos } from './paginas/gastos/PaginaGastos.js';
 import { PaginaJornada } from './paginas/jornada/PaginaJornada.js';
 import { PaginaInicio } from './paginas/PaginaInicio.js';
 import { PaginaNoEncontrada } from './paginas/PaginaNoEncontrada.js';
+import { PaginaLiquidez } from './paginas/liquidez/PaginaLiquidez.js';
 import { PaginaRemesas } from './paginas/remesas/PaginaRemesas.js';
 import { PaginaReportes } from './paginas/reportes/PaginaReportes.js';
 import { PaginaSeguimiento } from './paginas/seguimiento/PaginaSeguimiento.js';
@@ -115,6 +116,14 @@ export function App() {
             element={
               <RutaConPermiso permiso="jornada.cerrar">
                 <PaginaJornada />
+              </RutaConPermiso>
+            }
+          />
+          <Route
+            path="liquidez"
+            element={
+              <RutaConPermiso permiso="liquidez.ver">
+                <PaginaLiquidez />
               </RutaConPermiso>
             }
           />

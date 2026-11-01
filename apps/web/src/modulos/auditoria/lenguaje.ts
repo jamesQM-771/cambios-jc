@@ -98,6 +98,7 @@ export const FRASES_ACCION: Record<string, string> = {
   'cumplimiento.alerta_descartar': 'descartó una alerta de cumplimiento',
   'cumplimiento.ficha': 'actualizó la ficha de cumplimiento de un cliente',
   'cumplimiento.nivel': 'cambió el nivel de riesgo de un cliente',
+  'liquidez.parametros': 'cambió los umbrales de las alertas de liquidez',
   'datos.exportar': 'descargó la exportación completa de los datos',
   'migracion.saldos_contrapartes': 'cargó saldos iniciales de contrapartes desde el Excel',
   'seed.crear': 'creó los datos iniciales del sistema',
@@ -130,6 +131,7 @@ export const ETIQUETAS_ENTIDAD: Record<string, string> = {
   inventario: 'Inventario de divisas',
   operacion_divisa: 'Divisas en caja',
   cumplimiento: 'Cumplimiento',
+  liquidez: 'Liquidez',
 };
 
 /** Nombre legible de los campos que aparecen en el antes y el después. */

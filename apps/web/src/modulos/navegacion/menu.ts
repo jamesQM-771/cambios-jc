@@ -77,6 +77,14 @@ export const ENTRADAS_MENU: readonly EntradaMenu[] = [
     permiso: 'jornada.cerrar',
   },
   {
+    ruta: '/liquidez',
+    grupo: 'Operación',
+    icono: 'panel',
+    etiqueta: 'Liquidez',
+    descripcion: 'Bolívares disponibles frente a la cola por pagar',
+    permiso: 'liquidez.ver',
+  },
+  {
     ruta: '/contrapartes',
     grupo: 'Operación',
     icono: 'usuarios',

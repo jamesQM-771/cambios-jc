@@ -17,6 +17,7 @@ describe('menú según permisos', () => {
       'Traslados',
       'Gastos',
       'Jornada',
+      'Liquidez',
       'Contrapartes',
       'Compras',
       'Inventario',

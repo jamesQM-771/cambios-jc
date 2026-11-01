@@ -44,6 +44,7 @@ import { crearServicioCumplimiento } from './modulos/cumplimiento/servicio.js';
 import { rutasDatos } from './modulos/datos/rutas.js';
 import { crearServicioDatos } from './modulos/datos/servicio.js';
 import { rutasDivisas } from './modulos/divisas/rutas.js';
+import { rutasLiquidez } from './modulos/liquidez/rutas.js';
 import { rutasReportes } from './modulos/reportes/rutas.js';
 import { crearServicioReportes } from './modulos/reportes/servicio.js';
 import { crearServicioDivisas } from './modulos/divisas/servicio.js';
@@ -155,6 +156,7 @@ export function construirApp({
     rutasCumplimiento(rutas, crearServicioCumplimiento({ prisma }));
     rutasReportes(rutas, crearServicioReportes({ prisma }));
     rutasDatos(rutas, crearServicioDatos({ prisma }));
+    rutasLiquidez(rutas, prisma);
     listo();
   });
 

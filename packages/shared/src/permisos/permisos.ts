@@ -43,6 +43,8 @@ export const PERMISOS = [
   'reporte.ver',
   'datos.exportar',
   'migracion.cargar',
+  // Liquidez (fase 9)
+  'liquidez.ver',
 ] as const;
 
 export type Permiso = (typeof PERMISOS)[number];

@@ -116,6 +116,7 @@ describe('menús por rol', () => {
       'Traslados',
       'Gastos',
       'Jornada',
+      'Liquidez',
       'Contrapartes',
       'Compras',
       'Inventario',
@@ -175,7 +176,7 @@ describe('menús por rol', () => {
       unmount();
     }
 
-    expect(vistos).toEqual({ administrador: 17, vendedor: 7, digitador: 0 });
+    expect(vistos).toEqual({ administrador: 18, vendedor: 7, digitador: 0 });
   });
 
   it('el encabezado muestra la empresa, el nombre y el rol de la persona', async () => {
