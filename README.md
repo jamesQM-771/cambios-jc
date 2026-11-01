@@ -4,7 +4,7 @@ Sistema de operación y contabilidad para Cambios JC: remesas COP → VES, compr
 
 - Especificación: [`docs/PROYECTO.md`](docs/PROYECTO.md)
 - Reglas de trabajo: [`CLAUDE.md`](CLAUDE.md)
-- Fase actual: [`docs/fases/FASE-4.md`](docs/fases/FASE-4.md) (ver también FASE-5 a FASE-7)
+- Estado al 2026-11-01: fases 0 a 13 hechas o documentadas; ver [`docs/RESUMEN-SESION-2026-11-01.md`](docs/RESUMEN-SESION-2026-11-01.md)
 - Decisiones: [`docs/DECISIONES.md`](docs/DECISIONES.md)
 
 ## Estado y plan de fases
