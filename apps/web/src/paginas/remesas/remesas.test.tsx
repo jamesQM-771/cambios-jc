@@ -438,6 +438,9 @@ describe('nueva remesa', () => {
 
     await usuario.click(await screen.findByRole('button', { name: 'Emitir e imprimir' }));
     expect(await screen.findByRole('article', { name: 'Recibo 128' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Enviar por WhatsApp' }).getAttribute('href')).toMatch(
+      /^https:\/\/wa\.me\/\?text=Recibo/,
+    );
     await waitFor(() => expect(imprimir).toHaveBeenCalled());
   });
 
