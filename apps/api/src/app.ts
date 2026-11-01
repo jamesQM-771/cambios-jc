@@ -44,6 +44,8 @@ import { crearServicioCumplimiento } from './modulos/cumplimiento/servicio.js';
 import { rutasAprobaciones } from './modulos/aprobaciones/rutas.js';
 import { crearServicioAprobaciones } from './modulos/aprobaciones/servicio.js';
 import { rutasDatos } from './modulos/datos/rutas.js';
+import { rutasPermisos } from './modulos/permisos/rutas.js';
+import { cargarPermisos } from './lib/permisos.js';
 import { crearServicioDatos } from './modulos/datos/servicio.js';
 import { rutasDivisas } from './modulos/divisas/rutas.js';
 import { rutasLiquidez } from './modulos/liquidez/rutas.js';
@@ -165,7 +167,18 @@ export function construirApp({
     rutasReportes(rutas, crearServicioReportes({ prisma }));
     rutasDatos(rutas, crearServicioDatos({ prisma }));
     rutasLiquidez(rutas, prisma);
+    rutasPermisos(rutas, prisma);
     listo();
+  });
+
+  // Los permisos que eligió el dueño (fase 13) se cargan en memoria antes de atender peticiones.
+  app.addHook('onReady', async () => {
+    try {
+      await cargarPermisos(prisma);
+    } catch (error) {
+      // Sin base (algunas pruebas) se usan los permisos de fábrica; nunca se impide arrancar.
+      app.log.warn({ err: error }, 'No se pudieron cargar los permisos configurados.');
+    }
   });
 
   app.addHook('onClose', async () => {

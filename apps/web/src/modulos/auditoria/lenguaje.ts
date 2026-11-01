@@ -103,6 +103,8 @@ export const FRASES_ACCION: Record<string, string> = {
   'aprobacion.solicitar': 'pidió una aprobación (doble control)',
   'aprobacion.aprobar': 'aprobó una solicitud de doble control',
   'aprobacion.rechazar': 'rechazó una solicitud de doble control',
+  'permiso.configurar': 'cambió los permisos de un rol',
+  'permiso.restablecer': 'devolvió un rol a sus permisos de fábrica',
   'datos.exportar': 'descargó la exportación completa de los datos',
   'migracion.saldos_contrapartes': 'cargó saldos iniciales de contrapartes desde el Excel',
   'seed.crear': 'creó los datos iniciales del sistema',

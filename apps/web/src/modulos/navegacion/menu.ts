@@ -141,6 +141,14 @@ export const ENTRADAS_MENU: readonly EntradaMenu[] = [
     permiso: 'usuario.gestionar',
   },
   {
+    ruta: '/permisos',
+    grupo: 'Administración',
+    icono: 'usuarios',
+    etiqueta: 'Permisos',
+    descripcion: 'Qué puede hacer cada rol',
+    permiso: 'permiso.configurar',
+  },
+  {
     ruta: '/empresa',
     grupo: 'Administración',
     icono: 'empresa',

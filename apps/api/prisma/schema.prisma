@@ -1350,3 +1350,17 @@ model SolicitudAprobacion {
   @@index([estado, creadoEn])
   @@map("solicitud_aprobacion")
 }
+
+// ---------------------------------------------------------------------------
+// Fase 13: permisos configurables (§6.1, D169 a D171)
+// ---------------------------------------------------------------------------
+
+/// Permisos de un rol elegidos por el dueño. Sin fila, el rol usa los de fábrica (packages/shared).
+model PermisosRol {
+  rol            Rol      @id
+  permisos       String[]
+  actualizadoPor String   @map("actualizado_por") @db.Uuid
+  actualizadoEn  DateTime @default(now()) @map("actualizado_en") @db.Timestamptz(6)
+
+  @@map("permisos_rol")
+}

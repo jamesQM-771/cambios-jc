@@ -1,4 +1,4 @@
-import { comprobarAprobacion, tienePermiso, type Rol } from '@cambios-jc/shared';
+import { comprobarAprobacion, type Rol } from '@cambios-jc/shared';
 import { z } from 'zod';
 
 import { Prisma, type AccionAprobacion } from '../../generated/prisma/client.js';
@@ -6,6 +6,7 @@ import { errores } from '../../lib/errores.js';
 import type { PrismaClient } from '../../lib/prisma.js';
 import { registrarAuditoria } from '../../lib/registrar-auditoria.js';
 import type { ContextoPeticion } from '../auth/servicio.js';
+import { tienePermiso } from '../../lib/permisos.js';
 
 export const ACCIONES = [
   'reabrir_jornada',

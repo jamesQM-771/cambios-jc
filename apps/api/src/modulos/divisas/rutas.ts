@@ -1,4 +1,3 @@
-import { tienePermiso } from '@cambios-jc/shared';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 
 import { errores } from '../../lib/errores.js';
@@ -17,6 +16,7 @@ import {
   respuestaReciboDivisa,
 } from './esquemas.js';
 import type { Alcance, ServicioDivisas } from './servicio.js';
+import { tienePermiso } from '../../lib/permisos.js';
 
 const contextoDe = (request: FastifyRequest): ContextoPeticion => ({
   ip: request.ip,

@@ -1,9 +1,10 @@
 import type { Server as ServidorHttp } from 'node:http';
 
-import { EVENTOS_TIEMPO_REAL, tienePermiso, type CambioRemesa, type Rol } from '@cambios-jc/shared';
+import { EVENTOS_TIEMPO_REAL, type CambioRemesa, type Rol } from '@cambios-jc/shared';
 import { Server } from 'socket.io';
 
 import type { SesionActual } from '../plugins/permisos.js';
+import { tienePermiso } from './permisos.js';
 
 const SALA_COLA = 'cola';
 const SALA_VENDEDORES = 'vendedores';
