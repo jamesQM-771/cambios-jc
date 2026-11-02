@@ -1,5 +1,5 @@
 import { screen, waitFor, within } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { ErrorApi } from './lib/api.js';
 import { CLAVE_SESION } from './modulos/auth/sesion.js';
@@ -345,6 +345,64 @@ describe('salir y tema', () => {
     expect(screen.getByRole('button', { name: 'Contraer el menú' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Usuarios' })).not.toHaveAttribute('title');
     window.localStorage.removeItem('cambios-jc:menu-contraido');
+  });
+
+  it('en tableta el menú arranca plegado y al desplegarlo flota sobre el contenido', async () => {
+    // Ancho de tableta: coincide la consulta de tableta pero no la de celular.
+    vi.spyOn(window, 'matchMedia').mockImplementation(
+      (consulta) =>
+        ({
+          matches: consulta === '(max-width: 1100px)',
+          media: consulta,
+          addEventListener: () => undefined,
+          removeEventListener: () => undefined,
+        }) as unknown as MediaQueryList,
+    );
+    window.localStorage.removeItem('cambios-jc:menu-contraido');
+    simularApi({ 'GET /auth/yo': { cuerpo: sesionFalsa('administrador') } });
+    const { usuario, container } = renderizarApp('/');
+
+    const expandir = await screen.findByRole('button', { name: 'Expandir el menú' });
+    expect(container.querySelector('.estructura')).toHaveAttribute('data-menu', 'contraido');
+
+    await usuario.click(expandir);
+    expect(container.querySelector('.estructura')).toHaveAttribute('data-menu', 'flotante');
+    // Flotante no se recuerda: es solo para esta vez.
+    expect(window.localStorage.getItem('cambios-jc:menu-contraido')).toBeNull();
+
+    await usuario.keyboard('{Escape}');
+    expect(container.querySelector('.estructura')).toHaveAttribute('data-menu', 'contraido');
+
+    await usuario.click(screen.getByRole('button', { name: 'Expandir el menú' }));
+    await usuario.click(screen.getByRole('link', { name: 'Usuarios' }));
+    expect(container.querySelector('.estructura')).toHaveAttribute('data-menu', 'contraido');
+  });
+
+  it('el cajón del celular se cierra con su botón y con Escape', async () => {
+    simularApi({ 'GET /auth/yo': { cuerpo: sesionFalsa('administrador') } });
+    const { usuario } = renderizarApp('/');
+
+    const boton = await screen.findByRole('button', { name: 'Menú' });
+    await usuario.click(boton);
+    const menu = screen.getByRole('navigation', { name: 'Menú principal' });
+    await usuario.click(within(menu).getByRole('button', { name: 'Cerrar el menú' }));
+    expect(boton).toHaveAttribute('aria-expanded', 'false');
+
+    await usuario.click(boton);
+    await usuario.keyboard('{Escape}');
+    expect(boton).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('con menú lateral la marca va en el panel y el encabezado muestra la fecha', async () => {
+    simularApi({ 'GET /auth/yo': { cuerpo: sesionFalsa('administrador') } });
+    renderizarApp('/');
+
+    const menu = await screen.findByRole('navigation', { name: 'Menú principal' });
+    expect(within(menu).getByText('Casa de Cambio Ejemplo')).toBeInTheDocument();
+    const encabezado = screen.getByRole('banner');
+    expect(encabezado.querySelector('.encabezado__fecha')?.textContent).toMatch(
+      /^(lunes|martes|miércoles|jueves|viernes|sábado|domingo), \d{1,2} de [a-z]+$/,
+    );
   });
 
   it('quien no tiene menú lateral tampoco ve el botón para contraerlo', async () => {

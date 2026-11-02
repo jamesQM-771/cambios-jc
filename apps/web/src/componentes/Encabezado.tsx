@@ -17,9 +17,16 @@ interface PropiedadesEncabezado {
   conMenu: boolean;
   menuAbierto: boolean;
   alAlternarMenu: () => void;
-  /** En pantallas anchas el menú se puede contraer a solo iconos. */
-  menuContraido: boolean;
-  alAlternarContraido: () => void;
+}
+
+/** Fecha de hoy en Colombia para el encabezado: "lunes, 2 de noviembre". */
+function fechaDeHoy(): string {
+  return new Intl.DateTimeFormat('es-CO', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    timeZone: 'America/Bogota',
+  }).format(new Date());
 }
 
 /** Iniciales para el avatar: primera letra del nombre y del primer apellido. */
@@ -30,13 +37,7 @@ function inicialesDe(nombre: string): string {
   return (primera + segunda).toUpperCase();
 }
 
-export function Encabezado({
-  conMenu,
-  menuAbierto,
-  alAlternarMenu,
-  menuContraido,
-  alAlternarContraido,
-}: PropiedadesEncabezado) {
+export function Encabezado({ conMenu, menuAbierto, alAlternarMenu }: PropiedadesEncabezado) {
   const { usuario, empresa } = useSesionActual();
   const cliente = useQueryClient();
   const navegar = useNavigate();
@@ -67,20 +68,12 @@ export function Encabezado({
             <Icono nombre="menu" grande />
           </Boton>
         )}
-        {conMenu && (
-          <Boton
-            variante="fantasma"
-            className="boton-contraer boton--icono"
-            aria-label={menuContraido ? 'Expandir el menú' : 'Contraer el menú'}
-            title={menuContraido ? 'Expandir el menú' : 'Contraer el menú'}
-            aria-expanded={!menuContraido}
-            aria-controls="menu-principal"
-            onClick={alAlternarContraido}
-          >
-            <Icono nombre="panel" grande />
-          </Boton>
-        )}
-        <div className="encabezado__empresa">
+        {/* Con panel lateral la marca vive en el panel; aquí solo se ve en celular. */}
+        <div
+          className={
+            conMenu ? 'encabezado__empresa encabezado__empresa--celular' : 'encabezado__empresa'
+          }
+        >
           {empresa?.logoUrl ? (
             <img src={urlApi(empresa.logoUrl)} alt="" />
           ) : (
@@ -90,6 +83,7 @@ export function Encabezado({
           )}
           <span>{empresa?.nombre ?? 'Cambios JC'}</span>
         </div>
+        {conMenu && <p className="encabezado__fecha">{fechaDeHoy()}</p>}
       </div>
       <div className="encabezado__derecha">
         <div className="encabezado__persona">

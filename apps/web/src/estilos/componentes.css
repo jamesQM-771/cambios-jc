@@ -480,15 +480,20 @@ textarea.campo__entrada {
   }
 }
 
-/* ---------- Estructura principal ---------- */
+/* ---------- Estructura: layout A, panel lateral (D172) ----------
+ * Escritorio: panel a toda la altura que se despliega (248 px) o se pliega a un riel (72 px).
+ * Tableta (801-1100 px): riel de iconos; desplegado flota encima del contenido sin moverlo.
+ * Celular (hasta 800 px): cajón que entra desde la izquierda con el botón ☰.
+ */
 .estructura {
   min-height: 100dvh;
   display: grid;
   grid-template-columns: var(--ancho-menu) minmax(0, 1fr);
   grid-template-rows: var(--alto-encabezado) 1fr;
   grid-template-areas:
-    'encabezado encabezado'
+    'menu encabezado'
     'menu contenido';
+  transition: grid-template-columns var(--transicion-diseno);
 }
 
 .estructura--minima {
@@ -498,6 +503,7 @@ textarea.campo__entrada {
     'contenido';
 }
 
+/* Encabezado: solo sobre el contenido; translúcido para que se note el desplazamiento debajo. */
 .encabezado {
   grid-area: encabezado;
   display: flex;
@@ -505,11 +511,12 @@ textarea.campo__entrada {
   justify-content: space-between;
   gap: var(--espacio-3);
   padding: 0 var(--espacio-5);
-  background: var(--superficie);
+  background: color-mix(in srgb, var(--superficie) 86%, transparent);
+  backdrop-filter: saturate(1.4) blur(10px);
   border-bottom: 1px solid var(--borde);
   position: sticky;
   top: 0;
-  z-index: 20;
+  z-index: var(--capa-encabezado);
 }
 
 .encabezado__izquierda,
@@ -529,29 +536,52 @@ textarea.campo__entrada {
   min-width: 0;
 }
 
+/* Con panel lateral la marca ya está en el panel: en el encabezado solo aparece en celular. */
+.encabezado__empresa--celular {
+  display: none;
+}
+
 .encabezado__empresa img,
-.encabezado__sello {
+.encabezado__sello,
+.menu__logo,
+.menu__sello {
   flex: none;
   width: 32px;
   height: 32px;
   border-radius: 9px;
 }
 
-.encabezado__empresa img {
+.encabezado__empresa img,
+.menu__logo {
   object-fit: contain;
 }
 
-.encabezado__sello {
+.encabezado__sello,
+.menu__sello {
   display: grid;
   place-items: center;
-  background: var(--marca);
+  background: linear-gradient(135deg, var(--marca-viva), var(--marca-fuerte));
   color: var(--marca-texto);
+  box-shadow: 0 4px 12px var(--marca-anillo);
 }
 
 .encabezado__empresa span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.encabezado__fecha {
+  margin: 0;
+  color: var(--texto-suave);
+  font-size: var(--texto-chico);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.encabezado__fecha::first-letter {
+  text-transform: uppercase;
 }
 
 .encabezado__persona {
@@ -583,16 +613,89 @@ textarea.campo__entrada {
   display: none;
 }
 
+/* Panel lateral */
 .menu {
   grid-area: menu;
   position: sticky;
-  top: var(--alto-encabezado);
+  top: 0;
   align-self: start;
-  height: calc(100dvh - var(--alto-encabezado));
-  overflow-y: auto;
-  background: var(--superficie);
+  z-index: var(--capa-menu);
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--menu-fondo);
   border-right: 1px solid var(--borde);
+  transition:
+    width var(--transicion-diseno),
+    box-shadow var(--transicion-diseno);
+}
+
+/* Marca arriba del panel: el sello queda centrado en el riel plegado (72 px). */
+.menu__marca {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-3);
+  height: var(--alto-encabezado);
+  padding: 0 var(--espacio-3) 0 20px;
+  border-bottom: 1px solid var(--borde);
+}
+
+.menu__nombre {
+  flex: 1;
+  min-width: 0;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.menu__cerrar {
+  display: none;
+}
+
+.menu__grupos {
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
   padding: var(--espacio-4) var(--espacio-3);
+}
+
+.menu__grupo + .menu__grupo {
+  margin-top: var(--espacio-4);
+}
+
+.menu__rotulo {
+  position: relative;
+  margin: 0 0 var(--espacio-1);
+  padding: 0 15px;
+  color: var(--texto-suave);
+  font-size: var(--texto-mini);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  overflow: hidden;
+  white-space: nowrap;
+  transition: color var(--transicion);
+}
+
+/* Plegado, el rótulo del grupo se vuelve una raya que separa los grupos. */
+.menu__rotulo::after {
+  content: '';
+  position: absolute;
+  left: 15px;
+  right: 15px;
+  top: 50%;
+  height: 1px;
+  background: var(--borde-fuerte);
+  opacity: 0;
+  transition: opacity var(--transicion);
 }
 
 .menu__lista {
@@ -603,16 +706,20 @@ textarea.campo__entrada {
   gap: 2px;
 }
 
+/* El icono queda en el mismo sitio desplegado o plegado: no salta al cambiar. */
 .menu__enlace {
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--espacio-3);
   min-height: 44px;
-  padding: 0 var(--espacio-3);
+  padding: 0 15px;
   border-radius: var(--radio-chico);
   color: var(--texto-suave);
   text-decoration: none;
   font-weight: 500;
+  overflow: hidden;
+  white-space: nowrap;
   transition:
     background var(--transicion),
     color var(--transicion);
@@ -629,9 +736,182 @@ textarea.campo__entrada {
   font-weight: 600;
 }
 
-/* Fondo atenuado detrás del menú en celular; tocarlo lo cierra. */
+.menu__enlace .icono {
+  transition: transform var(--transicion);
+}
+
+.menu__enlace:hover .icono {
+  transform: scale(1.1);
+}
+
+.menu__enlace:active .icono {
+  transform: scale(0.94);
+}
+
+/* Marca de la pantalla actual: crece desde el centro al cambiar de sección. */
+.menu__enlace::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 10px;
+  bottom: 10px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: linear-gradient(180deg, var(--marca-viva), var(--marca));
+  transform: scaleY(0);
+  transition: transform var(--transicion-entrada);
+}
+
+.menu__enlace[aria-current='page']::before {
+  transform: scaleY(1);
+}
+
+.menu__texto {
+  transition: opacity var(--transicion);
+}
+
+/* Pie del panel: botón para desplegar o plegar. */
+.menu__pie {
+  flex: none;
+  padding: var(--espacio-3);
+  border-top: 1px solid var(--borde);
+}
+
+.menu__plegar {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-3);
+  width: 100%;
+  min-height: 44px;
+  padding: 0 15px;
+  border: 0;
+  border-radius: var(--radio-chico);
+  background: transparent;
+  color: var(--texto-suave);
+  font: inherit;
+  font-size: var(--texto-chico);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  cursor: pointer;
+  transition:
+    background var(--transicion),
+    color var(--transicion);
+}
+
+.menu__plegar:hover {
+  background: var(--superficie-suave);
+  color: var(--texto);
+}
+
+.menu__plegar .icono {
+  transition: transform var(--transicion-diseno);
+}
+
+/* Fondo atenuado detrás del cajón (celular) o del panel flotante (tableta); tocarlo lo cierra. */
 .menu-velo {
-  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: var(--capa-velo);
+  padding: 0;
+  border: 0;
+  background: var(--velo);
+  animation: aparecer 0.18s ease-out;
+}
+
+@media (min-width: 801px) {
+  .estructura[data-menu='contraido'],
+  .estructura[data-menu='flotante'] {
+    grid-template-columns: var(--ancho-menu-contraido) minmax(0, 1fr);
+  }
+
+  /* El texto sigue en la página para los lectores de pantalla; solo deja de verse. */
+  [data-menu='contraido'] .menu__texto {
+    opacity: 0;
+  }
+
+  [data-menu='contraido'] .menu__rotulo {
+    color: transparent;
+  }
+
+  [data-menu='contraido'] .menu__rotulo::after {
+    opacity: 1;
+  }
+
+  [data-menu='contraido'] .menu__plegar .icono {
+    transform: scaleX(-1);
+  }
+
+  /* Tableta: el panel desplegado ocupa su ancho completo encima del contenido. */
+  [data-menu='flotante'] .menu {
+    width: var(--ancho-menu);
+    box-shadow: var(--sombra-fuerte);
+  }
+}
+
+/* Celular: el panel es un cajón a toda la altura; el encabezado lleva el botón ☰ y la marca. */
+@media (max-width: 800px) {
+  .estructura {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'encabezado'
+      'contenido';
+  }
+
+  .encabezado {
+    padding: 0 var(--espacio-3);
+  }
+
+  .boton-menu {
+    display: inline-flex;
+  }
+
+  .encabezado__empresa--celular {
+    display: flex;
+  }
+
+  /* Solo el sello, el avatar y los botones; el nombre y el rol aparecen en la bienvenida. */
+  .encabezado__fecha,
+  .encabezado__usuario,
+  .encabezado__empresa span:not(.encabezado__sello) {
+    display: none;
+  }
+
+  .encabezado__persona {
+    padding-right: 0;
+    margin-right: 0;
+    border-right: 0;
+  }
+
+  .menu {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: min(300px, 85vw);
+    transform: translateX(-100%);
+    /* Cerrado queda fuera de la pantalla y fuera del orden de tabulación (visibility). */
+    visibility: hidden;
+    transition:
+      transform 0.16s ease-in,
+      visibility 0s linear 0.16s;
+  }
+
+  .menu[data-abierto='true'] {
+    transform: translateX(0);
+    visibility: visible;
+    box-shadow: var(--sombra-fuerte);
+    transition:
+      transform var(--transicion-entrada),
+      visibility 0s;
+  }
+
+  .menu__cerrar {
+    display: inline-flex;
+  }
+
+  /* En celular el cajón no se pliega: se cierra con la X, el velo o Escape. */
+  .menu__pie {
+    display: none;
+  }
 }
 
 .contenido {
@@ -1176,70 +1456,8 @@ textarea.campo__entrada {
 
 /* ---------- Celular ---------- */
 @media (max-width: 800px) {
-  .estructura {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas:
-      'encabezado'
-      'contenido';
-  }
-
-  .encabezado {
-    padding: 0 var(--espacio-3);
-  }
-
-  .boton-menu {
-    display: inline-flex;
-  }
-
-  .menu {
-    position: fixed;
-    inset: var(--alto-encabezado) auto 0 0;
-    z-index: 15;
-    width: min(300px, 85vw);
-    height: auto;
-    transform: translateX(-100%);
-    /* Cerrado queda fuera de la pantalla y fuera del orden de tabulación (visibility). */
-    visibility: hidden;
-    transition:
-      transform 0.16s ease-in,
-      visibility 0s linear 0.16s;
-  }
-
-  .menu[data-abierto='true'] {
-    transform: translateX(0);
-    visibility: visible;
-    box-shadow: var(--sombra-fuerte);
-    transition:
-      transform var(--transicion-entrada),
-      visibility 0s;
-  }
-
-  .menu-velo {
-    display: block;
-    position: fixed;
-    inset: var(--alto-encabezado) 0 0 0;
-    z-index: 14;
-    padding: 0;
-    border: 0;
-    background: var(--velo);
-    animation: aparecer 0.18s ease-out;
-  }
-
   .contenido {
     padding: var(--espacio-5) var(--espacio-4) var(--espacio-6);
-  }
-
-  /* En celular el encabezado solo lleva el avatar y los botones; el nombre y el rol aparecen en la
-     bienvenida. */
-  .encabezado__usuario,
-  .encabezado__empresa span:not(.encabezado__sello) {
-    display: none;
-  }
-
-  .encabezado__persona {
-    padding-right: 0;
-    margin-right: 0;
-    border-right: 0;
   }
 
   .comparacion {
@@ -1255,21 +1473,6 @@ textarea.campo__entrada {
   .tabla td {
     padding-inline: var(--espacio-4);
   }
-}
-
-/* ---------- Menú lateral por grupos ---------- */
-.menu__grupo + .menu__grupo {
-  margin-top: var(--espacio-4);
-}
-
-.menu__rotulo {
-  margin: 0 0 var(--espacio-1);
-  padding: 0 var(--espacio-3);
-  color: var(--texto-suave);
-  font-size: var(--texto-mini);
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
 }
 
 /* ---------- Notificaciones ---------- */
@@ -1717,112 +1920,6 @@ textarea.campo__entrada {
   from {
     opacity: 0;
     transform: rotate(-90deg) scale(0.6);
-  }
-}
-
-/* ---------- Menú lateral que se contrae ---------- */
-.estructura {
-  transition: grid-template-columns var(--transicion-diseno);
-}
-
-.boton-contraer .icono {
-  transition: transform var(--transicion-diseno);
-}
-
-.menu {
-  overflow-x: hidden;
-}
-
-/* El icono queda en el mismo sitio con el menú abierto o contraído: no salta al cambiar. */
-.menu__enlace {
-  position: relative;
-  padding: 0 15px;
-  overflow: hidden;
-  white-space: nowrap;
-}
-
-.menu__enlace .icono {
-  transition: transform var(--transicion);
-}
-
-.menu__enlace:hover .icono {
-  transform: scale(1.1);
-}
-
-.menu__enlace:active .icono {
-  transform: scale(0.94);
-}
-
-/* Marca de la pantalla actual: crece desde el centro al cambiar de sección. */
-.menu__enlace::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 10px;
-  bottom: 10px;
-  width: 3px;
-  border-radius: 0 3px 3px 0;
-  background: var(--marca);
-  transform: scaleY(0);
-  transition: transform var(--transicion-entrada);
-}
-
-.menu__enlace[aria-current='page']::before {
-  transform: scaleY(1);
-}
-
-.menu__texto {
-  transition: opacity var(--transicion);
-}
-
-.menu__rotulo {
-  position: relative;
-  padding: 0 15px;
-  overflow: hidden;
-  white-space: nowrap;
-  transition: color var(--transicion);
-}
-
-/* Contraído, el rótulo del grupo se vuelve una raya que separa los grupos. */
-.menu__rotulo::after {
-  content: '';
-  position: absolute;
-  left: 15px;
-  right: 15px;
-  top: 50%;
-  height: 1px;
-  background: var(--borde-fuerte);
-  opacity: 0;
-  transition: opacity var(--transicion);
-}
-
-@media (min-width: 801px) {
-  .estructura[data-menu='contraido'] {
-    grid-template-columns: var(--ancho-menu-contraido) minmax(0, 1fr);
-  }
-
-  /* El texto sigue en la página para los lectores de pantalla; solo deja de verse. */
-  [data-menu='contraido'] .menu__texto {
-    opacity: 0;
-  }
-
-  [data-menu='contraido'] .menu__rotulo {
-    color: transparent;
-  }
-
-  [data-menu='contraido'] .menu__rotulo::after {
-    opacity: 1;
-  }
-
-  [data-menu='contraido'] .boton-contraer .icono {
-    transform: scaleX(-1);
-  }
-}
-
-@media (max-width: 800px) {
-  /* En celular el menú es un cajón: se abre con el botón "Menú", no se contrae. */
-  .boton-contraer {
-    display: none;
   }
 }
 

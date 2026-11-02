@@ -31,7 +31,7 @@ export const ENTRADAS_MENU: readonly EntradaMenu[] = [
   {
     ruta: '/turno',
     grupo: 'Operación',
-    icono: 'panel',
+    icono: 'turno',
     etiqueta: 'Mi turno',
     descripcion: 'Abrir y cerrar tu caja contando el efectivo',
     permiso: 'turno.gestionar_propio',
@@ -39,7 +39,7 @@ export const ENTRADAS_MENU: readonly EntradaMenu[] = [
   {
     ruta: '/remesas',
     grupo: 'Operación',
-    icono: 'flecha',
+    icono: 'remesa',
     etiqueta: 'Remesas',
     descripcion: 'Registrar envíos, verificar pagos y seguir cada remesa',
     permiso: 'remesa.registrar',
@@ -47,7 +47,7 @@ export const ENTRADAS_MENU: readonly EntradaMenu[] = [
   {
     ruta: '/divisas',
     grupo: 'Operación',
-    icono: 'flecha',
+    icono: 'divisas',
     etiqueta: 'Divisas',
     descripcion: 'Comprar y vender dólares en efectivo, contando los billetes',
     permiso: 'divisa_caja.operar',
@@ -55,7 +55,7 @@ export const ENTRADAS_MENU: readonly EntradaMenu[] = [
   {
     ruta: '/traslados',
     grupo: 'Operación',
-    icono: 'flecha',
+    icono: 'traslado',
     etiqueta: 'Traslados',
     descripcion: 'Pasar dinero entre la caja, la bóveda y los bancos',
     permiso: 'traslado.registrar',
@@ -63,7 +63,7 @@ export const ENTRADAS_MENU: readonly EntradaMenu[] = [
   {
     ruta: '/gastos',
     grupo: 'Operación',
-    icono: 'flecha',
+    icono: 'gasto',
     etiqueta: 'Gastos',
     descripcion: 'Registrar lo que se paga con el dinero del negocio',
     permiso: 'gasto.registrar',
@@ -71,7 +71,7 @@ export const ENTRADAS_MENU: readonly EntradaMenu[] = [
   {
     ruta: '/jornada',
     grupo: 'Operación',
-    icono: 'panel',
+    icono: 'jornada',
     etiqueta: 'Jornada',
     descripcion: 'Cerrar el día: turnos, arqueo de cuentas y resumen',
     permiso: 'jornada.cerrar',
@@ -79,7 +79,7 @@ export const ENTRADAS_MENU: readonly EntradaMenu[] = [
   {
     ruta: '/liquidez',
     grupo: 'Operación',
-    icono: 'panel',
+    icono: 'liquidez',
     etiqueta: 'Liquidez',
     descripcion: 'Bolívares disponibles frente a la cola por pagar',
     permiso: 'liquidez.ver',
@@ -87,7 +87,7 @@ export const ENTRADAS_MENU: readonly EntradaMenu[] = [
   {
     ruta: '/contrapartes',
     grupo: 'Operación',
-    icono: 'usuarios',
+    icono: 'balanza',
     etiqueta: 'Contrapartes',
     descripcion: 'Lo que te deben y lo que debes: préstamos, abonos y anticipos',
     permiso: 'contraparte.registrar_movimiento',
@@ -95,7 +95,7 @@ export const ENTRADAS_MENU: readonly EntradaMenu[] = [
   {
     ruta: '/compras',
     grupo: 'Operación',
-    icono: 'flecha',
+    icono: 'compras',
     etiqueta: 'Compras',
     descripcion: 'Bolívares comprados a proveedores, de contado o a crédito',
     permiso: 'compra_contraparte.registrar',
@@ -103,7 +103,7 @@ export const ENTRADAS_MENU: readonly EntradaMenu[] = [
   {
     ruta: '/inventario',
     grupo: 'Operación',
-    icono: 'panel',
+    icono: 'inventario',
     etiqueta: 'Inventario',
     descripcion: 'Bolívares por pagar y su costo promedio',
     permiso: 'compra_contraparte.registrar',
@@ -111,7 +111,7 @@ export const ENTRADAS_MENU: readonly EntradaMenu[] = [
   {
     ruta: '/clientes',
     grupo: 'Operación',
-    icono: 'usuarios',
+    icono: 'cliente',
     etiqueta: 'Clientes',
     descripcion: 'Quienes envían y reciben dinero, con sus cuentas',
     permiso: 'cliente.registrar',
@@ -127,7 +127,7 @@ export const ENTRADAS_MENU: readonly EntradaMenu[] = [
   {
     ruta: '/reportes',
     grupo: 'Administración',
-    icono: 'panel',
+    icono: 'reportes',
     etiqueta: 'Reportes',
     descripcion: 'Tablero del dueño, reportes, histórico y datos del negocio',
     permiso: 'reporte.ver',
@@ -143,7 +143,7 @@ export const ENTRADAS_MENU: readonly EntradaMenu[] = [
   {
     ruta: '/permisos',
     grupo: 'Administración',
-    icono: 'usuarios',
+    icono: 'candado',
     etiqueta: 'Permisos',
     descripcion: 'Qué puede hacer cada rol',
     permiso: 'permiso.configurar',
@@ -175,7 +175,7 @@ export const ENTRADAS_MENU: readonly EntradaMenu[] = [
   {
     ruta: '/cumplimiento',
     grupo: 'Seguridad',
-    icono: 'bitacora',
+    icono: 'escudo',
     etiqueta: 'Cumplimiento',
     descripcion: 'Alertas SARLAFT, lista restrictiva y exportes',
     permiso: 'cumplimiento.gestionar_alertas',
@@ -183,7 +183,7 @@ export const ENTRADAS_MENU: readonly EntradaMenu[] = [
   {
     ruta: '/aprobaciones',
     grupo: 'Seguridad',
-    icono: 'bitacora',
+    icono: 'aprobar',
     etiqueta: 'Aprobaciones',
     descripcion: 'Doble control: aprobar o rechazar lo que pidió otra persona',
     permiso: 'aprobacion.aprobar',

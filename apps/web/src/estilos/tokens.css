@@ -1,6 +1,6 @@
 /*
  * Tokens de diseño de Cambios JC. Todo color, espacio y tamaño sale de aquí (CLAUDE.md §6).
- * Estilo neutro con acento índigo (D75). Claro por defecto; oscuro según el sistema, o el que elija
+ * Estilo neutro con acento azul cielo (D172; antes índigo, D75). Claro por defecto; oscuro según el sistema, o el que elija
  * la persona con el botón de tema (guarda data-tema="claro" | "oscuro" en <html>).
  */
 
@@ -30,19 +30,22 @@
 }
 
 :root {
-  --fondo: #f7f8fa;
+  --fondo: #f4f7fa;
   --superficie: #ffffff;
-  --superficie-suave: #f1f3f7;
+  --superficie-suave: #edf2f7;
   --texto: #0f172a;
-  --texto-suave: #5b6475;
-  --borde: #e3e6ec;
-  --borde-fuerte: #cbd1dc;
-  --marca: #4f46e5;
-  --marca-fuerte: #4338ca;
+  --texto-suave: #556070;
+  --borde: #dfe6ee;
+  --borde-fuerte: #c6d0dc;
+  /* Azul cielo: el tono de botones y enlaces es el más claro que mantiene 4,5:1 con texto blanco. */
+  --marca: #0270ae;
+  --marca-fuerte: #075985;
   --marca-texto: #ffffff;
-  --marca-suave: #eef0ff;
-  --marca-anillo: rgb(79 70 229 / 0.25);
-  --acento: #4f46e5;
+  --marca-suave: #e8f4fc;
+  --marca-anillo: rgb(14 165 233 / 0.28);
+  /* Cielo vivo: solo decorativo (sello, degradados, marcas finas), nunca detrás de texto. */
+  --marca-viva: #38bdf8;
+  --acento: #0270ae;
   --exito: #15803d;
   --exito-fondo: #e7f6ec;
   --alerta: #92400e;
@@ -51,7 +54,7 @@
   --error-fondo: #fdeaea;
   --info: #1d4ed8;
   --info-fondo: #e8effd;
-  --foco: #4f46e5;
+  --foco: #0284c7;
   --velo: rgb(15 23 42 / 0.5);
 
   /* El ticket se imprime en blanco y negro, igual en claro y en oscuro. */
@@ -59,10 +62,13 @@
   --tinta: #000000;
 
   /* Panel de marca de la pantalla de acceso: igual en claro y en oscuro. */
-  --panel-fondo: #1e1b4b;
-  --panel-texto: #eef0ff;
-  --panel-texto-suave: #c7d2fe;
-  --panel-acento: #818cf8;
+  --panel-fondo: #0c2d48;
+  --panel-texto: #e0f2fe;
+  --panel-texto-suave: #bae6fd;
+  --panel-acento: #7dd3fc;
+
+  /* Menú lateral: un velo de cielo muy suave sobre la superficie. */
+  --menu-fondo: linear-gradient(180deg, #f3f9fd 0%, #ffffff 42%);
 
   --radio: 12px;
   --radio-chico: 8px;
@@ -97,11 +103,12 @@
 
   /* Capas: cada elemento flotante tiene su altura fija, sin números sueltos. */
   --capa-encabezado: 20;
-  --capa-menu: 15;
+  --capa-velo: 24;
+  --capa-menu: 25;
   --capa-desplegable: 30;
   --capa-notificacion: 60;
 
-  --ancho-menu: 256px;
+  --ancho-menu: 248px;
   --ancho-menu-contraido: 72px;
   --ancho-formulario: 720px;
   --alto-encabezado: 64px;
@@ -112,19 +119,21 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-tema='claro']) {
-    --fondo: #0b0d12;
-    --superficie: #12151c;
-    --superficie-suave: #191d26;
+    --fondo: #0a0e14;
+    --superficie: #111820;
+    --superficie-suave: #18212b;
     --texto: #e7eaf0;
     --texto-suave: #9aa3b5;
-    --borde: #262b37;
-    --borde-fuerte: #394050;
-    --marca: #818cf8;
-    --marca-fuerte: #a5b4fc;
-    --marca-texto: #0b0d12;
-    --marca-suave: #1c1f3a;
-    --marca-anillo: rgb(129 140 248 / 0.35);
-    --acento: #818cf8;
+    --borde: #24303c;
+    --borde-fuerte: #364554;
+    --marca: #7dd3fc;
+    --marca-fuerte: #bae6fd;
+    --marca-texto: #08121c;
+    --marca-suave: #0c2536;
+    --marca-viva: #38bdf8;
+    --menu-fondo: linear-gradient(180deg, #0f1c28 0%, #111820 42%);
+    --marca-anillo: rgb(125 211 252 / 0.35);
+    --acento: #7dd3fc;
     --exito: #4ade80;
     --exito-fondo: #12281b;
     --alerta: #fbbf24;
@@ -133,7 +142,7 @@
     --error-fondo: #2e1516;
     --info: #93c5fd;
     --info-fondo: #13213a;
-    --foco: #a5b4fc;
+    --foco: #bae6fd;
     --velo: rgb(0 0 0 / 0.65);
     --sombra: 0 1px 2px rgb(0 0 0 / 0.5);
     --sombra-media: 0 6px 16px rgb(0 0 0 / 0.45);
@@ -144,19 +153,21 @@
 }
 
 :root[data-tema='oscuro'] {
-  --fondo: #0b0d12;
-  --superficie: #12151c;
-  --superficie-suave: #191d26;
+  --fondo: #0a0e14;
+  --superficie: #111820;
+  --superficie-suave: #18212b;
   --texto: #e7eaf0;
   --texto-suave: #9aa3b5;
-  --borde: #262b37;
-  --borde-fuerte: #394050;
-  --marca: #818cf8;
-  --marca-fuerte: #a5b4fc;
-  --marca-texto: #0b0d12;
-  --marca-suave: #1c1f3a;
-  --marca-anillo: rgb(129 140 248 / 0.35);
-  --acento: #818cf8;
+  --borde: #24303c;
+  --borde-fuerte: #364554;
+  --marca: #7dd3fc;
+  --marca-fuerte: #bae6fd;
+  --marca-texto: #08121c;
+  --marca-suave: #0c2536;
+  --marca-viva: #38bdf8;
+  --menu-fondo: linear-gradient(180deg, #0f1c28 0%, #111820 42%);
+  --marca-anillo: rgb(125 211 252 / 0.35);
+  --acento: #7dd3fc;
   --exito: #4ade80;
   --exito-fondo: #12281b;
   --alerta: #fbbf24;
@@ -165,7 +176,7 @@
   --error-fondo: #2e1516;
   --info: #93c5fd;
   --info-fondo: #13213a;
-  --foco: #a5b4fc;
+  --foco: #bae6fd;
   --velo: rgb(0 0 0 / 0.65);
   --sombra: 0 1px 2px rgb(0 0 0 / 0.5);
   --sombra-media: 0 6px 16px rgb(0 0 0 / 0.45);

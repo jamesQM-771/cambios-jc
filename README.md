@@ -41,15 +41,15 @@ Lo que existe hoy: acceso, usuarios, empresa, bitácora, configuración y, desde
 
 ## Interfaz
 
-Estilo neutro con acento índigo, en tema claro y oscuro (decisiones D75 a D80 en `docs/DECISIONES.md`).
+Layout A (panel lateral) con acento azul cielo, en tema claro y oscuro (D172; antes índigo, D75 a D80 en `docs/DECISIONES.md`).
 
 - **Tokens:** todo color, espacio y tamaño sale de `apps/web/src/estilos/tokens.css`. Los componentes usan clases propias de `componentes.css`; no hay Tailwind ni librerías de componentes.
 - **Tipografía:** Inter para texto y JetBrains Mono para cifras y códigos, servidas desde `apps/web/src/estilos/fuentes/` (licencia OFL incluida). No se pide nada a terceros.
-- **Iconos:** propios, en `apps/web/src/componentes/Icono.tsx`.
+- **Iconos:** propios, en `apps/web/src/componentes/Icono.tsx`; cada módulo del menú tiene el suyo para reconocerlo en el riel plegado.
 - **Cifras:** las tasas se muestran con coma decimal (`5,19`) mediante `formatearTasa` en `apps/web/src/lib/formato.ts`. La API sigue enviando y recibiendo punto (`5.190000`).
-- **Estructura:** encabezado con la empresa y la persona, menú lateral con iconos (cajón en celular) y, para quien solo tiene "Inicio" (el digitador), una estructura mínima sin menú.
+- **Estructura (layout A, D172):** panel lateral a toda la altura con la marca, los módulos por grupo (General, Operación, Administración, Seguridad) y abajo el botón «Contraer / Expandir»; a su derecha, el encabezado con la fecha y la persona, y el contenido. En escritorio el panel se despliega (248 px) o se pliega a un riel de iconos (72 px) y recuerda la elección; en tableta (801 a 1100 px) arranca como riel y al desplegarlo flota encima del contenido; en celular es un cajón que se abre con ☰ y se cierra con la X, tocando fuera o con Escape. Quien solo tiene "Inicio" (el digitador) ve una estructura mínima sin panel.
 - **Componentes compartidos** (`apps/web/src/componentes/`): `Notificaciones` (éxitos que se cierran solos), `MenuAcciones` (acciones de una fila, con teclado), `Pagina.tsx` (encabezado de página, barra de búsqueda y filtros, secciones de formulario, estado vacío y carga con forma) y `CamposEspeciales.tsx` (solo dígitos, teléfono con país y resumen de errores). Decisiones D82 a D95.
-- **Movimiento (D96):** el menú lateral se contrae a solo iconos con el botón del encabezado y recuerda la elección. Las animaciones viven al final de `estilos/componentes.css` y usan los tokens `--transicion-*`. Si el sistema operativo tiene desactivadas las animaciones (en Windows: Configuración → Accesibilidad → Pantalla → "Mostrar animaciones en Windows"), la interfaz no anima nada: es lo esperado.
+- **Movimiento (D96):** el panel lateral se despliega y se pliega con una transición suave. Las animaciones viven al final de `estilos/componentes.css` y usan los tokens `--transicion-*`. Si el sistema operativo tiene desactivadas las animaciones (en Windows: Configuración → Accesibilidad → Pantalla → "Mostrar animaciones en Windows"), la interfaz no anima nada: es lo esperado.
 - **Datos por partes:** el NIT, los teléfonos y la dirección se capturan por partes y se guardan como un solo texto (`lib/empresa.ts`, `lib/telefono.ts`). La API no cambió.
 - **Tasas a mano:** se pueden escribir con coma o con punto. Un valor ambiguo como `3.200` no se publica: el campo pide aclararlo.
 - **Actividad:** es la bitácora de auditoría con otro nombre en el menú y en lenguaje claro. Los registros, el permiso y la protección contra cambios son los mismos.

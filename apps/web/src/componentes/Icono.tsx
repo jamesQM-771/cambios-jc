@@ -27,6 +27,55 @@ const TRAZOS = {
     <path d="M6 3h9l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM14 3v5h5M9 13h6M9 17h6" />
   ),
   menu: <path d="M4 6h16M4 12h16M4 18h16" />,
+  turno: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 2" />
+    </>
+  ),
+  remesa: <path d="M21 3 10 14M21 3l-7 18-4-7-7-4 18-7z" />,
+  divisas: (
+    <>
+      <rect x="3" y="6" width="18" height="12" rx="2" />
+      <circle cx="12" cy="12" r="2.5" />
+      <path d="M6.5 9.5h.01M17.5 14.5h.01" />
+    </>
+  ),
+  traslado: <path d="M7 7h13l-4-4M17 17H4l4 4" />,
+  gasto: <path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3zM9 8h6M9 12h6M9 16h3" />,
+  jornada: (
+    <>
+      <rect x="3" y="5" width="18" height="16" rx="2" />
+      <path d="M3 10h18M8 3v4M16 3v4" />
+    </>
+  ),
+  liquidez: <path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z" />,
+  balanza: (
+    <path d="M12 4v16M7 20h10M5 7h14M5 7l-3 7a3 3 0 0 0 6 0L5 7zM19 7l-3 7a3 3 0 0 0 6 0l-3-7z" />
+  ),
+  compras: (
+    <>
+      <circle cx="9" cy="20" r="1.5" />
+      <circle cx="18" cy="20" r="1.5" />
+      <path d="M3 4h2l2.4 11h11.2L21 8H6.2" />
+    </>
+  ),
+  inventario: <path d="M3 7l9-4 9 4v10l-9 4-9-4V7zM3 7l9 4 9-4M12 11v10" />,
+  cliente: (
+    <>
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 21c0-4 3.6-6 8-6s8 2 8 6" />
+    </>
+  ),
+  reportes: <path d="M4 20V10M10 20V4M16 20v-7M21 20H3" />,
+  candado: (
+    <>
+      <rect x="5" y="11" width="14" height="10" rx="2" />
+      <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+    </>
+  ),
+  aprobar: <path d="M9 11l3 3 8-8M20 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />,
+  plegar: <path d="M11 17l-5-5 5-5M18 17l-5-5 5-5" />,
   cola: <path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01" />,
   panel: (
     <path d="M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zM9 5v14" />
