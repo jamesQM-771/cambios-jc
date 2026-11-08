@@ -131,6 +131,17 @@ npm run iniciar    # API compilada + web; la API responde en unos 10 segundos
 
 Luego abre http://localhost:5173/acceso. Para detenerlo, `Ctrl+C` en esa terminal. Si un arranque anterior quedó abierto, ciérralo antes: dos copias pelean por los puertos 3000 y 5173.
 
+#### En Windows, con doble clic: `iniciar-windows.bat`
+
+Para usar el sistema sin escribir comandos ni pasar por GitHub, haz doble clic en `iniciar-windows.bat`
+(raíz del proyecto). Ejecuta `scripts/iniciar-windows.ps1`, que trabaja solo con el código de la carpeta:
+
+1. Revisa Node.js 26 y enciende el servicio de PostgreSQL si está detenido.
+2. La primera vez pregunta las claves, crea la base con `scripts/db-preparar.sql` y escribe el `.env`.
+3. Instala dependencias si faltan (`npm install`; solo esto usa internet).
+4. Aplica migraciones pendientes con `prisma migrate deploy`, que nunca borra datos ni pregunta.
+5. Compila solo si el código cambió y arranca con `npm run iniciar`; abre el navegador cuando la web responde.
+
 #### Para abrirlo desde un celular en la misma red: `npm run iniciar:red`
 
 `npm run iniciar` solo escucha en tu equipo (`localhost`), a propósito: el sistema maneja dinero y no

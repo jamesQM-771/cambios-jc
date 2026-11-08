@@ -8,3 +8,7 @@
 *.xlsx binary
 *.xls binary
 *.pdf binary
+
+# Scripts de Windows: CRLF para que cmd y PowerShell los lean sin sorpresas.
+*.bat text eol=crlf
+*.ps1 text eol=crlf
