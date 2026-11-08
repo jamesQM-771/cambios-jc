@@ -30,3 +30,6 @@ coverage/
 e2e/.datos.json
 e2e/test-results/
 e2e/playwright-report/
+
+# Credenciales locales para TestSprite (ver docs/testsprite/credenciales.ejemplo.md)
+docs/testsprite/credenciales.md
