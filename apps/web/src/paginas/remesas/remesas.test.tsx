@@ -286,6 +286,36 @@ describe('detalle y acciones', () => {
     expect(dialogo.getByLabelText('Motivo')).toHaveValue('Se cobró dos veces');
   });
 
+  it('el administrador ve el costo y la ganancia neta de una remesa pagada', async () => {
+    const remesa = remesaFalsa({ estado: 'completada' });
+    const api = simularApi({
+      'GET /auth/yo': { cuerpo: sesionFalsa('administrador') },
+      'GET /remesas': { cuerpo: { remesas: [remesa] } },
+      'GET /remesas/r-1/historial': { cuerpo: { historial: [] } },
+      'GET /remesas/r-1/ganancia': {
+        cuerpo: {
+          ganancia: {
+            costoPromedio: '3.700000',
+            bruta: '2585.11',
+            costoBancarioPesos: '46.25',
+            neta: '2538.86',
+          },
+        },
+      },
+    });
+    const { usuario } = renderizarApp('/remesas');
+    await usuario.click(await screen.findByRole('button', { name: /Abrir remesa 128/ }));
+    expect(await screen.findByText(/COP 2\.539/)).toBeInTheDocument();
+    expect(screen.getByText('3,70')).toBeInTheDocument();
+    expect(api.de('GET', '/remesas/r-1/ganancia')).toHaveLength(1);
+  });
+
+  it('el vendedor no pide la ganancia', async () => {
+    const { api } = await abrirDetalle('vendedor', remesaFalsa({ estado: 'completada' }));
+    await screen.findByRole('heading', { name: /Comprobante N° 128/ });
+    expect(api.de('GET', '/remesas/r-1/ganancia')).toHaveLength(0);
+  });
+
   it('muestra el historial, el código de seguimiento y la captura cuando existe', async () => {
     await abrirDetalle(
       'vendedor',

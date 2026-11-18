@@ -22,6 +22,8 @@ const cuentaFalsa = (cambios: Partial<CuentaDinero> = {}): CuentaDinero => ({
   sucursalId: 's-1',
   sucursalNombre: 'Principal',
   titular: null,
+  contraparteTitularId: null,
+  contraparteTitularNombre: null,
   responsableId: null,
   responsableNombre: null,
   activa: true,
@@ -74,6 +76,12 @@ function abrirCuentas(
     'GET /cuentas-dinero': { cuerpo: { cuentas } },
     'GET /sucursales': { cuerpo: SUCURSALES },
     'GET /bancos': { cuerpo: BANCOS },
+    'GET /contrapartes/opciones': {
+      cuerpo: {
+        contrapartes: [{ id: 'cp-1', nombre: 'Sara Castro', tipo: 'proveedor' }],
+        cuentas: [],
+      },
+    },
     'GET /usuarios': { cuerpo: USUARIOS },
     ...extra,
   });
@@ -119,6 +127,30 @@ describe('pantalla de cuentas', () => {
     await usuario.click(within(dialogo).getByRole('button', { name: 'Crear cuenta' }));
 
     expect(await screen.findByText('Se creó la cuenta.')).toBeInTheDocument();
+  });
+
+  it('la cuenta puede quedar a nombre de una contraparte (§5.9)', async () => {
+    const { api, usuario } = abrirCuentas([], {
+      'POST /cuentas-dinero': () => ({
+        estado: 201,
+        cuerpo: { cuenta: cuentaFalsa({ id: 'cu-3' }) },
+      }),
+    });
+    await usuario.click(await screen.findByRole('button', { name: 'Nueva cuenta' }));
+    const dialogo = await screen.findByRole('dialog');
+    await usuario.type(within(dialogo).getByLabelText('Nombre'), 'VZLA Sara Castro');
+    await waitFor(() => expect(within(dialogo).getByLabelText('Sucursal')).not.toBeDisabled());
+    await usuario.selectOptions(within(dialogo).getByLabelText('Sucursal'), 'Principal · Cúcuta');
+    await usuario.selectOptions(
+      await within(dialogo).findByLabelText('Contraparte titular'),
+      'Sara Castro',
+    );
+    await usuario.click(within(dialogo).getByRole('button', { name: 'Crear cuenta' }));
+
+    await waitFor(() => expect(api.de('POST', '/cuentas-dinero')).toHaveLength(1));
+    expect(api.de('POST', '/cuentas-dinero')[0]?.cuerpo).toMatchObject({
+      contraparteTitularId: 'cp-1',
+    });
   });
 
   it('crea una cuenta tipo banco pidiendo banco y últimos 4 dígitos', async () => {
@@ -203,6 +235,12 @@ describe('pantalla de cuentas', () => {
       'GET /cuentas-dinero': errorApi(500, 'ERROR_INTERNO', 'Ocurrió un error.'),
       'GET /sucursales': { cuerpo: SUCURSALES },
       'GET /bancos': { cuerpo: BANCOS },
+      'GET /contrapartes/opciones': {
+        cuerpo: {
+          contrapartes: [{ id: 'cp-1', nombre: 'Sara Castro', tipo: 'proveedor' }],
+          cuentas: [],
+        },
+      },
       'GET /usuarios': { cuerpo: USUARIOS },
     });
     renderizarApp('/configuracion/cuentas');

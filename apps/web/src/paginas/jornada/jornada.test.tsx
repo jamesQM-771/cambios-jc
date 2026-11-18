@@ -37,6 +37,21 @@ const resumenFalso = (): ResumenJornada => ({
   costosBancarios: [],
   gastosOperativos: [{ moneda: 'COP', total: '25000.00' }],
   retirosDelDueno: [],
+  ganancia: {
+    moneda: 'COP',
+    remesasCosteadas: 2,
+    remesasSinCosto: 0,
+    gananciaRemesas: '3585.61',
+    costosBancarios: '46.25',
+    gastosOperativos: '500.00',
+    gananciaDelDia: '3085.61',
+  },
+  contrapartes: {
+    saldos: [{ moneda: 'COP', meDeben: '50000.00', lesDebo: '20000.00' }],
+    movimientosDelDia: 1,
+  },
+  devolucionesPendientes: [],
+  posicion: [{ moneda: 'COP', total: '1030000.00' }],
   traslados: 2,
   diferenciasDeArqueo: [
     {
@@ -256,6 +271,11 @@ describe('jornada cerrada', () => {
     expect(dialogo.getByText('Total en COP')).toBeInTheDocument();
     expect(dialogo.getByText('Vuelto mal dado')).toBeInTheDocument();
     expect(dialogo.queryByRole('button', { name: 'Cerrar jornada' })).toBeNull();
+    // Fase 4: ganancia del día, contrapartes y posición total.
+    expect(dialogo.getByRole('heading', { name: 'Ganancia del día' })).toBeInTheDocument();
+    expect(dialogo.getByText('COP 3.086')).toBeInTheDocument();
+    expect(dialogo.getByText(/Me deben COP 50\.000/)).toBeInTheDocument();
+    expect(dialogo.getByText('Posición total')).toBeInTheDocument();
 
     await usuario.click(dialogo.getByRole('button', { name: 'Reabrir la jornada' }));
     const reapertura = within(await screen.findByRole('dialog', { name: 'Reabrir la jornada' }));

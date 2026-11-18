@@ -270,6 +270,18 @@ textarea.campo__entrada {
   box-shadow: var(--sombra);
 }
 
+/* Cifras clave arriba de una tabla (contrapartes, inventario): se acomodan solas en el celular. */
+.tarjetas-resumen {
+  display: grid;
+  gap: var(--espacio-4);
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  margin-bottom: var(--espacio-5);
+}
+
+.tarjetas-resumen .tarjeta p {
+  margin: 0 0 var(--espacio-2);
+}
+
 .cargando {
   display: flex;
   align-items: center;

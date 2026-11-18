@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 
-import { historialRemesa, listarRemesas, opcionesRemesa } from './api.js';
+import { gananciaRemesa, historialRemesa, listarRemesas, opcionesRemesa } from './api.js';
 import type { EstadoRemesa } from './tipos.js';
 
 /** Todo lo de remesas cuelga de esta clave: invalidarla refresca lista, detalle e historial. */
@@ -18,6 +18,15 @@ export function useHistorialRemesa(id: string | null) {
     queryKey: [...CLAVE_REMESAS, 'historial', id],
     queryFn: () => historialRemesa(id ?? ''),
     enabled: id !== null,
+  });
+}
+
+/** Solo se pide si la persona tiene `ganancia.ver` y la remesa ya se pagó. */
+export function useGananciaRemesa(id: string, habilitado: boolean) {
+  return useQuery({
+    queryKey: [...CLAVE_REMESAS, 'ganancia', id],
+    queryFn: () => gananciaRemesa(id),
+    enabled: habilitado,
   });
 }
 

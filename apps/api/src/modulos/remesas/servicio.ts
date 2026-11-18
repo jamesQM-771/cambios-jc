@@ -9,6 +9,7 @@ import {
 
 import { Prisma, type EstadoOperacion } from '../../generated/prisma/client.js';
 import { generarCodigoSeguimiento } from '../../lib/codigo-seguimiento.js';
+import { alertasDespuesDeRegistrar, verificarAntesDeRegistrar } from '../../lib/cumplimiento.js';
 import { errores } from '../../lib/errores.js';
 import type { PrismaClient } from '../../lib/prisma.js';
 import { registrarAuditoria } from '../../lib/registrar-auditoria.js';
@@ -161,6 +162,27 @@ export function crearServicioRemesas({
   }
 
   return {
+    /** Costo y ganancia fijados al pagarse (D140). Solo para quien tiene `ganancia.ver`. */
+    async ganancia(id: string) {
+      const fila = await prisma.operacion.findUnique({
+        where: { id },
+        select: {
+          costoPromedio: true,
+          gananciaBruta: true,
+          costoBancarioPesos: true,
+          gananciaNeta: true,
+        },
+      });
+      if (!fila) throw errores.noEncontrado('La remesa no existe.');
+      if (!fila.costoPromedio || !fila.gananciaBruta || !fila.gananciaNeta) return null;
+      return {
+        costoPromedio: fila.costoPromedio.toFixed(DECIMALES_TASA),
+        bruta: fila.gananciaBruta.toFixed(2),
+        costoBancarioPesos: fila.costoBancarioPesos?.toFixed(2) ?? '0.00',
+        neta: fila.gananciaNeta.toFixed(2),
+      };
+    },
+
     obtener: cargar,
 
     async opciones(actor: Actor): Promise<OpcionesRemesa> {
@@ -460,6 +482,13 @@ export function crearServicioRemesas({
         : new Decimal(tasaVigente.tasaVenta.toString());
       const montos = calcularMontos(datos, tasaUsada);
 
+      // Cumplimiento (§5.13): la lista restrictiva bloquea; el umbral de la ficha la exige (D151).
+      await verificarAntesDeRegistrar(prisma, {
+        remitente,
+        beneficiario: medio.cliente,
+        montoPesos: montos.pesos,
+      });
+
       const crear = () =>
         prisma.$transaction(async (tx) => {
           const filas = await tx.$queryRaw<{ valor: number }[]>`
@@ -506,6 +535,12 @@ export function crearServicioRemesas({
             });
             anterior = estado;
           }
+
+          await alertasDespuesDeRegistrar(tx, {
+            operacionId: creada.id,
+            remitenteId: remitente.id,
+            beneficiarioId: medio.cliente.id,
+          });
 
           // El efectivo ya está en la caja; la transferencia entra cuando se verifica (D121).
           if (datos.formaPago === 'efectivo') await ingresarPorRemesa(tx, creada.id, actor.id);

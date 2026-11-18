@@ -16,6 +16,7 @@ import {
   respuestaHistorialRemesa,
   esquemaOpcionesRemesa,
   respuestaListaRemesas,
+  respuestaGananciaRemesa,
   respuestaRemesa,
 } from './esquemas.js';
 import type { ServicioRemesas } from './servicio.js';
@@ -77,6 +78,15 @@ export function rutasRemesas(app: FastifyInstance, servicio: ServicioRemesas): v
     '/remesas/:id/historial',
     { config: PERMISO, schema: { params: esquemaId, response: { 200: respuestaHistorialRemesa } } },
     async (request) => ({ historial: await servicio.historial(request.params.id) }),
+  );
+
+  rutas.get(
+    '/remesas/:id/ganancia',
+    {
+      config: { permiso: 'ganancia.ver' },
+      schema: { params: esquemaId, response: { 200: respuestaGananciaRemesa } },
+    },
+    async (request) => ({ ganancia: await servicio.ganancia(request.params.id) }),
   );
 
   rutas.post(

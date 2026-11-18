@@ -13,14 +13,19 @@ describe('menú según permisos', () => {
       'Inicio',
       'Mi turno',
       'Remesas',
+      'Divisas',
       'Traslados',
       'Gastos',
       'Jornada',
+      'Contrapartes',
+      'Compras',
+      'Inventario',
       'Clientes',
       'Usuarios',
       'Empresa',
       'Configuración',
       'Actividad',
+      'Cumplimiento',
     ]);
   });
 
@@ -29,6 +34,7 @@ describe('menú según permisos', () => {
       'Inicio',
       'Mi turno',
       'Remesas',
+      'Divisas',
       'Traslados',
       'Gastos',
       'Clientes',

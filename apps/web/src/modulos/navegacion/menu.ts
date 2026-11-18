@@ -45,6 +45,14 @@ export const ENTRADAS_MENU: readonly EntradaMenu[] = [
     permiso: 'remesa.registrar',
   },
   {
+    ruta: '/divisas',
+    grupo: 'Operación',
+    icono: 'flecha',
+    etiqueta: 'Divisas',
+    descripcion: 'Comprar y vender dólares en efectivo, contando los billetes',
+    permiso: 'divisa_caja.operar',
+  },
+  {
     ruta: '/traslados',
     grupo: 'Operación',
     icono: 'flecha',
@@ -67,6 +75,30 @@ export const ENTRADAS_MENU: readonly EntradaMenu[] = [
     etiqueta: 'Jornada',
     descripcion: 'Cerrar el día: turnos, arqueo de cuentas y resumen',
     permiso: 'jornada.cerrar',
+  },
+  {
+    ruta: '/contrapartes',
+    grupo: 'Operación',
+    icono: 'usuarios',
+    etiqueta: 'Contrapartes',
+    descripcion: 'Lo que te deben y lo que debes: préstamos, abonos y anticipos',
+    permiso: 'contraparte.registrar_movimiento',
+  },
+  {
+    ruta: '/compras',
+    grupo: 'Operación',
+    icono: 'flecha',
+    etiqueta: 'Compras',
+    descripcion: 'Bolívares comprados a proveedores, de contado o a crédito',
+    permiso: 'compra_contraparte.registrar',
+  },
+  {
+    ruta: '/inventario',
+    grupo: 'Operación',
+    icono: 'panel',
+    etiqueta: 'Inventario',
+    descripcion: 'Bolívares por pagar y su costo promedio',
+    permiso: 'compra_contraparte.registrar',
   },
   {
     ruta: '/clientes',
@@ -115,6 +147,14 @@ export const ENTRADAS_MENU: readonly EntradaMenu[] = [
     etiqueta: 'Actividad',
     descripcion: 'Quién hizo qué y cuándo, con el antes y el después',
     permiso: 'auditoria.ver',
+  },
+  {
+    ruta: '/cumplimiento',
+    grupo: 'Seguridad',
+    icono: 'bitacora',
+    etiqueta: 'Cumplimiento',
+    descripcion: 'Alertas SARLAFT, lista restrictiva y exportes',
+    permiso: 'cumplimiento.gestionar_alertas',
   },
 ];
 

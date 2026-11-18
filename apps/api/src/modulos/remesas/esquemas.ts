@@ -139,6 +139,18 @@ export type RemesaPublica = z.infer<typeof esquemaRemesaPublica>;
 
 export const respuestaRemesa = z.object({ remesa: esquemaRemesaPublica });
 
+/** Costo y ganancia de una remesa pagada (§7.3); `null` si aún no se paga o no había costo conocido. */
+export const respuestaGananciaRemesa = z.object({
+  ganancia: z
+    .object({
+      costoPromedio: z.string(),
+      bruta: z.string(),
+      costoBancarioPesos: z.string(),
+      neta: z.string(),
+    })
+    .nullable(),
+});
+
 /**
  * Lo que necesita el formulario de una remesa y quien vende no puede pedir en Configuración (que
  * exige `empresa.configurar`): líneas de remesas con su tasa vigente y cuentas donde entra el dinero.
