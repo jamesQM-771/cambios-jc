@@ -1,5 +1,5 @@
 import { bolivaresDesdePesos, formatearMoneda, multiplicar } from '@cambios-jc/shared';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRef, useState, type SyntheticEvent } from 'react';
 import { Link } from 'react-router';
 
@@ -10,9 +10,11 @@ import { CampoSelector } from '../../componentes/CampoSelector.js';
 import { Dialogo } from '../../componentes/Dialogo.js';
 import { SeccionFormulario } from '../../componentes/Pagina.js';
 import { erroresPorCampo, mensajeDe } from '../../lib/api.js';
+import { useRetraso } from '../../lib/useRetraso.js';
 import { avisoDecimalAmbiguo, formatearTasa, normalizarDecimal } from '../../lib/formato.js';
 import { useBancosDisponibles, useCliente } from '../../modulos/clientes/consultas.js';
 import { resumenMedioPago, type Cliente } from '../../modulos/clientes/tipos.js';
+import { alcanzaLiquidez } from '../../modulos/liquidez/api.js';
 import { registrarRemesa } from '../../modulos/remesas/api.js';
 import { CLAVE_REMESAS } from '../../modulos/remesas/consultas.js';
 import type { FormaPago, OpcionesRemesa, Remesa } from '../../modulos/remesas/tipos.js';
@@ -30,6 +32,21 @@ interface PropiedadesFormularioRemesa {
 }
 
 type ModoMonto = 'pesos' | 'bolivares';
+
+/** Bolívares que saldrán con esta remesa, para preguntar si alcanza la liquidez (§5.3 paso 8). */
+export function bolivaresDeLaRemesa(
+  modo: ModoMonto,
+  monto: string,
+  tasa: string | null,
+): string | null {
+  if (!tasa || !/^\d+(\.\d+)?$/.test(monto)) return null;
+  try {
+    const valor = modo === 'pesos' ? bolivaresDesdePesos(monto, tasa) : multiplicar(monto, '1');
+    return valor.gt(0) ? valor.toFixed(3) : null;
+  } catch {
+    return null;
+  }
+}
 
 /** Cálculo solo para mostrar: el servidor vuelve a calcular y es el que cuenta (D101). */
 function vistaPrevia(modo: ModoMonto, monto: string, tasa: string | null): string | null {
@@ -94,6 +111,17 @@ export function FormularioRemesa({
   const tasaUsada =
     cambiarTasa && tasaNormalizada !== '' ? tasaNormalizada : (linea?.tasaVenta ?? null);
   const previa = avisoMonto ? null : vistaPrevia(modo, montoNormalizado, tasaUsada);
+  // Aviso de liquidez: solo sí o no, sin mostrar saldos del negocio. No bloquea el registro.
+  const bolivares = useRetraso(
+    avisoMonto ? null : bolivaresDeLaRemesa(modo, montoNormalizado, tasaUsada),
+    500,
+  );
+  const liquidez = useQuery({
+    queryKey: ['liquidez', 'alcanza', lineaId, bolivares],
+    queryFn: () => alcanzaLiquidez(lineaId, bolivares ?? '0'),
+    enabled: bolivares !== null && lineaId !== '',
+    retry: false,
+  });
 
   const registrar = useMutation({
     mutationFn: () =>
@@ -270,6 +298,13 @@ export function FormularioRemesa({
               {modo === 'pesos' ? 'El beneficiario recibe' : 'El cliente entrega'}{' '}
               <strong className="mono">{previa}</strong>
             </p>
+          )}
+
+          {liquidez.data?.alcanza === false && (
+            <Aviso tipo="advertencia">
+              Los bolívares libres no alcanzan para la cola pendiente más esta remesa. Puedes
+              registrarla; avisa al administrador para que fondee.
+            </Aviso>
           )}
 
           {puedeCambiarTasa && (

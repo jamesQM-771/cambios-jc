@@ -1,9 +1,9 @@
-import { tienePermiso } from '@cambios-jc/shared';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 
 import { errores } from '../../lib/errores.js';
 import type { ProveedorZod } from '../../plugins/validacion-zod.js';
+import { respuestaSolicitud, type ServicioAprobaciones } from '../aprobaciones/servicio.js';
 import type { ContextoPeticion } from '../auth/servicio.js';
 
 import {
@@ -16,9 +16,11 @@ import {
   respuestaHistorialRemesa,
   esquemaOpcionesRemesa,
   respuestaListaRemesas,
+  respuestaGananciaRemesa,
   respuestaRemesa,
 } from './esquemas.js';
 import type { ServicioRemesas } from './servicio.js';
+import { tienePermiso } from '../../lib/permisos.js';
 
 const contextoDe = (request: FastifyRequest): ContextoPeticion => ({
   ip: request.ip,
@@ -32,8 +34,18 @@ const actorDe = (request: FastifyRequest): { id: string } => {
   return { id: request.usuario.id };
 };
 
-export function rutasRemesas(app: FastifyInstance, servicio: ServicioRemesas): void {
+export function rutasRemesas(
+  app: FastifyInstance,
+  servicio: ServicioRemesas,
+  aprobaciones?: ServicioAprobaciones,
+): void {
   const rutas = app.withTypeProvider<ProveedorZod>();
+  aprobaciones?.registrarEjecutor('devolver_remesa', (id, datos, actor, contexto) =>
+    servicio.devolver(id, String(datos.motivo), actor, contexto),
+  );
+  aprobaciones?.registrarEjecutor('anular_remesa', (id, datos, actor, contexto) =>
+    servicio.anular(id, String(datos.motivo), actor, contexto),
+  );
 
   rutas.post(
     '/remesas',
@@ -79,6 +91,15 @@ export function rutasRemesas(app: FastifyInstance, servicio: ServicioRemesas): v
     async (request) => ({ historial: await servicio.historial(request.params.id) }),
   );
 
+  rutas.get(
+    '/remesas/:id/ganancia',
+    {
+      config: { permiso: 'ganancia.ver' },
+      schema: { params: esquemaId, response: { 200: respuestaGananciaRemesa } },
+    },
+    async (request) => ({ ganancia: await servicio.ganancia(request.params.id) }),
+  );
+
   rutas.post(
     '/remesas/:id/verificar-pago',
     {
@@ -101,17 +122,28 @@ export function rutasRemesas(app: FastifyInstance, servicio: ServicioRemesas): v
       schema: {
         params: esquemaId,
         body: esquemaAnularRemesa,
-        response: { 200: respuestaRemesa },
+        response: { 200: respuestaRemesa, 202: respuestaSolicitud },
       },
     },
-    async (request) => ({
-      remesa: await servicio.anular(
+    async (request, respuesta) => {
+      const solicitud = await aprobaciones?.interceptar(
+        'anular_remesa',
         request.params.id,
-        request.body.motivo,
+        { motivo: request.body.motivo },
+        `Anular una remesa: ${request.body.motivo}`,
         actorDe(request),
         contextoDe(request),
-      ),
-    }),
+      );
+      if (solicitud) return respuesta.status(202).send({ solicitud });
+      return {
+        remesa: await servicio.anular(
+          request.params.id,
+          request.body.motivo,
+          actorDe(request),
+          contextoDe(request),
+        ),
+      };
+    },
   );
 
   rutas.post(
@@ -121,17 +153,28 @@ export function rutasRemesas(app: FastifyInstance, servicio: ServicioRemesas): v
       schema: {
         params: esquemaId,
         body: esquemaDevolverRemesa,
-        response: { 200: respuestaRemesa },
+        response: { 200: respuestaRemesa, 202: respuestaSolicitud },
       },
     },
-    async (request) => ({
-      remesa: await servicio.devolver(
+    async (request, respuesta) => {
+      const solicitud = await aprobaciones?.interceptar(
+        'devolver_remesa',
         request.params.id,
-        request.body.motivo,
+        { motivo: request.body.motivo },
+        `Devolver el dinero de una remesa: ${request.body.motivo}`,
         actorDe(request),
         contextoDe(request),
-      ),
-    }),
+      );
+      if (solicitud) return respuesta.status(202).send({ solicitud });
+      return {
+        remesa: await servicio.devolver(
+          request.params.id,
+          request.body.motivo,
+          actorDe(request),
+          contextoDe(request),
+        ),
+      };
+    },
   );
 
   rutas.post(

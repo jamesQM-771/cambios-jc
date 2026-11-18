@@ -1,7 +1,8 @@
-import { comparar, type Moneda } from '@cambios-jc/shared';
+import { comparar, gananciaDeRemesa, sumar, type Moneda } from '@cambios-jc/shared';
 
 import type { Prisma } from '../../generated/prisma/client.js';
 import { errores } from '../../lib/errores.js';
+import { salirInventario } from '../../lib/inventario.js';
 import { registrarMovimiento } from '../../lib/libro.js';
 
 /**
@@ -103,12 +104,43 @@ interface DatosPago {
   usuarioId: string;
 }
 
-/** Salen de la cuenta de origen los bolívares pagados y, si lo hubo, el costo del banco. */
+/**
+ * Salen de la cuenta de origen los bolívares pagados y, si lo hubo, el costo del banco. En la misma
+ * transacción salen del inventario al costo promedio vigente y queda fijada la ganancia de la remesa
+ * (§7.3, D140): bruta = (tasa usada − costo) × bolívares; neta = bruta − costo bancario en pesos.
+ */
 export async function pagarRemesa(tx: Prisma.TransactionClient, datos: DatosPago): Promise<void> {
   const operacion = await tx.operacion.findUniqueOrThrow({
     where: { id: datos.operacionId },
-    select: { montoBolivares: true },
+    select: { montoBolivares: true, tasaUsada: true },
   });
+  const hayCosto = datos.costo !== null && comparar(datos.costo, '0') > 0;
+  const costoUnitario = await salirInventario(tx, {
+    moneda: datos.moneda,
+    cantidad: hayCosto
+      ? sumar(operacion.montoBolivares.toString(), datos.costo ?? '0')
+      : operacion.montoBolivares.toString(),
+    origen: 'remesa_pago',
+    operacionId: datos.operacionId,
+    usuarioId: datos.usuarioId,
+  });
+  if (costoUnitario !== null) {
+    const ganancia = gananciaDeRemesa({
+      montoBolivares: operacion.montoBolivares.toString(),
+      tasaUsada: operacion.tasaUsada.toString(),
+      costoPromedio: costoUnitario,
+      costoBancario: hayCosto ? datos.costo : null,
+    });
+    await tx.operacion.update({
+      where: { id: datos.operacionId },
+      data: {
+        costoPromedio: costoUnitario.toString(),
+        gananciaBruta: ganancia.bruta.toString(),
+        costoBancarioPesos: ganancia.costoBancarioPesos.toString(),
+        gananciaNeta: ganancia.neta.toString(),
+      },
+    });
+  }
   await registrarMovimiento(tx, {
     cuentaId: datos.cuentaOrigenId,
     sentido: 'salida',

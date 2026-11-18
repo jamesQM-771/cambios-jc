@@ -4,26 +4,36 @@ Sistema de operación y contabilidad para Cambios JC: remesas COP → VES, compr
 
 - Especificación: [`docs/PROYECTO.md`](docs/PROYECTO.md)
 - Reglas de trabajo: [`CLAUDE.md`](CLAUDE.md)
-- Fase actual: [`docs/fases/FASE-1.md`](docs/fases/FASE-1.md)
+- Estado al 2026-11-01: fases 0 a 13 hechas o documentadas; ver [`docs/RESUMEN-SESION-2026-11-01.md`](docs/RESUMEN-SESION-2026-11-01.md)
 - Decisiones: [`docs/DECISIONES.md`](docs/DECISIONES.md)
 
 ## Estado y plan de fases
 
 El proyecto se entrega en 14 fases agrupadas en 4 versiones (detalle en `docs/PROYECTO.md` §12).
 
-| Versión                               | Fases                                                                                                                          |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| **MVP** — primer uso real             | 0. Base · 1. Configuración · 2. Remesas · 3. Caja                                                                              |
-| **v1** — reemplazo completo del Excel | 4. Inventario y contrapartes · 5. Divisas en caja · 6. Facturación DIAN (opcional) · 7. Cumplimiento · 8. Reportes y migración |
-| **v1.5** — control y comodidad        | 9. Liquidez · 10. Doble control · 11. Tasa asistida · 12. WhatsApp · 12b. Comprobante (OCR) · 13. Permisos                     |
-| **v2** — otros negocios               | Solo después de varios meses estables en Cambios JC                                                                            |
+| Versión                               | Fases                                                                                                                                   |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| **MVP** — primer uso real             | 0. Base · 1. Configuración · 2. Remesas · 3. Caja                                                                                       |
+| **v1** — reemplazo completo del Excel | 4. Inventario y contrapartes · 5. Divisas en caja · 6. Facturación DIAN (opcional) · 7. Cumplimiento · 8. Reportes y migración          |
+| **v1.5** — control y comodidad        | 9. Liquidez · 10. Doble control · 11. Tasa asistida · 12. WhatsApp · 12b. Comprobante (OCR) · 13. Permisos                              |
+| 10. Doble control                     | Completa salvo monto y tasa fuera de rango (D166): solicitudes, bandeja, nadie aprueba lo propio, apagado por defecto                   |
+| 11, 12, 12b                           | 12 en su primera etapa (recibo por WhatsApp con enlace); 11, la API de WhatsApp y 12b bloqueadas por definiciones externas (FASE-11-12) |
+| 13. Permisos                          | Completa: el dueño configura los permisos de cada rol, con restricciones que nadie se salta                                             |
+| **v2** — otros negocios               | Solo después de varios meses estables en Cambios JC                                                                                     |
 
-| Fase             | Estado                                                                                                                    |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| 0. Base          | Completa                                                                                                                  |
-| 1. Configuración | Completa en la rama `fase-1-configuracion`: bancos, sucursales, cajas, denominaciones, líneas de negocio, tasas y cuentas |
-| Rediseño         | Interfaz nueva en la rama `rediseno-interfaz` (fuera de las fases numeradas; no cambia backend, rutas ni permisos)        |
-| 2. Remesas       | Completa en la rama `fase-2-remesas`: clientes, remesas, cola del digitador, recibo, seguimiento público y avisos en vivo |
+| Fase             | Estado                                                                                                                                              |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0. Base          | Completa                                                                                                                                            |
+| 1. Configuración | Completa en la rama `fase-1-configuracion`: bancos, sucursales, cajas, denominaciones, líneas de negocio, tasas y cuentas                           |
+| Rediseño         | Interfaz nueva en la rama `rediseno-interfaz` (fuera de las fases numeradas; no cambia backend, rutas ni permisos)                                  |
+| 2. Remesas       | Completa en la rama `fase-2-remesas`: clientes, remesas, cola del digitador, recibo, seguimiento público y avisos en vivo                           |
+| 3. Caja          | Completa: turnos con arqueo por denominación, libro de movimientos, traslados, gastos, devoluciones y cierre de jornada                             |
+| 4. Inventario    | Completa: contrapartes con cuenta corriente, compras de bolívares, costo promedio, ganancia por remesa y posición del día                           |
+| 5. Divisas       | Completa: compra y venta de dólares en caja con billetes, inventario, ganancia y recibo                                                             |
+| 6. Facturación   | Omitida: opcional y desactivada en Cambios JC (D149)                                                                                                |
+| 7. Cumplimiento  | Completa con umbrales apagados hasta definirlos: ficha, nivel de riesgo, lista restrictiva, alertas y exporte CSV                                   |
+| 8. Reportes      | Completa salvo la carga histórica de los .xlsx (bloqueada, ver FASE-8): reportes, histórico, tablero, exportación de datos y saldos de contrapartes |
+| 9. Liquidez      | Completa: disponible, comprometido y libre, límites diarios, anticipos en tránsito, alertas y aviso al registrar                                    |
 
 Cada fase vive en su propia rama (`fase-0-base`, `fase-1-configuracion`…) y se fusiona a `main` al cerrarla.
 

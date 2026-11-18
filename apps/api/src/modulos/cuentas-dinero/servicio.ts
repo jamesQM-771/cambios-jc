@@ -21,6 +21,8 @@ const SELECCION_PUBLICA = {
   cajaId: true,
   caja: { select: { nombre: true } },
   titular: true,
+  contraparteTitularId: true,
+  contraparteTitular: { select: { nombre: true } },
   responsableId: true,
   responsable: { select: { nombre: true } },
   activa: true,
@@ -46,6 +48,8 @@ function aPublica(fila: FilaCuenta): CuentaDineroPublica {
     cajaId: fila.cajaId,
     cajaNombre: fila.caja?.nombre ?? null,
     titular: fila.titular,
+    contraparteTitularId: fila.contraparteTitularId,
+    contraparteTitularNombre: fila.contraparteTitular?.nombre ?? null,
     responsableId: fila.responsableId,
     responsableNombre: fila.responsable?.nombre ?? null,
     activa: fila.activa,
@@ -73,6 +77,7 @@ export type DatosNuevaCuentaDinero =
       moneda: Moneda;
       sucursalId: string;
       titular?: string | null;
+      contraparteTitularId?: string | null;
       responsableId?: string | null;
       limiteDiario?: string | null;
       comisionPorDefecto?: string | null;
@@ -85,6 +90,7 @@ export type DatosNuevaCuentaDinero =
       moneda: Moneda;
       sucursalId: string;
       titular?: string | null;
+      contraparteTitularId?: string | null;
       responsableId?: string | null;
       limiteDiario?: string | null;
       comisionPorDefecto?: string | null;
@@ -95,6 +101,7 @@ export interface CambiosCuentaDinero {
   ultimos4Digitos?: string | undefined;
   cajaId?: string | null | undefined;
   titular?: string | null | undefined;
+  contraparteTitularId?: string | null | undefined;
   responsableId?: string | null | undefined;
   limiteDiario?: string | null | undefined;
   comisionPorDefecto?: string | null | undefined;
@@ -170,6 +177,15 @@ export function crearServicioCuentasDinero({ prisma }: { prisma: PrismaClient })
     if (!usuario) throw errorValidacion('responsableId', 'El usuario responsable no existe.');
   }
 
+  async function exigirContraparteActiva(contraparteId: string): Promise<void> {
+    const contraparte = await prisma.contraparte.findFirst({
+      where: { id: contraparteId, activa: true },
+    });
+    if (!contraparte) {
+      throw errorValidacion('contraparteTitularId', 'La contraparte no existe o está desactivada.');
+    }
+  }
+
   async function cargar(id: string): Promise<FilaCuenta> {
     const cuenta = await prisma.cuentaDinero.findUnique({
       where: { id },
@@ -202,6 +218,7 @@ export function crearServicioCuentasDinero({ prisma }: { prisma: PrismaClient })
       await exigirSucursalActiva(datos.sucursalId);
       if (datos.tipo === 'banco') await exigirBancoActivo(datos.bancoId);
       if (datos.responsableId) await exigirUsuarioExiste(datos.responsableId);
+      if (datos.contraparteTitularId) await exigirContraparteActiva(datos.contraparteTitularId);
       if (datos.tipo === 'caja' && datos.cajaId) {
         await exigirCajaValida(datos.cajaId, datos.sucursalId, datos.moneda);
       }
@@ -212,6 +229,7 @@ export function crearServicioCuentasDinero({ prisma }: { prisma: PrismaClient })
         moneda: datos.moneda,
         sucursalId: datos.sucursalId,
         titular: datos.titular ?? null,
+        contraparteTitularId: datos.contraparteTitularId ?? null,
         responsableId: datos.responsableId ?? null,
         limiteDiario:
           datos.limiteDiario !== null && datos.limiteDiario !== undefined
@@ -255,6 +273,7 @@ export function crearServicioCuentasDinero({ prisma }: { prisma: PrismaClient })
         );
       }
       if (cambios.responsableId) await exigirUsuarioExiste(cambios.responsableId);
+      if (cambios.contraparteTitularId) await exigirContraparteActiva(cambios.contraparteTitularId);
       if (cambios.cajaId !== undefined) {
         if (filaAntes.tipo !== 'caja') {
           throw errorValidacion('cajaId', 'Solo una cuenta de tipo "caja" pertenece a una caja.');
@@ -286,6 +305,9 @@ export function crearServicioCuentasDinero({ prisma }: { prisma: PrismaClient })
           ? { ultimos4Digitos: cambios.ultimos4Digitos }
           : {}),
         ...(cambios.titular !== undefined ? { titular: cambios.titular } : {}),
+        ...(cambios.contraparteTitularId !== undefined
+          ? { contraparteTitularId: cambios.contraparteTitularId }
+          : {}),
         ...(cambios.responsableId !== undefined ? { responsableId: cambios.responsableId } : {}),
         ...(cambios.limiteDiario !== undefined
           ? {

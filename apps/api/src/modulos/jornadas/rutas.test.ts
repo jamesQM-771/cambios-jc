@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
+import { aDecimal } from '@cambios-jc/shared';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
@@ -215,6 +216,19 @@ interface DetalleJson {
     retirosDelDueno: { moneda: string; total: string }[];
     traslados: number;
     diferenciasDeArqueo: { resultado: string; diferencia: string; explicacion: string | null }[];
+    ganancia?: {
+      moneda: string;
+      remesasCosteadas: number;
+      remesasSinCosto: number;
+      gananciaRemesas: string;
+      gananciaDivisas?: string;
+      costosBancarios: string;
+      gastosOperativos: string;
+      gananciaDelDia: string;
+    };
+    contrapartes?: { saldos: { moneda: string; meDeben: string; lesDebo: string }[] };
+    devolucionesPendientes?: { moneda: string; total: string }[];
+    posicion?: { moneda: string; total: string }[];
   };
   eventos: { tipo: string; motivo: string | null }[];
 }
@@ -350,6 +364,103 @@ describe('consultar', () => {
       saldo: '140004.00',
       origen: 'conteo_de_turno',
     });
+  });
+});
+
+describe('ganancia, contrapartes y posición (fase 4)', () => {
+  it('suma la ganancia de lo pagado hoy menos gastos, y la posición cuadra con sus partes', async () => {
+    const e = await escenario();
+    const banco = await prisma.banco.upsert({
+      where: { codigo: '9126' },
+      update: {},
+      create: { codigo: '9126', nombre: 'Banco de prueba de la jornada' },
+    });
+    const beneficiario = await prisma.cliente.create({
+      data: {
+        tipoDocumento: 'V',
+        numeroDocumento: String(Math.floor(Math.random() * 9e8) + 1e8),
+        nombre: 'Beneficiario de la jornada',
+        creadoPorId: e.vendedor.id,
+      },
+    });
+    const medio = await prisma.medioPago.create({
+      data: {
+        clienteId: beneficiario.id,
+        tipo: 'pago_movil',
+        bancoId: banco.id,
+        telefonoPagoMovil: '04141234567',
+        titular: 'Titular',
+        tipoDocumentoTitular: 'V',
+        numeroDocumentoTitular: '12345678',
+      },
+    });
+    const pagadas = [
+      { neta: '2585.11', costo: '46.25' },
+      { neta: '1000.50', costo: '0.00' },
+      { neta: null, costo: null },
+    ];
+    for (const pagada of pagadas) {
+      const remesa = await remesaEn(e, 'completada');
+      await prisma.transferencia.create({
+        data: { operacionId: remesa.id, medioPagoId: medio.id, completadaEn: new Date() },
+      });
+      if (pagada.neta) {
+        await prisma.operacion.update({
+          where: { id: remesa.id },
+          data: {
+            costoPromedio: '3.700000',
+            gananciaBruta: pagada.neta,
+            costoBancarioPesos: pagada.costo,
+            gananciaNeta: pagada.neta,
+          },
+        });
+      }
+    }
+    const incidencia = await remesaEn(e, 'tomada');
+    await prisma.operacion.update({
+      where: { id: incidencia.id },
+      data: { estado: 'con_incidencia' },
+    });
+    const categoria = await prisma.categoriaGasto.create({
+      data: { nombre: `Categoría ${unico()}` },
+    });
+    await prisma.gasto.create({
+      data: {
+        tipo: 'operativo',
+        categoriaId: categoria.id,
+        descripcion: 'Almuerzo',
+        cuentaId: e.efectivo,
+        monto: '500',
+        claveIdempotencia: randomUUID(),
+        creadoPorId: e.admin.id,
+      },
+    });
+
+    const { resumen } = detalleDe(await ver(nuevaApp(), e.admin.token, e.jornadaId));
+
+    expect(resumen.ganancia).toEqual({
+      moneda: 'COP',
+      remesasCosteadas: 2,
+      remesasSinCosto: 1,
+      gananciaRemesas: '3585.61',
+      gananciaDivisas: '0.00',
+      costosBancarios: '46.25',
+      gastosOperativos: '500.00',
+      gananciaDelDia: '3085.61',
+    });
+    expect(resumen.devolucionesPendientes).toEqual([{ moneda: 'COP', total: '162000.00' }]);
+    // posición = disponible + me deben − le debo − devoluciones pendientes, por moneda.
+    expect(resumen.posicion?.length).toBeGreaterThan(0);
+    for (const { moneda, total } of resumen.posicion ?? []) {
+      const valor = (lista: { moneda: string; total: string }[] | undefined) =>
+        lista?.find((x) => x.moneda === moneda)?.total ?? '0';
+      const contraparte = resumen.contrapartes?.saldos.find((c) => c.moneda === moneda);
+      const esperado = aDecimal(valor(resumen.totalDisponible))
+        .plus(contraparte?.meDeben ?? '0')
+        .minus(contraparte?.lesDebo ?? '0')
+        .minus(valor(resumen.devolucionesPendientes));
+      expect(aDecimal(total).equals(esperado), moneda).toBe(true);
+    }
   });
 });
 

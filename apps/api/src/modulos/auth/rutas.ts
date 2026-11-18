@@ -1,4 +1,3 @@
-import { permisosDeRol } from '@cambios-jc/shared';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 
 import type { Config } from '../../lib/config.js';
@@ -19,6 +18,7 @@ import {
   respuestaYo,
 } from './esquemas.js';
 import type { ContextoPeticion, ServicioAuth, SesionEmitida } from './servicio.js';
+import { permisosDeRol } from '../../lib/permisos.js';
 
 export const NOMBRE_COOKIE_SESION = 'cambios_sesion';
 

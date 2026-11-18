@@ -18,15 +18,24 @@ import { PaginaCambiarContrasena } from './paginas/acceso/PaginaCambiarContrasen
 import { PaginaConfigurar2fa } from './paginas/acceso/PaginaConfigurar2fa.js';
 import { PaginaLogin } from './paginas/acceso/PaginaLogin.js';
 import { PaginaVerificar2fa } from './paginas/acceso/PaginaVerificar2fa.js';
+import { PaginaAprobaciones } from './paginas/aprobaciones/PaginaAprobaciones.js';
 import { PaginaBitacora } from './paginas/bitacora/PaginaBitacora.js';
 import { PaginaClientes } from './paginas/clientes/PaginaClientes.js';
+import { PaginaCompras } from './paginas/compras/PaginaCompras.js';
+import { PaginaContrapartes } from './paginas/contrapartes/PaginaContrapartes.js';
+import { PaginaInventario } from './paginas/inventario/PaginaInventario.js';
 import { PaginaCola } from './paginas/cola/PaginaCola.js';
+import { PaginaCumplimiento } from './paginas/cumplimiento/PaginaCumplimiento.js';
+import { PaginaDivisas } from './paginas/divisas/PaginaDivisas.js';
 import { PaginaEmpresa } from './paginas/empresa/PaginaEmpresa.js';
 import { PaginaGastos } from './paginas/gastos/PaginaGastos.js';
 import { PaginaJornada } from './paginas/jornada/PaginaJornada.js';
 import { PaginaInicio } from './paginas/PaginaInicio.js';
 import { PaginaNoEncontrada } from './paginas/PaginaNoEncontrada.js';
+import { PaginaLiquidez } from './paginas/liquidez/PaginaLiquidez.js';
+import { PaginaPermisos } from './paginas/permisos/PaginaPermisos.js';
 import { PaginaRemesas } from './paginas/remesas/PaginaRemesas.js';
+import { PaginaReportes } from './paginas/reportes/PaginaReportes.js';
 import { PaginaSeguimiento } from './paginas/seguimiento/PaginaSeguimiento.js';
 import { PaginaTraslados } from './paginas/traslados/PaginaTraslados.js';
 import { PaginaTurno } from './paginas/turno/PaginaTurno.js';
@@ -109,6 +118,78 @@ export function App() {
             element={
               <RutaConPermiso permiso="jornada.cerrar">
                 <PaginaJornada />
+              </RutaConPermiso>
+            }
+          />
+          <Route
+            path="permisos"
+            element={
+              <RutaConPermiso permiso="permiso.configurar">
+                <PaginaPermisos />
+              </RutaConPermiso>
+            }
+          />
+          <Route
+            path="aprobaciones"
+            element={
+              <RutaConPermiso permiso="aprobacion.aprobar">
+                <PaginaAprobaciones />
+              </RutaConPermiso>
+            }
+          />
+          <Route
+            path="liquidez"
+            element={
+              <RutaConPermiso permiso="liquidez.ver">
+                <PaginaLiquidez />
+              </RutaConPermiso>
+            }
+          />
+          <Route
+            path="reportes"
+            element={
+              <RutaConPermiso permiso="reporte.ver">
+                <PaginaReportes />
+              </RutaConPermiso>
+            }
+          />
+          <Route
+            path="cumplimiento"
+            element={
+              <RutaConPermiso permiso="cumplimiento.gestionar_alertas">
+                <PaginaCumplimiento />
+              </RutaConPermiso>
+            }
+          />
+          <Route
+            path="divisas"
+            element={
+              <RutaConPermiso permiso="divisa_caja.operar">
+                <PaginaDivisas />
+              </RutaConPermiso>
+            }
+          />
+          <Route
+            path="contrapartes"
+            element={
+              <RutaConPermiso permiso="contraparte.registrar_movimiento">
+                <PaginaContrapartes />
+              </RutaConPermiso>
+            }
+          />
+          <Route
+            path="compras"
+            element={
+              <RutaConPermiso permiso="compra_contraparte.registrar">
+                <PaginaCompras />
+              </RutaConPermiso>
+            }
+          />
+          <Route
+            path="inventario"
+            element={
+              <RutaConPermiso permiso="compra_contraparte.registrar">
+                <PaginaInventario />
               </RutaConPermiso>
             }
           />

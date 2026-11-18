@@ -17,6 +17,13 @@ import {
 } from '../../../test/auth.js';
 import { formularioConArchivos, jpegDePrueba, pngDePrueba } from '../../../test/imagenes.js';
 import { abrirTurnoDePrueba } from '../../../test/turnos.js';
+import {
+  aDecimal,
+  entrarAlInventario,
+  gananciaDeRemesa,
+  type EstadoInventario,
+} from '@cambios-jc/shared';
+
 import { crearPrisma, type PrismaClient } from '../../lib/prisma.js';
 
 let prisma: PrismaClient;
@@ -438,6 +445,88 @@ describe('tomar, devolver y reportar incidencia', () => {
 
     expect(respuesta.statusCode).toBe(409);
     expect(noExiste.statusCode).toBe(404);
+  });
+});
+
+async function inventarioVes(): Promise<EstadoInventario> {
+  const fila = await prisma.inventarioDivisa.findUnique({ where: { moneda: 'VES' } });
+  return {
+    cantidad: aDecimal(fila?.cantidad.toString() ?? '0'),
+    costoPromedio: fila?.costoPromedio ? aDecimal(fila.costoPromedio.toString()) : null,
+  };
+}
+
+describe('costo y ganancia al pagar (fase 4)', () => {
+  it('sale del inventario al costo promedio y fija la ganancia neta de costos bancarios', async () => {
+    const e = await escenario();
+    const api = nuevaApp();
+    // Entrada de inventario a 4,80: el costo que tendrá el pago es el promedio con lo que ya había.
+    const antes = await inventarioVes();
+    const ajuste = await llamar(api, 'POST', '/inventario/VES/ajustes', {
+      token: e.admin.token,
+      cuerpo: { sentido: 'entrada', cantidad: '100000', tasa: '4.8', motivo: 'Inventario inicial' },
+    });
+    expect(ajuste.statusCode).toBe(200);
+    const esperado = entrarAlInventario(antes, '100000', '4.8', 'VES');
+    expect(ajuste.json<{ inventario: { costoPromedio: string } }>().inventario.costoPromedio).toBe(
+      esperado.costoPromedio?.toFixed(6),
+    );
+
+    const remesa = await e.crearRemesa(api);
+    await llamar(api, 'POST', `/cola/${remesa.id}/tomar`, { token: e.digitador.token });
+    const completada = await completarConArchivo(api, e.digitador.token, remesa.id, {
+      cuentaOrigenId: e.cuentaVesId,
+      costoBancario: '2.250',
+    });
+    expect(completada.statusCode).toBe(200);
+
+    const costo = esperado.costoPromedio?.toFixed(6) ?? '';
+    const calculo = gananciaDeRemesa({
+      montoBolivares: remesa.montoBolivares,
+      tasaUsada: '5',
+      costoPromedio: costo,
+      costoBancario: '2.250',
+    });
+    const respuesta = await llamar(api, 'GET', `/remesas/${remesa.id}/ganancia`, {
+      token: e.admin.token,
+    });
+    expect(respuesta.statusCode).toBe(200);
+    expect(respuesta.json()).toEqual({
+      ganancia: {
+        costoPromedio: costo,
+        bruta: calculo.bruta.toFixed(2),
+        costoBancarioPesos: calculo.costoBancarioPesos.toFixed(2),
+        neta: calculo.neta.toFixed(2),
+      },
+    });
+    // Salieron del inventario los bolívares enviados más el costo bancario.
+    const despues = await inventarioVes();
+    expect(despues.cantidad.toFixed(3)).toBe(
+      esperado.cantidad.minus(remesa.montoBolivares).minus('2.25').toFixed(3),
+    );
+    const salida = await prisma.movimientoInventario.findFirst({
+      where: { operacionId: remesa.id },
+    });
+    expect(salida).toMatchObject({ origen: 'remesa_pago', sentido: 'salida' });
+  });
+
+  it('la ganancia es solo para quien tiene ganancia.ver; sin pagar devuelve null', async () => {
+    const e = await escenario();
+    const api = nuevaApp();
+    const remesa = await e.crearRemesa(api);
+    for (const quien of [e.vendedor, e.digitador]) {
+      const respuesta = await llamar(api, 'GET', `/remesas/${remesa.id}/ganancia`, {
+        token: quien.token,
+      });
+      expect(respuesta.statusCode).toBe(403);
+    }
+    const sinPagar = await llamar(api, 'GET', `/remesas/${remesa.id}/ganancia`, {
+      token: e.admin.token,
+    });
+    expect(sinPagar.json()).toEqual({ ganancia: null });
+    // La cola del digitador nunca trae costo ni ganancia.
+    const cola = await llamar(api, 'GET', '/cola', { token: e.digitador.token });
+    expect(cola.body).not.toMatch(/ganancia|costoPromedio/);
   });
 });
 

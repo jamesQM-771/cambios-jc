@@ -286,6 +286,36 @@ describe('detalle y acciones', () => {
     expect(dialogo.getByLabelText('Motivo')).toHaveValue('Se cobró dos veces');
   });
 
+  it('el administrador ve el costo y la ganancia neta de una remesa pagada', async () => {
+    const remesa = remesaFalsa({ estado: 'completada' });
+    const api = simularApi({
+      'GET /auth/yo': { cuerpo: sesionFalsa('administrador') },
+      'GET /remesas': { cuerpo: { remesas: [remesa] } },
+      'GET /remesas/r-1/historial': { cuerpo: { historial: [] } },
+      'GET /remesas/r-1/ganancia': {
+        cuerpo: {
+          ganancia: {
+            costoPromedio: '3.700000',
+            bruta: '2585.11',
+            costoBancarioPesos: '46.25',
+            neta: '2538.86',
+          },
+        },
+      },
+    });
+    const { usuario } = renderizarApp('/remesas');
+    await usuario.click(await screen.findByRole('button', { name: /Abrir remesa 128/ }));
+    expect(await screen.findByText(/COP 2\.539/)).toBeInTheDocument();
+    expect(screen.getByText('3,70')).toBeInTheDocument();
+    expect(api.de('GET', '/remesas/r-1/ganancia')).toHaveLength(1);
+  });
+
+  it('el vendedor no pide la ganancia', async () => {
+    const { api } = await abrirDetalle('vendedor', remesaFalsa({ estado: 'completada' }));
+    await screen.findByRole('heading', { name: /Comprobante N° 128/ });
+    expect(api.de('GET', '/remesas/r-1/ganancia')).toHaveLength(0);
+  });
+
   it('muestra el historial, el código de seguimiento y la captura cuando existe', async () => {
     await abrirDetalle(
       'vendedor',
@@ -334,6 +364,8 @@ describe('nueva remesa', () => {
       }),
       'GET /clientes/c-2': { cuerpo: { cliente: beneficiarioConMedios } },
       'GET /clientes/bancos': { cuerpo: { bancos: [] } },
+      // Fase 9: la liquidez no alcanza; se avisa pero se deja registrar.
+      'GET /liquidez/alcanza': { cuerpo: { alcanza: false } },
       'POST /remesas': { estado: 201, cuerpo: { remesa: creada } },
       'POST /remesas/r-1/recibo': {
         cuerpo: {
@@ -386,6 +418,7 @@ describe('nueva remesa', () => {
 
     await usuario.type(screen.getByLabelText('Pesos entregados (COP)'), '162000');
     expect(await screen.findByText('VES 43.085,106')).toBeInTheDocument();
+    expect(await screen.findByText(/Los bolívares libres no alcanzan/)).toBeInTheDocument();
     await usuario.click(screen.getByRole('button', { name: 'Registrar remesa' }));
 
     await waitFor(() => expect(api.de('POST', '/remesas')).toHaveLength(1));
@@ -405,6 +438,9 @@ describe('nueva remesa', () => {
 
     await usuario.click(await screen.findByRole('button', { name: 'Emitir e imprimir' }));
     expect(await screen.findByRole('article', { name: 'Recibo 128' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Enviar por WhatsApp' }).getAttribute('href')).toMatch(
+      /^https:\/\/wa\.me\/\?text=Recibo/,
+    );
     await waitFor(() => expect(imprimir).toHaveBeenCalled());
   });
 

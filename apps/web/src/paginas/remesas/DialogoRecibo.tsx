@@ -7,6 +7,7 @@ import { BotonCopiar } from '../../componentes/BotonCopiar.js';
 import { Dialogo } from '../../componentes/Dialogo.js';
 import { ReciboTicket } from '../../componentes/ReciboTicket.js';
 import { useAnchoRecibo } from '../../lib/ancho-recibo.js';
+import { enlaceWhatsApp } from '../../lib/whatsapp.js';
 import { mensajeDe } from '../../lib/api.js';
 import { emitirRecibo } from '../../modulos/recibos/api.js';
 import type { AnchoRecibo, Recibo } from '../../modulos/recibos/tipos.js';
@@ -88,6 +89,14 @@ function ContenidoRecibo({
             <Boton chico onClick={() => window.print()}>
               Imprimir
             </Boton>
+            <a
+              className="boton boton--secundario boton--chico"
+              href={enlaceWhatsApp(recibo.texto)}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Enviar por WhatsApp
+            </a>
             <BotonCopiar texto={recibo.texto} etiqueta="Copiar texto" />
             <BotonCopiar texto={recibo.urlSeguimiento} etiqueta="Copiar enlace de seguimiento" />
             <Boton

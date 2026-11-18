@@ -33,9 +33,18 @@ export const PERMISOS = [
   'divisa_caja.operar',
   'compra_contraparte.registrar',
   'contraparte.registrar_movimiento',
+  'divisa_caja.anular',
+  // Ver la ganancia y el costo de cada remesa (fase 4): información del dueño.
+  'ganancia.ver',
   // Control
   'aprobacion.aprobar',
   'cumplimiento.gestionar_alertas',
+  // Reportes y migración (fase 8)
+  'reporte.ver',
+  'datos.exportar',
+  'migracion.cargar',
+  // Liquidez (fase 9)
+  'liquidez.ver',
 ] as const;
 
 export type Permiso = (typeof PERMISOS)[number];

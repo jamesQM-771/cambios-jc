@@ -33,6 +33,12 @@ const MATRIZ: Record<Permiso, readonly [boolean, boolean, boolean]> = {
   'divisa_caja.operar': [true, true, false],
   'compra_contraparte.registrar': [true, false, false],
   'contraparte.registrar_movimiento': [true, false, false],
+  'ganancia.ver': [true, false, false],
+  'divisa_caja.anular': [true, false, false],
+  'reporte.ver': [true, false, false],
+  'datos.exportar': [true, false, false],
+  'migracion.cargar': [true, false, false],
+  'liquidez.ver': [true, false, false],
   'aprobacion.aprobar': [true, false, false],
   'cumplimiento.gestionar_alertas': [true, false, false],
 };

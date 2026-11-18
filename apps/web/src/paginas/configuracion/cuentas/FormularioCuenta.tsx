@@ -8,7 +8,9 @@ import { Campo } from '../../../componentes/Campo.js';
 import { CampoSelector } from '../../../componentes/CampoSelector.js';
 import { erroresPorCampo, mensajeDe } from '../../../lib/api.js';
 import { ETIQUETAS_MONEDA, MONEDAS_SOPORTADAS } from '../../../lib/formato.js';
+import { useSesionActual } from '../../../modulos/auth/ContextoSesion.js';
 import { useBancos } from '../../../modulos/bancos/consultas.js';
+import { useOpcionesContraparte } from '../../../modulos/contrapartes/consultas.js';
 import { crearCuenta, editarCuenta } from '../../../modulos/cuentas-dinero/api.js';
 import { CLAVE_CUENTAS } from '../../../modulos/cuentas-dinero/consultas.js';
 import type {
@@ -53,6 +55,13 @@ export function FormularioCuenta({ cuenta, alGuardar, alCancelar }: PropiedadesF
   const [bancoId, setBancoId] = useState('');
   const [ultimos4Digitos, setUltimos4Digitos] = useState(cuenta?.ultimos4Digitos ?? '');
   const [titular, setTitular] = useState(cuenta?.titular ?? '');
+  const { permisos } = useSesionActual();
+  const contrapartes = useOpcionesContraparte(
+    permisos.includes('contraparte.registrar_movimiento'),
+  );
+  const [contraparteTitularId, setContraparteTitularId] = useState(
+    cuenta?.contraparteTitularId ?? '',
+  );
   const [responsableId, setResponsableId] = useState(cuenta?.responsableId ?? '');
   const [limiteDiario, setLimiteDiario] = useState(cuenta?.limiteDiario ?? '');
   const [comisionPorDefecto, setComisionPorDefecto] = useState(cuenta?.comisionPorDefecto ?? '');
@@ -65,6 +74,7 @@ export function FormularioCuenta({ cuenta, alGuardar, alCancelar }: PropiedadesF
           moneda,
           sucursalId,
           titular: aNuloOVacio(titular),
+          contraparteTitularId: contraparteTitularId === '' ? null : contraparteTitularId,
           responsableId: responsableId === '' ? null : responsableId,
           limiteDiario: aNuloOVacio(limiteDiario),
           comisionPorDefecto: aNuloOVacio(comisionPorDefecto),
@@ -79,6 +89,10 @@ export function FormularioCuenta({ cuenta, alGuardar, alCancelar }: PropiedadesF
         cambios.ultimos4Digitos = ultimos4Digitos;
       }
       if (aNuloOVacio(titular) !== cuenta.titular) cambios.titular = aNuloOVacio(titular);
+      const contraparteNueva = contraparteTitularId === '' ? null : contraparteTitularId;
+      if (contraparteNueva !== cuenta.contraparteTitularId) {
+        cambios.contraparteTitularId = contraparteNueva;
+      }
       const responsableNuevo = responsableId === '' ? null : responsableId;
       if (responsableNuevo !== cuenta.responsableId) cambios.responsableId = responsableNuevo;
       if (aNuloOVacio(limiteDiario) !== cuenta.limiteDiario) {
@@ -199,6 +213,22 @@ export function FormularioCuenta({ cuenta, alGuardar, alCancelar }: PropiedadesF
         onChange={(evento) => setTitular(evento.target.value)}
         error={delServidor.titular}
       />
+      {contrapartes.data && (
+        <CampoSelector
+          etiqueta="Contraparte titular"
+          value={contraparteTitularId}
+          onChange={(evento) => setContraparteTitularId(evento.target.value)}
+          error={delServidor.contraparteTitularId}
+          ayuda="Opcional. Si la cuenta está a nombre de una contraparte (ej. quien te vende bolívares), sus saldos se ven juntos."
+        >
+          <option value="">Ninguna</option>
+          {contrapartes.data.contrapartes.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.nombre}
+            </option>
+          ))}
+        </CampoSelector>
+      )}
       <CampoSelector
         etiqueta="Responsable"
         value={responsableId}

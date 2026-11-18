@@ -1,7 +1,8 @@
-import { esPermiso, tienePermiso, type Permiso, type Rol } from '@cambios-jc/shared';
+import { esPermiso, type Permiso, type Rol } from '@cambios-jc/shared';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 
 import { errores } from '../lib/errores.js';
+import { tienePermiso } from '../lib/permisos.js';
 
 /** Usuario con una sesión válida. */
 export interface UsuarioAutenticado {

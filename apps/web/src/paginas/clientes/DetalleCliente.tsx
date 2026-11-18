@@ -19,6 +19,8 @@ import {
 import { formatearCuenta, type MedioPago } from '../../modulos/clientes/tipos.js';
 import { formatearTelefono } from '../../lib/telefono.js';
 
+import { FichaCumplimiento } from '../cumplimiento/FichaCumplimiento.js';
+
 import { FormularioCliente } from './FormularioCliente.js';
 import { FormularioMedioPago } from './FormularioMedioPago.js';
 
@@ -34,6 +36,7 @@ export function DetalleCliente({ clienteId, alCerrar }: PropiedadesDetalleClient
   const bancos = useBancosDisponibles();
   const [editando, setEditando] = useState(false);
   const [agregando, setAgregando] = useState(false);
+  const [viendoFicha, setViendoFicha] = useState(false);
 
   const refrescar = () => consultas.invalidateQueries({ queryKey: CLAVE_CLIENTES });
 
@@ -53,6 +56,10 @@ export function DetalleCliente({ clienteId, alCerrar }: PropiedadesDetalleClient
   if (detalle.isPending) return <Esqueleto texto="Cargando el cliente…" />;
   if (detalle.isError) return <Aviso tipo="error">{mensajeDe(detalle.error)}</Aviso>;
   const { cliente } = detalle.data;
+
+  if (viendoFicha) {
+    return <FichaCumplimiento clienteId={clienteId} alVolver={() => setViendoFicha(false)} />;
+  }
 
   if (editando) {
     return (
@@ -97,6 +104,9 @@ export function DetalleCliente({ clienteId, alCerrar }: PropiedadesDetalleClient
       <div className="acciones">
         <Boton variante="secundario" chico onClick={() => setEditando(true)}>
           Editar datos
+        </Boton>
+        <Boton variante="secundario" chico onClick={() => setViendoFicha(true)}>
+          Ficha de cumplimiento
         </Boton>
         <Boton
           variante={cliente.activo ? 'peligro' : 'secundario'}

@@ -129,6 +129,16 @@ model CuentaDinero {
 
   saldosJornada SaldoCuentaJornada[]
 
+  /// Persona a cuyo nombre está la cuenta, cuando es una contraparte del negocio (§5.9, D137).
+  contraparteTitularId String?      @map("contraparte_titular_id") @db.Uuid
+  contraparteTitular   Contraparte? @relation(fields: [contraparteTitularId], references: [id], onDelete: Restrict)
+
+  movimientosContraparte MovimientoContraparte[]
+  comprasDestino         CompraDivisa[]          @relation("CompraDestino")
+  comprasPago            CompraDivisa[]          @relation("CompraPago")
+  divisasCuentaDivisa    OperacionDivisa[]       @relation("DivisaCuentaDivisa")
+  divisasCuentaPesos     OperacionDivisa[]       @relation("DivisaCuentaPesos")
+
   @@map("cuenta_dinero")
 }
 
@@ -152,19 +162,20 @@ enum ModoTasa {
 /// Línea de negocio (fase 1, §4.3 de PROYECTO.md): remesa (envío a otro país) o divisa_caja (compra/
 /// venta de una divisa en efectivo).
 model LineaNegocio {
-  id            String      @id @default(uuid(7)) @db.Uuid
-  nombre        String      @unique
-  clase         ClaseLinea
-  monedaOrigen  String      @map("moneda_origen") @db.Char(3)
-  monedaDestino String      @map("moneda_destino") @db.Char(3)
-  activa        Boolean     @default(true)
-  modoTasa      ModoTasa    @default(directo) @map("modo_tasa")
+  id                String            @id @default(uuid(7)) @db.Uuid
+  nombre            String            @unique
+  clase             ClaseLinea
+  monedaOrigen      String            @map("moneda_origen") @db.Char(3)
+  monedaDestino     String            @map("moneda_destino") @db.Char(3)
+  activa            Boolean           @default(true)
+  modoTasa          ModoTasa          @default(directo) @map("modo_tasa")
   /// Margen vigente en modo "porcentaje" (D64); null si la línea es "directo" o aún no se configuró.
-  margenCompra  Decimal?    @map("margen_compra") @db.Decimal(18, 6)
-  margenVenta   Decimal?    @map("margen_venta") @db.Decimal(18, 6)
-  creadoEn      DateTime    @default(now()) @map("creado_en") @db.Timestamptz(6)
-  tasas         Tasa[]
-  operaciones   Operacion[]
+  margenCompra      Decimal?          @map("margen_compra") @db.Decimal(18, 6)
+  margenVenta       Decimal?          @map("margen_venta") @db.Decimal(18, 6)
+  creadoEn          DateTime          @default(now()) @map("creado_en") @db.Timestamptz(6)
+  tasas             Tasa[]
+  operaciones       Operacion[]
+  operacionesDivisa OperacionDivisa[]
 
   @@map("linea_negocio")
 }
@@ -172,22 +183,23 @@ model LineaNegocio {
 /// Historial de tasas publicadas por línea de negocio (fase 1, §5.2 de PROYECTO.md). Nunca se
 /// sobrescribe: publicar una tasa nueva cierra la vigencia de la anterior de esa misma línea.
 model Tasa {
-  id             String       @id @default(uuid(7)) @db.Uuid
-  lineaNegocioId String       @map("linea_negocio_id") @db.Uuid
-  lineaNegocio   LineaNegocio @relation(fields: [lineaNegocioId], references: [id], onDelete: Restrict)
+  id                String            @id @default(uuid(7)) @db.Uuid
+  lineaNegocioId    String            @map("linea_negocio_id") @db.Uuid
+  lineaNegocio      LineaNegocio      @relation(fields: [lineaNegocioId], references: [id], onDelete: Restrict)
   /// Solo en modo "porcentaje": la tasa del proveedor y el margen usados ese día (snapshot).
-  tasaReferencia Decimal?     @map("tasa_referencia") @db.Decimal(18, 6)
-  margenUsado    Decimal?     @map("margen_usado") @db.Decimal(18, 6)
+  tasaReferencia    Decimal?          @map("tasa_referencia") @db.Decimal(18, 6)
+  margenUsado       Decimal?          @map("margen_usado") @db.Decimal(18, 6)
   /// Solo si la línea opera compra (hoy, Dólares). Null en remesas, que aún no compran (fase 4).
-  tasaCompra     Decimal?     @map("tasa_compra") @db.Decimal(18, 6)
-  tasaVenta      Decimal      @map("tasa_venta") @db.Decimal(18, 6)
-  publicadaPorId String       @map("publicada_por_id") @db.Uuid
-  publicadaPor   Usuario      @relation(fields: [publicadaPorId], references: [id], onDelete: Restrict)
-  motivo         String?
-  vigenteDesde   DateTime     @default(now()) @map("vigente_desde") @db.Timestamptz(6)
+  tasaCompra        Decimal?          @map("tasa_compra") @db.Decimal(18, 6)
+  tasaVenta         Decimal           @map("tasa_venta") @db.Decimal(18, 6)
+  publicadaPorId    String            @map("publicada_por_id") @db.Uuid
+  publicadaPor      Usuario           @relation(fields: [publicadaPorId], references: [id], onDelete: Restrict)
+  motivo            String?
+  vigenteDesde      DateTime          @default(now()) @map("vigente_desde") @db.Timestamptz(6)
   /// Null mientras es la tasa vigente de su línea; se llena al publicar la siguiente.
-  vigenteHasta   DateTime?    @map("vigente_hasta") @db.Timestamptz(6)
-  operaciones    Operacion[]
+  vigenteHasta      DateTime?         @map("vigente_hasta") @db.Timestamptz(6)
+  operaciones       Operacion[]
+  operacionesDivisa OperacionDivisa[]
 
   @@map("tasa")
 }
@@ -204,7 +216,8 @@ model Denominacion {
   activa   Boolean  @default(true)
   creadoEn DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
 
-  conteos ConteoTurno[]
+  conteos       ConteoTurno[]
+  enOperaciones DenominacionOperacion[]
 
   @@map("denominacion")
 }
@@ -252,6 +265,19 @@ model Usuario {
 
   jornadasCerradas Jornada[]       @relation("JornadaCerradaPor")
   eventosJornada   EventoJornada[] @relation("EventoJornadaUsuario")
+
+  contrapartesCreadas    Contraparte[]
+  movimientosContraparte MovimientoContraparte[]
+  movimientosInventario  MovimientoInventario[]
+  comprasCreadas         CompraDivisa[]            @relation("CompraCreadaPor")
+  comprasAnuladas        CompraDivisa[]            @relation("CompraAnuladaPor")
+  divisasCreadas         OperacionDivisa[]         @relation("DivisaCreadaPor")
+  divisasAnuladas        OperacionDivisa[]         @relation("DivisaAnuladaPor")
+  perfilesActualizados   PerfilRiesgo[]
+  listaRestrictivaCreada EntradaListaRestrictiva[]
+  alertasResueltas       AlertaCumplimiento[]      @relation("AlertaResueltaPor")
+  solicitudesHechas      SolicitudAprobacion[]     @relation("SolicitudSolicitante")
+  solicitudesResueltas   SolicitudAprobacion[]     @relation("SolicitudAprobador")
 
   @@map("usuario")
 }
@@ -321,17 +347,19 @@ enum TipoMedioPago {
 /// Persona que paga en el local (remitente) o recibe en destino (beneficiario); una puede ser ambas
 /// (fase 2, §5.1 de PROYECTO.md). Único por tipo + número de documento. Nunca se borra (D97).
 model Cliente {
-  id              String        @id @default(uuid(7)) @db.Uuid
-  tipoDocumento   TipoDocumento @map("tipo_documento")
-  numeroDocumento String        @map("numero_documento") @db.VarChar(20)
+  id              String               @id @default(uuid(7)) @db.Uuid
+  tipoDocumento   TipoDocumento        @map("tipo_documento")
+  numeroDocumento String               @map("numero_documento") @db.VarChar(20)
   nombre          String
-  telefono        String?       @db.VarChar(20)
-  activo          Boolean       @default(true)
-  creadoPorId     String        @map("creado_por_id") @db.Uuid
-  creadoPor       Usuario       @relation(fields: [creadoPorId], references: [id], onDelete: Restrict)
-  creadoEn        DateTime      @default(now()) @map("creado_en") @db.Timestamptz(6)
+  telefono        String?              @db.VarChar(20)
+  activo          Boolean              @default(true)
+  creadoPorId     String               @map("creado_por_id") @db.Uuid
+  creadoPor       Usuario              @relation(fields: [creadoPorId], references: [id], onDelete: Restrict)
+  creadoEn        DateTime             @default(now()) @map("creado_en") @db.Timestamptz(6)
   mediosPago      MedioPago[]
   remesasEnviadas Operacion[]
+  perfilRiesgo    PerfilRiesgo?
+  alertas         AlertaCumplimiento[]
 
   @@unique([tipoDocumento, numeroDocumento])
   @@index([nombre])
@@ -430,6 +458,17 @@ model Operacion {
   impresiones       ImpresionRecibo[]
 
   movimientos MovimientoCuenta[]
+
+  /// Costo promedio de la divisa con que se pagó (§7.3, D140). Null hasta que se completa, o si no había costo conocido.
+  costoPromedio         Decimal?               @map("costo_promedio") @db.Decimal(18, 6)
+  /// (tasa usada − costo promedio) × bolívares enviados, en pesos.
+  gananciaBruta         Decimal?               @map("ganancia_bruta") @db.Decimal(18, 2)
+  /// Costo bancario del pago llevado a pesos al costo promedio.
+  costoBancarioPesos    Decimal?               @map("costo_bancario_pesos") @db.Decimal(18, 2)
+  /// Ganancia bruta − costo bancario en pesos.
+  gananciaNeta          Decimal?               @map("ganancia_neta") @db.Decimal(18, 2)
+  movimientosInventario MovimientoInventario[]
+  alertas               AlertaCumplimiento[]
 
   @@index([estado, creadoEn])
   @@index([turnoId])
@@ -576,6 +615,10 @@ model Turno {
   traslados   Traslado[]
   gastos      Gasto[]
 
+  movimientosContraparte MovimientoContraparte[]
+  compras                CompraDivisa[]
+  operacionesDivisa      OperacionDivisa[]
+
   @@index([jornadaId])
   @@index([cajaId, abiertoEn])
   @@map("turno")
@@ -647,6 +690,22 @@ enum OrigenMovimiento {
   retiro_dueno
   /// Deshace un gasto o retiro anulado.
   gasto_anulacion
+  /// Dinero que entra o sale por un movimiento de cuenta corriente con una contraparte.
+  contraparte
+  /// Deshace el dinero de un movimiento de contraparte anulado.
+  contraparte_anulacion
+  /// Entra a la cuenta de destino la divisa comprada a una contraparte.
+  compra_ingreso
+  /// Sale de la cuenta en pesos el pago de una compra de contado.
+  compra_pago
+  /// Deshace un movimiento de una compra anulada.
+  compra_anulacion
+
+  /// Entra o sale efectivo por una compra o venta de divisas en caja.
+  divisa_entrada
+  divisa_salida
+  /// Deshace un movimiento de una operación de divisas anulada.
+  divisa_anulacion
 
   @@map("origen_movimiento")
 }
@@ -655,35 +714,47 @@ enum OrigenMovimiento {
 /// cuenta es la suma de sus entradas menos sus salidas. Es de solo inserción: un error se corrige con
 /// un movimiento contrario que apunta al original (`revierteId`), nunca editando ni borrando.
 model MovimientoCuenta {
-  id          String            @id @default(uuid(7)) @db.Uuid
-  cuentaId    String            @map("cuenta_id") @db.Uuid
-  cuenta      CuentaDinero      @relation(fields: [cuentaId], references: [id], onDelete: Restrict)
-  sentido     SentidoMovimiento
+  id                      String                 @id @default(uuid(7)) @db.Uuid
+  cuentaId                String                 @map("cuenta_id") @db.Uuid
+  cuenta                  CuentaDinero           @relation(fields: [cuentaId], references: [id], onDelete: Restrict)
+  sentido                 SentidoMovimiento
   /// Siempre positivo; el sentido dice si entra o sale. En la moneda de la cuenta.
-  monto       Decimal           @db.Decimal(18, 3)
-  origen      OrigenMovimiento
-  operacionId String?           @map("operacion_id") @db.Uuid
-  operacion   Operacion?        @relation(fields: [operacionId], references: [id], onDelete: Restrict)
+  monto                   Decimal                @db.Decimal(18, 3)
+  origen                  OrigenMovimiento
+  operacionId             String?                @map("operacion_id") @db.Uuid
+  operacion               Operacion?             @relation(fields: [operacionId], references: [id], onDelete: Restrict)
   /// Turno en el que ocurrió, si lo hay (se llena desde la tarea 3.3).
-  turnoId     String?           @map("turno_id") @db.Uuid
-  turno       Turno?            @relation(fields: [turnoId], references: [id], onDelete: Restrict)
+  turnoId                 String?                @map("turno_id") @db.Uuid
+  turno                   Turno?                 @relation(fields: [turnoId], references: [id], onDelete: Restrict)
   /// El movimiento que este deshace; cada movimiento se revierte, como mucho, una vez.
-  revierteId  String?           @unique @map("revierte_id") @db.Uuid
+  revierteId              String?                @unique @map("revierte_id") @db.Uuid
   /// Traslado del que forma parte (cada traslado tiene dos movimientos: una salida y una entrada).
-  gastoId     String?           @map("gasto_id") @db.Uuid
-  gasto       Gasto?            @relation(fields: [gastoId], references: [id], onDelete: Restrict)
-  trasladoId  String?           @map("traslado_id") @db.Uuid
-  traslado    Traslado?         @relation(fields: [trasladoId], references: [id], onDelete: Restrict)
-  revierte    MovimientoCuenta? @relation("Reversion", fields: [revierteId], references: [id], onDelete: Restrict)
-  reversion   MovimientoCuenta? @relation("Reversion")
-  usuarioId   String            @map("usuario_id") @db.Uuid
-  usuario     Usuario           @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
-  creadoEn    DateTime          @default(now()) @map("creado_en") @db.Timestamptz(6)
+  gastoId                 String?                @map("gasto_id") @db.Uuid
+  gasto                   Gasto?                 @relation(fields: [gastoId], references: [id], onDelete: Restrict)
+  trasladoId              String?                @map("traslado_id") @db.Uuid
+  traslado                Traslado?              @relation(fields: [trasladoId], references: [id], onDelete: Restrict)
+  /// Movimiento de cuenta corriente que movió dinero físico (préstamo, abono, anticipo…).
+  movimientoContraparteId String?                @map("movimiento_contraparte_id") @db.Uuid
+  movimientoContraparte   MovimientoContraparte? @relation(fields: [movimientoContraparteId], references: [id], onDelete: Restrict)
+  /// Compra de divisa que movió este dinero (la divisa que entra o el pago que sale).
+  compraId                String?                @map("compra_id") @db.Uuid
+  compra                  CompraDivisa?          @relation(fields: [compraId], references: [id], onDelete: Restrict)
+  /// Compra o venta de divisas en caja que movió este dinero (fase 5).
+  operacionDivisaId       String?                @map("operacion_divisa_id") @db.Uuid
+  operacionDivisa         OperacionDivisa?       @relation(fields: [operacionDivisaId], references: [id], onDelete: Restrict)
+  revierte                MovimientoCuenta?      @relation("Reversion", fields: [revierteId], references: [id], onDelete: Restrict)
+  reversion               MovimientoCuenta?      @relation("Reversion")
+  usuarioId               String                 @map("usuario_id") @db.Uuid
+  usuario                 Usuario                @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+  creadoEn                DateTime               @default(now()) @map("creado_en") @db.Timestamptz(6)
 
   @@index([cuentaId, creadoEn])
   @@index([operacionId])
   @@index([trasladoId])
   @@index([gastoId])
+  @@index([movimientoContraparteId])
+  @@index([compraId])
+  @@index([operacionDivisaId])
   @@map("movimiento_cuenta")
 }
 
@@ -812,4 +883,484 @@ model SaldoCuentaJornada {
   @@unique([jornadaId, ciclo, cuentaId])
   @@index([cuentaId])
   @@map("saldo_cuenta_jornada")
+}
+
+// ---------------------------------------------------------------------------
+// Fase 4: contrapartes y cuentas corrientes (§5.8, D137)
+// ---------------------------------------------------------------------------
+
+enum TipoContraparte {
+  proveedor
+  familiar
+  socio
+  tercero
+  otro
+
+  @@map("tipo_contraparte")
+}
+
+enum TipoMovimientoContraparte {
+  prestamo_otorgado
+  prestamo_recibido
+  abono_recibido
+  abono_entregado
+  anticipo_proveedor
+  compra_credito
+  ajuste
+  otro
+
+  @@map("tipo_movimiento_contraparte")
+}
+
+model Contraparte {
+  id          String          @id @default(uuid(7)) @db.Uuid
+  /// Único sin distinguir mayúsculas (índice sobre lower(nombre) en la migración): evita "Sara Castro" y "SARA CASTRO".
+  nombre      String
+  documento   String?
+  telefono    String?
+  tipo        TipoContraparte
+  notas       String?
+  activa      Boolean         @default(true)
+  creadoPorId String          @map("creado_por_id") @db.Uuid
+  creadoPor   Usuario         @relation(fields: [creadoPorId], references: [id], onDelete: Restrict)
+  creadoEn    DateTime        @default(now()) @map("creado_en") @db.Timestamptz(6)
+
+  movimientos    MovimientoContraparte[]
+  cuentasTitular CuentaDinero[]
+  compras        CompraDivisa[]
+
+  @@map("contraparte")
+}
+
+/// Cuenta corriente de solo inserción: anular es agregar el movimiento contrario (`revierteId`).
+model MovimientoContraparte {
+  id                String                    @id @default(uuid(7)) @db.Uuid
+  contraparteId     String                    @map("contraparte_id") @db.Uuid
+  contraparte       Contraparte               @relation(fields: [contraparteId], references: [id], onDelete: Restrict)
+  tipo              TipoMovimientoContraparte
+  moneda            String                    @db.Char(3)
+  /// Siempre positivo; `signo` dice hacia dónde mueve el saldo.
+  monto             Decimal                   @db.Decimal(18, 3)
+  /// 1: me debe más (o le debo menos). -1: le debo más (o me debe menos).
+  signo             Int                       @db.SmallInt
+  /// Cuenta del negocio por la que se movió el dinero; null si es solo reconocimiento de deuda.
+  cuentaId          String?                   @map("cuenta_id") @db.Uuid
+  cuenta            CuentaDinero?             @relation(fields: [cuentaId], references: [id], onDelete: Restrict)
+  nota              String?
+  /// El movimiento que este anula; cada uno se anula una sola vez.
+  revierteId        String?                   @unique @map("revierte_id") @db.Uuid
+  revierte          MovimientoContraparte?    @relation("ReversionContraparte", fields: [revierteId], references: [id], onDelete: Restrict)
+  reversion         MovimientoContraparte?    @relation("ReversionContraparte")
+  turnoId           String?                   @map("turno_id") @db.Uuid
+  turno             Turno?                    @relation(fields: [turnoId], references: [id], onDelete: Restrict)
+  claveIdempotencia String                    @unique @map("clave_idempotencia") @db.VarChar(64)
+  usuarioId         String                    @map("usuario_id") @db.Uuid
+  usuario           Usuario                   @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+  creadoEn          DateTime                  @default(now()) @map("creado_en") @db.Timestamptz(6)
+
+  movimientosCuenta MovimientoCuenta[]
+  compra            CompraDivisa?
+
+  @@index([contraparteId, creadoEn])
+  @@index([creadoEn])
+  @@map("movimiento_contraparte")
+}
+
+// ---------------------------------------------------------------------------
+// Fase 4: inventario de divisas, compras a contrapartes y ganancia (§5.6, §7.3, D138 a D141)
+// ---------------------------------------------------------------------------
+
+/// Estado vivo del inventario de una divisa. Se bloquea la fila en cada movimiento (SELECT … FOR UPDATE).
+model InventarioDivisa {
+  moneda        String   @id @db.Char(3)
+  /// Unidades compradas y aún no pagadas; puede quedar negativa (se paga más de lo registrado como comprado).
+  cantidad      Decimal  @default(0) @db.Decimal(18, 3)
+  /// Pesos por unidad; null mientras no haya compras ni inventario inicial.
+  costoPromedio Decimal? @map("costo_promedio") @db.Decimal(18, 6)
+  actualizadoEn DateTime @default(now()) @map("actualizado_en") @db.Timestamptz(6)
+
+  movimientos MovimientoInventario[]
+
+  @@map("inventario_divisa")
+}
+
+enum OrigenInventario {
+  /// Inventario inicial o corrección del administrador, con motivo.
+  ajuste
+  /// Bolívares (o la divisa) comprados a una contraparte.
+  compra
+  /// Deshace una compra anulada.
+  compra_anulacion
+  /// Salen al pagar una remesa (bolívares enviados + costo bancario).
+  remesa_pago
+
+  /// Entran al comprarle divisa a un cliente en caja.
+  divisa_compra
+  /// Salen al venderle divisa a un cliente en caja.
+  divisa_venta
+  /// Deshace una compra o venta de divisas en caja anulada.
+  divisa_anulacion
+
+  @@map("origen_inventario")
+}
+
+/// Historial de solo inserción del inventario: cada fila guarda el antes y el después.
+model MovimientoInventario {
+  id                String            @id @default(uuid(7)) @db.Uuid
+  moneda            String            @db.Char(3)
+  inventario        InventarioDivisa  @relation(fields: [moneda], references: [moneda], onDelete: Restrict)
+  origen            OrigenInventario
+  sentido           SentidoMovimiento
+  /// Siempre positiva; el sentido dice si entra o sale.
+  cantidad          Decimal           @db.Decimal(18, 3)
+  /// Tasa de la entrada (compra o ajuste); en una salida, el costo unitario con que salió.
+  tasa              Decimal?          @db.Decimal(18, 6)
+  cantidadAntes     Decimal           @map("cantidad_antes") @db.Decimal(18, 3)
+  costoAntes        Decimal?          @map("costo_antes") @db.Decimal(18, 6)
+  cantidadDespues   Decimal           @map("cantidad_despues") @db.Decimal(18, 3)
+  costoDespues      Decimal?          @map("costo_despues") @db.Decimal(18, 6)
+  compraId          String?           @map("compra_id") @db.Uuid
+  compra            CompraDivisa?     @relation(fields: [compraId], references: [id], onDelete: Restrict)
+  operacionId       String?           @map("operacion_id") @db.Uuid
+  operacion         Operacion?        @relation(fields: [operacionId], references: [id], onDelete: Restrict)
+  operacionDivisaId String?           @map("operacion_divisa_id") @db.Uuid
+  operacionDivisa   OperacionDivisa?  @relation(fields: [operacionDivisaId], references: [id], onDelete: Restrict)
+  nota              String?
+  usuarioId         String            @map("usuario_id") @db.Uuid
+  usuario           Usuario           @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+  creadoEn          DateTime          @default(now()) @map("creado_en") @db.Timestamptz(6)
+
+  @@index([moneda, creadoEn])
+  @@index([compraId])
+  @@index([operacionId])
+  @@map("movimiento_inventario")
+}
+
+enum FormaPagoCompra {
+  /// Sale de una cuenta del negocio en pesos.
+  contado
+  /// Queda en la cuenta corriente de la contraparte (le debo); si había anticipo, lo descuenta.
+  credito
+
+  @@map("forma_pago_compra")
+}
+
+/// Compra de bolívares (u otra divisa) a una contraparte (§5.6).
+model CompraDivisa {
+  id                      String                 @id @default(uuid(7)) @db.Uuid
+  contraparteId           String                 @map("contraparte_id") @db.Uuid
+  contraparte             Contraparte            @relation(fields: [contraparteId], references: [id], onDelete: Restrict)
+  moneda                  String                 @db.Char(3)
+  /// Divisa recibida, en la cuenta de destino.
+  cantidad                Decimal                @db.Decimal(18, 3)
+  /// Punto de compra: pesos por unidad.
+  tasa                    Decimal                @db.Decimal(18, 6)
+  /// cantidad × tasa, fijado en pesos.
+  montoPesos              Decimal                @map("monto_pesos") @db.Decimal(18, 2)
+  cuentaDestinoId         String                 @map("cuenta_destino_id") @db.Uuid
+  cuentaDestino           CuentaDinero           @relation("CompraDestino", fields: [cuentaDestinoId], references: [id], onDelete: Restrict)
+  formaPago               FormaPagoCompra        @map("forma_pago")
+  /// Cuenta en pesos de la que salió el pago (solo de contado).
+  cuentaPagoId            String?                @map("cuenta_pago_id") @db.Uuid
+  cuentaPago              CuentaDinero?          @relation("CompraPago", fields: [cuentaPagoId], references: [id], onDelete: Restrict)
+  /// Movimiento de cuenta corriente de una compra a crédito.
+  movimientoContraparteId String?                @unique @map("movimiento_contraparte_id") @db.Uuid
+  movimientoContraparte   MovimientoContraparte? @relation(fields: [movimientoContraparteId], references: [id], onDelete: Restrict)
+  nota                    String?
+  turnoId                 String?                @map("turno_id") @db.Uuid
+  turno                   Turno?                 @relation(fields: [turnoId], references: [id], onDelete: Restrict)
+  claveIdempotencia       String                 @unique @map("clave_idempotencia") @db.VarChar(64)
+  creadoPorId             String                 @map("creado_por_id") @db.Uuid
+  creadoPor               Usuario                @relation("CompraCreadaPor", fields: [creadoPorId], references: [id], onDelete: Restrict)
+  creadoEn                DateTime               @default(now()) @map("creado_en") @db.Timestamptz(6)
+  anuladoEn               DateTime?              @map("anulado_en") @db.Timestamptz(6)
+  anuladoPorId            String?                @map("anulado_por_id") @db.Uuid
+  anuladoPor              Usuario?               @relation("CompraAnuladaPor", fields: [anuladoPorId], references: [id], onDelete: Restrict)
+  motivoAnulacion         String?                @map("motivo_anulacion")
+
+  movimientosCuenta     MovimientoCuenta[]
+  movimientosInventario MovimientoInventario[]
+
+  @@index([contraparteId, creadoEn])
+  @@index([creadoEn])
+  @@map("compra_divisa")
+}
+
+// ---------------------------------------------------------------------------
+// Fase 5: divisas en caja (§5.7, D145 a D148)
+// ---------------------------------------------------------------------------
+
+enum TipoOperacionDivisa {
+  /// El negocio le compra divisa al cliente: entra la divisa, salen pesos.
+  compra
+  /// El negocio le vende divisa al cliente: sale la divisa, entran pesos.
+  venta
+
+  @@map("tipo_operacion_divisa")
+}
+
+/// Compra o venta de divisa en efectivo, en la caja del turno de quien la registra.
+model OperacionDivisa {
+  id                String              @id @default(uuid(7)) @db.Uuid
+  /// Mismo consecutivo que las remesas (tabla contador): un solo número de recibo por negocio (D100).
+  numeroComprobante Int                 @unique @map("numero_comprobante")
+  tipo              TipoOperacionDivisa
+  lineaNegocioId    String              @map("linea_negocio_id") @db.Uuid
+  lineaNegocio      LineaNegocio        @relation(fields: [lineaNegocioId], references: [id], onDelete: Restrict)
+  tasaId            String              @map("tasa_id") @db.Uuid
+  tasa              Tasa                @relation(fields: [tasaId], references: [id], onDelete: Restrict)
+  moneda            String              @db.Char(3)
+  montoDivisa       Decimal             @map("monto_divisa") @db.Decimal(18, 2)
+  montoPesos        Decimal             @map("monto_pesos") @db.Decimal(18, 2)
+  tasaCalculada     Decimal             @map("tasa_calculada") @db.Decimal(18, 6)
+  tasaUsada         Decimal             @map("tasa_usada") @db.Decimal(18, 6)
+  motivoTasa        String?             @map("motivo_tasa")
+  /// Nombre y documento del cliente, opcionales (la ficha de cumplimiento llega en la fase 7).
+  clienteNombre     String?             @map("cliente_nombre")
+  clienteDocumento  String?             @map("cliente_documento")
+  turnoId           String              @map("turno_id") @db.Uuid
+  turno             Turno               @relation(fields: [turnoId], references: [id], onDelete: Restrict)
+  cuentaDivisaId    String              @map("cuenta_divisa_id") @db.Uuid
+  cuentaDivisa      CuentaDinero        @relation("DivisaCuentaDivisa", fields: [cuentaDivisaId], references: [id], onDelete: Restrict)
+  cuentaPesosId     String              @map("cuenta_pesos_id") @db.Uuid
+  cuentaPesos       CuentaDinero        @relation("DivisaCuentaPesos", fields: [cuentaPesosId], references: [id], onDelete: Restrict)
+  /// Solo en ventas: costo promedio con que salió la divisa y la ganancia (§7.3).
+  costoPromedio     Decimal?            @map("costo_promedio") @db.Decimal(18, 6)
+  ganancia          Decimal?            @db.Decimal(18, 2)
+  impresiones       Int                 @default(0)
+  claveIdempotencia String              @unique @map("clave_idempotencia") @db.VarChar(64)
+  creadoPorId       String              @map("creado_por_id") @db.Uuid
+  creadoPor         Usuario             @relation("DivisaCreadaPor", fields: [creadoPorId], references: [id], onDelete: Restrict)
+  creadoEn          DateTime            @default(now()) @map("creado_en") @db.Timestamptz(6)
+  anuladoEn         DateTime?           @map("anulado_en") @db.Timestamptz(6)
+  anuladoPorId      String?             @map("anulado_por_id") @db.Uuid
+  anuladoPor        Usuario?            @relation("DivisaAnuladaPor", fields: [anuladoPorId], references: [id], onDelete: Restrict)
+  motivoAnulacion   String?             @map("motivo_anulacion")
+
+  denominaciones        DenominacionOperacion[]
+  movimientosCuenta     MovimientoCuenta[]
+  movimientosInventario MovimientoInventario[]
+
+  @@index([turnoId])
+  @@index([creadoEn])
+  @@map("operacion_divisa")
+}
+
+/// Billetes recibidos y entregados en una operación de divisas (§5.7).
+model DenominacionOperacion {
+  id                String            @id @default(uuid(7)) @db.Uuid
+  operacionDivisaId String            @map("operacion_divisa_id") @db.Uuid
+  operacionDivisa   OperacionDivisa   @relation(fields: [operacionDivisaId], references: [id], onDelete: Restrict)
+  /// "entrada" = recibida del cliente; "salida" = entregada al cliente.
+  sentido           SentidoMovimiento
+  moneda            String            @db.Char(3)
+  denominacionId    String            @map("denominacion_id") @db.Uuid
+  denominacion      Denominacion      @relation(fields: [denominacionId], references: [id], onDelete: Restrict)
+  valor             Decimal           @db.Decimal(18, 3)
+  cantidad          Int
+
+  @@index([operacionDivisaId])
+  @@map("denominacion_operacion")
+}
+
+// ---------------------------------------------------------------------------
+// Fase 7: cumplimiento SARLAFT / UIAF (§5.13, §7.7, D150 a D154). Umbrales provisionales (§13, 9).
+// ---------------------------------------------------------------------------
+
+enum NivelRiesgo {
+  bajo
+  medio
+  alto
+
+  @@map("nivel_riesgo")
+}
+
+/// Ficha ampliada del cliente (§5.13).
+model PerfilRiesgo {
+  id                 String      @id @default(uuid(7)) @db.Uuid
+  clienteId          String      @unique @map("cliente_id") @db.Uuid
+  cliente            Cliente     @relation(fields: [clienteId], references: [id], onDelete: Restrict)
+  actividadEconomica String?     @map("actividad_economica")
+  origenFondos       String?     @map("origen_fondos")
+  direccion          String?
+  pep                Boolean     @default(false)
+  nivel              NivelRiesgo @default(bajo)
+  motivoNivel        String?     @map("motivo_nivel")
+  actualizadoPorId   String      @map("actualizado_por_id") @db.Uuid
+  actualizadoPor     Usuario     @relation(fields: [actualizadoPorId], references: [id], onDelete: Restrict)
+  actualizadoEn      DateTime    @default(now()) @map("actualizado_en") @db.Timestamptz(6)
+
+  @@map("perfil_riesgo")
+}
+
+/// Parámetros de cumplimiento de la instalación. Todo null = regla apagada (D150).
+model ParametrosCumplimiento {
+  id                         String   @id @default(uuid(7)) @db.Uuid
+  unica                      Boolean  @unique @default(true)
+  /// Acumulado del mes de un remitente (moneda local) a partir del cual se exige la ficha ampliada.
+  umbralFichaMensual         Decimal? @map("umbral_ficha_mensual") @db.Decimal(18, 2)
+  /// Fraccionamiento: más de N remesas de un remitente en 24 h, cada una por debajo de este monto.
+  fraccionamientoCantidad    Int?     @map("fraccionamiento_cantidad")
+  fraccionamientoMontoMaximo Decimal? @map("fraccionamiento_monto_maximo") @db.Decimal(18, 2)
+  /// Concentración: un beneficiario que recibe de más de M remitentes distintos en 30 días.
+  concentracionRemitentes    Int?     @map("concentracion_remitentes")
+  actualizadoEn              DateTime @default(now()) @map("actualizado_en") @db.Timestamptz(6)
+
+  @@map("parametros_cumplimiento")
+}
+
+enum FuenteLista {
+  onu
+  ofac
+  propia
+
+  @@map("fuente_lista")
+}
+
+/// Lista restrictiva cargada por el administrador (ONU, OFAC o propia). Se desactiva, no se borra.
+model EntradaListaRestrictiva {
+  id              String      @id @default(uuid(7)) @db.Uuid
+  fuente          FuenteLista
+  nombre          String
+  /// Solo dígitos y letras, sin puntos: se compara exacto contra el documento del cliente.
+  numeroDocumento String?     @map("numero_documento") @db.VarChar(20)
+  nota            String?
+  activa          Boolean     @default(true)
+  creadoPorId     String      @map("creado_por_id") @db.Uuid
+  creadoPor       Usuario     @relation(fields: [creadoPorId], references: [id], onDelete: Restrict)
+  creadoEn        DateTime    @default(now()) @map("creado_en") @db.Timestamptz(6)
+
+  @@index([numeroDocumento])
+  @@map("entrada_lista_restrictiva")
+}
+
+enum TipoAlerta {
+  lista_restrictiva
+  fraccionamiento
+  concentracion
+  ficha_requerida
+
+  @@map("tipo_alerta")
+}
+
+enum EstadoAlerta {
+  abierta
+  descartada
+  escalada
+
+  @@map("estado_alerta")
+}
+
+model AlertaCumplimiento {
+  id            String       @id @default(uuid(7)) @db.Uuid
+  tipo          TipoAlerta
+  estado        EstadoAlerta @default(abierta)
+  clienteId     String       @map("cliente_id") @db.Uuid
+  cliente       Cliente      @relation(fields: [clienteId], references: [id], onDelete: Restrict)
+  operacionId   String?      @map("operacion_id") @db.Uuid
+  operacion     Operacion?   @relation(fields: [operacionId], references: [id], onDelete: Restrict)
+  /// Qué disparó la alerta (cuántas operaciones, montos, coincidencia en la lista…).
+  detalle       Json
+  justificacion String?
+  resueltaPorId String?      @map("resuelta_por_id") @db.Uuid
+  resueltaPor   Usuario?     @relation("AlertaResueltaPor", fields: [resueltaPorId], references: [id], onDelete: Restrict)
+  resueltaEn    DateTime?    @map("resuelta_en") @db.Timestamptz(6)
+  creadoEn      DateTime     @default(now()) @map("creado_en") @db.Timestamptz(6)
+
+  @@index([estado, creadoEn])
+  @@index([clienteId])
+  @@map("alerta_cumplimiento")
+}
+
+// ---------------------------------------------------------------------------
+// Fase 9: liquidez (§5.10, §7.4, D160 a D162)
+// ---------------------------------------------------------------------------
+
+/// Umbrales de las alertas de liquidez. Null = alerta apagada.
+model ParametrosLiquidez {
+  id               String   @id @default(uuid(7)) @db.Uuid
+  unica            Boolean  @unique @default(true)
+  /// Bolívares libres (en la moneda destino) por debajo de los cuales se alerta.
+  umbralLibre      Decimal? @map("umbral_libre") @db.Decimal(18, 3)
+  /// Porcentaje del límite diario de una cuenta a partir del cual se alerta (ej. 80).
+  porcentajeLimite Int?     @map("porcentaje_limite")
+  actualizadoEn    DateTime @default(now()) @map("actualizado_en") @db.Timestamptz(6)
+
+  @@map("parametros_liquidez")
+}
+
+// ---------------------------------------------------------------------------
+// Fase 10: doble control (§5.12, D163 a D166)
+// ---------------------------------------------------------------------------
+
+/// Qué acciones pasan por aprobación. Todo apagado al instalar.
+model ParametrosDobleControl {
+  id                String   @id @default(uuid(7)) @db.Uuid
+  unica             Boolean  @unique @default(true)
+  reaperturaJornada Boolean  @default(false) @map("reapertura_jornada")
+  devoluciones      Boolean  @default(false)
+  anulaciones       Boolean  @default(false)
+  ajustes           Boolean  @default(false)
+  actualizadoEn     DateTime @default(now()) @map("actualizado_en") @db.Timestamptz(6)
+
+  @@map("parametros_doble_control")
+}
+
+enum AccionAprobacion {
+  reabrir_jornada
+  devolver_remesa
+  anular_remesa
+  anular_divisa
+  anular_compra
+  anular_gasto
+  anular_traslado
+  ajuste_contraparte
+  ajuste_inventario
+
+  @@map("accion_aprobacion")
+}
+
+enum EstadoSolicitud {
+  pendiente
+  aprobada
+  rechazada
+
+  @@map("estado_solicitud")
+}
+
+/// Solicitud de doble control: la acción queda guardada y la ejecuta otra persona al aprobarla.
+model SolicitudAprobacion {
+  id            String           @id @default(uuid(7)) @db.Uuid
+  accion        AccionAprobacion
+  /// Registro sobre el que actúa (jornada, remesa, contraparte, moneda del inventario…).
+  entidadId     String           @map("entidad_id")
+  /// Lo necesario para ejecutar la acción al aprobarla (el cuerpo de la petición original).
+  datos         Json
+  /// Resumen legible para la bandeja.
+  descripcion   String
+  estado        EstadoSolicitud  @default(pendiente)
+  solicitanteId String           @map("solicitante_id") @db.Uuid
+  solicitante   Usuario          @relation("SolicitudSolicitante", fields: [solicitanteId], references: [id], onDelete: Restrict)
+  aprobadorId   String?          @map("aprobador_id") @db.Uuid
+  aprobador     Usuario?         @relation("SolicitudAprobador", fields: [aprobadorId], references: [id], onDelete: Restrict)
+  comentario    String?
+  resueltaEn    DateTime?        @map("resuelta_en") @db.Timestamptz(6)
+  creadoEn      DateTime         @default(now()) @map("creado_en") @db.Timestamptz(6)
+
+  @@index([estado, creadoEn])
+  @@map("solicitud_aprobacion")
+}
+
+// ---------------------------------------------------------------------------
+// Fase 13: permisos configurables (§6.1, D169 a D171)
+// ---------------------------------------------------------------------------
+
+/// Permisos de un rol elegidos por el dueño. Sin fila, el rol usa los de fábrica (packages/shared).
+model PermisosRol {
+  rol            Rol      @id
+  permisos       String[]
+  actualizadoPor String   @map("actualizado_por") @db.Uuid
+  actualizadoEn  DateTime @default(now()) @map("actualizado_en") @db.Timestamptz(6)
+
+  @@map("permisos_rol")
 }

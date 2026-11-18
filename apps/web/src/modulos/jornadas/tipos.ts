@@ -57,6 +57,29 @@ export interface ResumenJornada {
     resultado: 'sobrante' | 'faltante';
     explicacion: string | null;
   }[];
+  /** Desde la fase 4 (D141); las jornadas cerradas antes no lo traen. */
+  ganancia?: {
+    moneda: string;
+    remesasCosteadas: number;
+    remesasSinCosto: number;
+    gananciaRemesas: string;
+    gananciaDivisas?: string;
+    costosBancarios: string;
+    gastosOperativos: string;
+    gananciaDelDia: string;
+  };
+  divisas?: {
+    compras: number;
+    ventas: number;
+    comprado: TotalPorMoneda[];
+    vendido: TotalPorMoneda[];
+  };
+  contrapartes?: {
+    saldos: { moneda: string; meDeben: string; lesDebo: string }[];
+    movimientosDelDia: number;
+  };
+  devolucionesPendientes?: TotalPorMoneda[];
+  posicion?: TotalPorMoneda[];
 }
 
 export interface SaldoCuentaJornada {

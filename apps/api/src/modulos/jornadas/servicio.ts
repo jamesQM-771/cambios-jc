@@ -16,6 +16,7 @@ import { saldoDeCuenta } from '../../lib/libro.js';
 import type { PrismaClient } from '../../lib/prisma.js';
 import { registrarAuditoria } from '../../lib/registrar-auditoria.js';
 import type { ContextoPeticion } from '../auth/servicio.js';
+import { resumenDeContrapartes } from '../contrapartes/servicio.js';
 
 import {
   esquemaResumen,
@@ -111,7 +112,7 @@ export function crearServicioJornadas({ prisma }: { prisma: PrismaClient }) {
       select: { id: true, nombre: true, tipo: true, moneda: true },
     });
 
-  /** El resumen del día (§5.16 C). Sin ganancia neta: necesita el costo promedio de la fase 4. */
+  /** El resumen del día (§5.16 B y C): dinero, remesas, gastos, ganancia, contrapartes y posición. */
   async function calcularResumen(
     cliente: Cliente,
     jornada: { sucursalId: string; fecha: Date; sucursal: { id: string; nombre: string } },
@@ -248,11 +249,101 @@ export function crearServicioJornadas({ prisma }: { prisma: PrismaClient }) {
       ];
     });
 
+    // Ganancia de las remesas pagadas hoy (D140, D141). Las devoluciones no se restan: una remesa
+    // devuelta nunca se pagó ni generó ganancia (D142).
+    const empresa = await cliente.empresa.findUnique({ where: { unica: true } });
+    const local = (empresa?.monedaLocal ?? 'COP') as Moneda;
+    const pagadas = await cliente.operacion.findMany({
+      where: {
+        estado: 'completada',
+        transferencia: { completadaEn: rango },
+        cuentaIngreso: { sucursalId },
+      },
+      select: { gananciaNeta: true, costoBancarioPesos: true },
+    });
+    const costeadas = pagadas.filter((p) => p.gananciaNeta !== null);
+    let gananciaRemesas = sumar('0', '0');
+    let costosEnPesos = sumar('0', '0');
+    for (const p of costeadas) {
+      gananciaRemesas = sumar(gananciaRemesas, p.gananciaNeta?.toString() ?? '0');
+      costosEnPesos = sumar(costosEnPesos, p.costoBancarioPesos?.toString() ?? '0');
+    }
+    const divisas = await cliente.operacionDivisa.findMany({
+      where: { creadoEn: rango, anuladoEn: null, cuentaPesos: { sucursalId } },
+      select: { tipo: true, moneda: true, montoDivisa: true, ganancia: true },
+    });
+    let gananciaDivisas = sumar('0', '0');
+    for (const d of divisas) {
+      if (d.ganancia) gananciaDivisas = sumar(gananciaDivisas, d.ganancia.toString());
+    }
+    const deTipoDivisa = (tipo: 'compra' | 'venta') =>
+      totalesPorMoneda(
+        divisas
+          .filter((d) => d.tipo === tipo)
+          .map((d) => ({ moneda: d.moneda, monto: d.montoDivisa.toString() })),
+      );
+    let gastosLocales = sumar('0', '0');
+    for (const g of gastos) {
+      if (g.tipo === 'operativo' && g.cuenta.moneda === local) {
+        gastosLocales = sumar(gastosLocales, g.monto.toString());
+      }
+    }
+    const ganancia = {
+      moneda: local,
+      remesasCosteadas: costeadas.length,
+      remesasSinCosto: pagadas.length - costeadas.length,
+      gananciaRemesas: montoATexto(gananciaRemesas, local),
+      gananciaDivisas: montoATexto(gananciaDivisas, local),
+      costosBancarios: montoATexto(costosEnPesos, local),
+      gastosOperativos: montoATexto(gastosLocales, local),
+      gananciaDelDia: montoATexto(
+        restar(sumar(gananciaRemesas, gananciaDivisas), gastosLocales),
+        local,
+      ),
+    };
+
+    // B. Contrapartes y posición total (§5.16, §7.6).
+    const saldosContrapartes = await resumenDeContrapartes(cliente);
+    const movimientosDelDia = await cliente.movimientoContraparte.count({
+      where: { creadoEn: rango },
+    });
+    const conIncidencia = await cliente.operacion.findMany({
+      where: { estado: 'con_incidencia', cuentaIngreso: { sucursalId } },
+      select: { montoPesos: true, lineaNegocio: { select: { monedaOrigen: true } } },
+    });
+    const devolucionesPendientes = totalesPorMoneda(
+      conIncidencia.map((o) => ({
+        moneda: o.lineaNegocio.monedaOrigen,
+        monto: o.montoPesos.toString(),
+      })),
+    );
+    const totalDisponible = totalesPorMoneda(saldos);
+    const monedasPosicion = [
+      ...new Set([
+        ...totalDisponible.map((t) => t.moneda),
+        ...saldosContrapartes.map((c) => c.moneda),
+        ...devolucionesPendientes.map((d) => d.moneda),
+      ]),
+    ].sort();
+    const de = (lista: { moneda: string; total: string }[], moneda: string) =>
+      lista.find((item) => item.moneda === moneda)?.total ?? '0';
+    const posicion = monedasPosicion.map((moneda) => {
+      const contraparte = saldosContrapartes.find((c) => c.moneda === moneda);
+      const valor = restar(
+        restar(
+          sumar(de(totalDisponible, moneda), contraparte?.meDeben ?? '0'),
+          contraparte?.lesDebo ?? '0',
+        ),
+        de(devolucionesPendientes, moneda),
+      );
+      return { moneda, total: montoATexto(valor, moneda as Moneda) };
+    });
+
     return {
       fecha,
       sucursal: jornada.sucursal,
       disponible,
-      totalDisponible: totalesPorMoneda(saldos),
+      totalDisponible,
       remesas: {
         registradas: porEstado.reduce((total, fila) => total + fila._count._all, 0),
         completadas: cuantas('completada'),
@@ -267,6 +358,16 @@ export function crearServicioJornadas({ prisma }: { prisma: PrismaClient }) {
       retirosDelDueno: deTipo('retiro_dueno'),
       traslados,
       diferenciasDeArqueo,
+      ganancia,
+      divisas: {
+        compras: divisas.filter((d) => d.tipo === 'compra').length,
+        ventas: divisas.filter((d) => d.tipo === 'venta').length,
+        comprado: deTipoDivisa('compra'),
+        vendido: deTipoDivisa('venta'),
+      },
+      contrapartes: { saldos: saldosContrapartes, movimientosDelDia },
+      devolucionesPendientes,
+      posicion,
     };
   }
 

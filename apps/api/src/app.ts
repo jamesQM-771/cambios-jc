@@ -35,6 +35,25 @@ import { rutasGastos } from './modulos/gastos/rutas.js';
 import { rutasJornadas } from './modulos/jornadas/rutas.js';
 import { crearServicioJornadas } from './modulos/jornadas/servicio.js';
 import { crearServicioGastos } from './modulos/gastos/servicio.js';
+import { rutasContrapartes } from './modulos/contrapartes/rutas.js';
+import { crearServicioContrapartes } from './modulos/contrapartes/servicio.js';
+import { rutasCompras } from './modulos/compras/rutas.js';
+import { crearServicioCompras } from './modulos/compras/servicio.js';
+import { rutasCumplimiento } from './modulos/cumplimiento/rutas.js';
+import { crearServicioCumplimiento } from './modulos/cumplimiento/servicio.js';
+import { rutasAprobaciones } from './modulos/aprobaciones/rutas.js';
+import { crearServicioAprobaciones } from './modulos/aprobaciones/servicio.js';
+import { rutasDatos } from './modulos/datos/rutas.js';
+import { rutasPermisos } from './modulos/permisos/rutas.js';
+import { cargarPermisos } from './lib/permisos.js';
+import { crearServicioDatos } from './modulos/datos/servicio.js';
+import { rutasDivisas } from './modulos/divisas/rutas.js';
+import { rutasLiquidez } from './modulos/liquidez/rutas.js';
+import { rutasReportes } from './modulos/reportes/rutas.js';
+import { crearServicioReportes } from './modulos/reportes/servicio.js';
+import { crearServicioDivisas } from './modulos/divisas/servicio.js';
+import { rutasInventario } from './modulos/inventario/rutas.js';
+import { crearServicioInventario } from './modulos/inventario/servicio.js';
 import { rutasTraslados } from './modulos/traslados/rutas.js';
 import { crearServicioTraslados } from './modulos/traslados/servicio.js';
 import { crearServicioLibro } from './modulos/libro/servicio.js';
@@ -103,6 +122,7 @@ export function construirApp({
   // seguridad. El límite de peticiones se engancha con onRoute y solo alcanza a las rutas declaradas
   // una vez cargado; una ruta declarada aquí, fuera de un plugin, quedaría sin límite.
   app.register((rutas, _opciones, listo) => {
+    const aprobaciones = crearServicioAprobaciones({ prisma });
     rutasSalud(rutas, prisma);
     rutasAuth(rutas, { servicio: servicioAuth, prisma, config });
     rutasUsuarios(rutas, crearServicioUsuarios({ prisma, auth: servicioAuth }));
@@ -121,7 +141,11 @@ export function construirApp({
     rutasLineasNegocio(rutas, crearServicioLineasNegocio({ prisma }));
     const almacenamiento = crearAlmacenamiento(config.CARPETA_SUBIDAS);
     const { notificador } = tiempoReal;
-    rutasRemesas(rutas, crearServicioRemesas({ prisma, almacenamiento, notificador }));
+    rutasRemesas(
+      rutas,
+      crearServicioRemesas({ prisma, almacenamiento, notificador }),
+      aprobaciones,
+    );
     rutasCola(rutas, crearServicioCola({ prisma, almacenamiento, notificador }));
     rutasRecibos(rutas, crearServicioRecibos({ prisma, origenWeb: config.ORIGEN_WEB }));
     rutasSeguimiento(rutas, crearServicioSeguimiento({ prisma }));
@@ -129,12 +153,32 @@ export function construirApp({
     rutasClientes(rutas, crearServicioClientes({ prisma }));
     rutasTurnos(rutas, crearServicioTurnos({ prisma }));
     rutasLibro(rutas, crearServicioLibro({ prisma }));
-    rutasTraslados(rutas, crearServicioTraslados({ prisma }));
+    rutasTraslados(rutas, crearServicioTraslados({ prisma }), aprobaciones);
     rutasCategoriasGasto(rutas, crearServicioCategoriasGasto({ prisma }));
-    rutasGastos(rutas, crearServicioGastos({ prisma }));
-    rutasJornadas(rutas, crearServicioJornadas({ prisma }));
+    rutasGastos(rutas, crearServicioGastos({ prisma }), aprobaciones);
+    rutasJornadas(rutas, crearServicioJornadas({ prisma }), aprobaciones);
     rutasCuentasDinero(rutas, crearServicioCuentasDinero({ prisma }));
+    rutasContrapartes(rutas, crearServicioContrapartes({ prisma }), aprobaciones);
+    rutasCompras(rutas, crearServicioCompras({ prisma }), aprobaciones);
+    rutasInventario(rutas, crearServicioInventario({ prisma }), aprobaciones);
+    rutasDivisas(rutas, crearServicioDivisas({ prisma }), aprobaciones);
+    rutasAprobaciones(rutas, aprobaciones);
+    rutasCumplimiento(rutas, crearServicioCumplimiento({ prisma }));
+    rutasReportes(rutas, crearServicioReportes({ prisma }));
+    rutasDatos(rutas, crearServicioDatos({ prisma }));
+    rutasLiquidez(rutas, prisma);
+    rutasPermisos(rutas, prisma);
     listo();
+  });
+
+  // Los permisos que eligió el dueño (fase 13) se cargan en memoria antes de atender peticiones.
+  app.addHook('onReady', async () => {
+    try {
+      await cargarPermisos(prisma);
+    } catch (error) {
+      // Sin base (algunas pruebas) se usan los permisos de fábrica; nunca se impide arrancar.
+      app.log.warn({ err: error }, 'No se pudieron cargar los permisos configurados.');
+    }
   });
 
   app.addHook('onClose', async () => {
