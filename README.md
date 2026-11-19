@@ -1,5 +1,7 @@
 # Cambios JC
 
+[![CI](https://github.com/jamesQM-771/cambios-jc/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/jamesQM-771/cambios-jc/actions/workflows/ci.yml)
+
 Sistema de operación y contabilidad para Cambios JC: remesas COP → VES, compra y venta de USD, contrapartes y caja diaria.
 
 - Especificación: [`docs/PROYECTO.md`](docs/PROYECTO.md)
