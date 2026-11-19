@@ -6,6 +6,7 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'lcov', 'json'],
+      thresholds: { statements: 95, branches: 90, functions: 95, lines: 95 },
       include: ['apps/*/src/**', 'packages/*/src/**'],
       exclude: [
         '**/*.test.ts',
