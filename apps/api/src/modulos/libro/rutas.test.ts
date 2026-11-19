@@ -516,6 +516,8 @@ describe('registrarMovimiento y saldoDeCuenta', () => {
     await prisma.$transaction(async (tx) => {
       await registrarMovimiento(tx, { ...datos, sentido: 'entrada', monto: '100' });
     });
+    // La base guarda microsegundos y Date solo milisegundos: sin esta espera el primer movimiento puede quedar "después" del corte.
+    await new Promise((resolver) => setTimeout(resolver, 20));
     const corte = new Date();
     await new Promise((resolver) => setTimeout(resolver, 20));
     await prisma.$transaction(async (tx) => {
